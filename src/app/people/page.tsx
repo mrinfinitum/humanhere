@@ -1,27 +1,20 @@
 import type { Metadata } from "next";
-import { Footer } from "@/components/Footer";
-import { Header } from "@/components/Header";
-import { PortraitField } from "@/components/PortraitField";
+import { ArchiveRows } from "@/components/ArchiveRows";
+import { EditorialShell } from "@/components/EditorialShell";
+import { PanelFooter } from "@/components/PanelFooter";
 import { DEV_FIXTURE_PEOPLE } from "@/data/people";
 
-export const metadata: Metadata = {
-  title: "People",
-  description: "Meet the people whose real stories form the HUMAN:HERE archive.",
-};
+export const metadata: Metadata = { title: "People", description: "Meet the people whose real stories form the HUMAN:HERE archive." };
 
 export default function PeoplePage() {
   return (
-    <>
-      <Header />
-      <main id="main-content" className="archive-page">
-        <header className="page-intro page-intro--archive">
-          <p>Human archive / Development fixtures</p>
-          <h1>People<span>.</span></h1>
-          <div><p>Everyone has a story.</p><p>You cannot always tell what someone is carrying.</p></div>
-        </header>
-        <PortraitField people={DEV_FIXTURE_PEOPLE} showIntro={false} />
-      </main>
-      <Footer />
-    </>
+    <EditorialShell current="People">
+      <article className="panel-document">
+        <header className="document-header"><p>Archive</p><h1>People</h1></header>
+        <section className="panel-introduction"><p>Every person has a name, a face, a story, dignity, and worth.</p><p>You cannot always tell what someone is carrying.</p></section>
+        <section className="panel-section"><h2>Current entries</h2><p className="section-description">Development fixtures awaiting real, consented stories and photography.</p><ArchiveRows people={DEV_FIXTURE_PEOPLE} /></section>
+        <PanelFooter />
+      </article>
+    </EditorialShell>
   );
 }
