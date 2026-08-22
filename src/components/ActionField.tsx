@@ -9,7 +9,7 @@ export function ActionField() {
   return (
     <section className="action-field" id="involved" aria-labelledby="action-title">
       <p>People need people.</p>
-      <h2 id="action-title">Show up<span>.</span></h2>
+      <h2 id="action-title"><span>Show</span> <em>up.</em></h2>
       <nav id="give" aria-label="Ways to get involved">
         {actions.map((action) => <a key={action.label} href={action.href}>{action.label}<span aria-hidden="true">↗</span></a>)}
       </nav>

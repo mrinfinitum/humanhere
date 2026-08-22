@@ -11,7 +11,7 @@ export function LoveLooks() {
           sizes="100vw"
         />
         <div className="love-looks__veil" aria-hidden="true" />
-        <h2 id="love-looks-title">Love looks like<br />showing up<span>.</span></h2>
+        <h2 id="love-looks-title"><span>Love looks like</span><em>showing up.</em></h2>
       </div>
 
       <div className="love-looks__faith">

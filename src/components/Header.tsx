@@ -30,7 +30,7 @@ export function Header() {
     <header className="site-header">
       <a className="skip-link" href="#main-content">Skip to content</a>
       <a className="header-brand" href="#top" aria-label="HUMAN:HERE home">
-        <BrandMark inverse showTagline={false} />
+        <BrandMark showTagline={false} />
       </a>
 
       <nav className="desktop-nav" aria-label="Primary navigation">

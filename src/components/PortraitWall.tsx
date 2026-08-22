@@ -5,7 +5,7 @@ export function PortraitWall() {
   return (
     <section className="portrait-wall" id="stories" aria-labelledby="portrait-wall-title">
       <div className="portrait-wall__question">
-        <h2 id="portrait-wall-title">Who<br />needs<br />help<span>?</span></h2>
+        <h2 id="portrait-wall-title">Who needs <em>help?</em></h2>
         <p>You can&apos;t always tell.<br />That&apos;s the point.</p>
       </div>
 
