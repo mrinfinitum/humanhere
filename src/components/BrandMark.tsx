@@ -13,25 +13,16 @@ export function BrandMark({
 }: BrandMarkProps) {
   if (compact) {
     return (
-      <span
-        className={`compact-mark ${inverse ? "compact-mark--inverse" : ""} ${className}`}
-        aria-label="HUMAN:HERE"
-      >
-        <span>H</span>
-        <span className="brand-colon" aria-hidden="true">:</span>
-        <span>H</span>
+      <span className={`compact-mark ${inverse ? "is-inverse" : ""} ${className}`} aria-label="HUMAN:HERE">
+        H<span className="brand-colon" aria-hidden="true">:</span>H
       </span>
     );
   }
 
   return (
-    <span className={`brand-lockup ${inverse ? "brand-lockup--inverse" : ""} ${className}`}>
-      <span className="brand-frame" aria-label="HUMAN:HERE">
-        <span>HUMAN</span>
-        <span>
-          <span className="brand-colon" aria-hidden="true">:</span>
-          <span>HERE</span>
-        </span>
+    <span className={`brand-lockup ${inverse ? "is-inverse" : ""} ${className}`}>
+      <span className="brand-wordmark" aria-label="HUMAN:HERE">
+        HUMAN<span className="brand-colon" aria-hidden="true">:</span>HERE
       </span>
       {showTagline && <span className="brand-tagline">People need people.</span>}
     </span>

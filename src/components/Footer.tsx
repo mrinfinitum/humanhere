@@ -1,36 +1,34 @@
 import { BrandMark } from "./BrandMark";
 
 const primaryLinks = [
-  { label: "About", href: "#about" },
   { label: "Stories", href: "#stories" },
+  { label: "About", href: "#about" },
   { label: "Get involved", href: "#involved" },
   { label: "Give", href: "#give" },
   { label: "Contact", href: "mailto:hello@humanhere.co" },
 ];
-const socialLinks = ["Instagram", "TikTok", "YouTube"];
 
 export function Footer() {
   return (
     <footer className="site-footer">
-      <div className="page-shell site-footer__top">
+      <div className="site-footer__identity">
         <BrandMark inverse />
-        <p>Be human.<br />Be here<span className="headline-period">.</span></p>
+        <p>Be human.<br />Be here<span>.</span></p>
       </div>
-      <div className="page-shell site-footer__links">
+      <div className="site-footer__navigation">
         <nav aria-label="Footer navigation">
-          {primaryLinks.map((link) => (
-            <a href={link.href} key={link.label}>{link.label}</a>
-          ))}
+          {primaryLinks.map((link) => <a href={link.href} key={link.label}>{link.label}</a>)}
         </nav>
         <nav aria-label="Social media">
-          {socialLinks.map((link) => <a href="#social" key={link}>{link}</a>)}
+          <a href="mailto:hello@humanhere.co?subject=Instagram">Instagram</a>
+          <a href="mailto:hello@humanhere.co?subject=TikTok">TikTok</a>
+          <a href="mailto:hello@humanhere.co?subject=YouTube">YouTube</a>
         </nav>
       </div>
-      <div className="page-shell site-footer__bottom">
+      <div className="site-footer__legal">
         <span>humanhere.co</span>
         <span>© {new Date().getFullYear()} HUMAN:HERE</span>
-        <span><a href="mailto:hello@humanhere.co?subject=Privacy">Privacy</a> / <a href="mailto:hello@humanhere.co?subject=Legal">Legal</a></span>
-        <BrandMark compact inverse showTagline={false} />
+        <a href="mailto:hello@humanhere.co?subject=Privacy">Privacy</a>
       </div>
     </footer>
   );

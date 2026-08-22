@@ -4,10 +4,9 @@ import { useEffect, useState } from "react";
 import { BrandMark } from "./BrandMark";
 
 const navigation = [
-  { label: "About", href: "#about" },
   { label: "Stories", href: "#stories" },
+  { label: "About", href: "#about" },
   { label: "Get involved", href: "#involved" },
-  { label: "Partners", href: "#partners" },
   { label: "Give", href: "#give" },
 ];
 
@@ -20,21 +19,22 @@ export function Header() {
       if (event.key === "Escape") setOpen(false);
     };
     document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
+    document.body.classList.add("menu-is-open");
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      document.body.classList.remove("menu-is-open");
+    };
   }, [open]);
 
   return (
     <header className="site-header">
+      <a className="skip-link" href="#main-content">Skip to content</a>
       <a className="header-brand" href="#top" aria-label="HUMAN:HERE home">
-        <BrandMark showTagline={false} />
-        <BrandMark compact showTagline={false} />
+        <BrandMark inverse showTagline={false} />
       </a>
 
       <nav className="desktop-nav" aria-label="Primary navigation">
-        {navigation.map((item) => (
-          <a key={item.href} href={item.href}>{item.label}</a>
-        ))}
-        <a className="button button--small" href="#involved">Show up</a>
+        {navigation.map((item) => <a key={item.href} href={item.href}>{item.label}</a>)}
       </nav>
 
       <button
@@ -49,17 +49,10 @@ export function Header() {
         <span />
       </button>
 
-      <div
-        id="mobile-menu"
-        className={`mobile-menu ${open ? "is-open" : ""}`}
-        aria-hidden={!open}
-        inert={!open ? true : undefined}
-      >
+      <div id="mobile-menu" className={`mobile-menu ${open ? "is-open" : ""}`} aria-hidden={!open} inert={!open ? true : undefined}>
         <nav aria-label="Mobile navigation">
-          {navigation.map((item, index) => (
-            <a key={item.href} href={item.href} onClick={() => setOpen(false)}>
-              <span>0{index + 1}</span>{item.label}
-            </a>
+          {navigation.map((item) => (
+            <a key={item.href} href={item.href} onClick={() => setOpen(false)}>{item.label}<span aria-hidden="true">↗</span></a>
           ))}
         </nav>
         <p>Human connection cannot be automated.</p>
