@@ -1,11 +1,12 @@
+import Link from "next/link";
 import { BrandMark } from "./BrandMark";
 
 const primaryLinks = [
-  { label: "Stories", href: "#stories" },
-  { label: "About", href: "#about" },
-  { label: "Get involved", href: "#involved" },
-  { label: "Give", href: "#give" },
-  { label: "Contact", href: "mailto:hello@humanhere.co" },
+  { label: "People", href: "/people" },
+  { label: "About", href: "/about" },
+  { label: "Get involved", href: "/get-involved" },
+  { label: "Give", href: "/give" },
+  { label: "Contact", href: "/contact" },
 ];
 
 export function Footer() {
@@ -17,7 +18,7 @@ export function Footer() {
       </div>
       <div className="site-footer__navigation">
         <nav aria-label="Footer navigation">
-          {primaryLinks.map((link) => <a href={link.href} key={link.label}>{link.label}</a>)}
+          {primaryLinks.map((link) => <Link href={link.href} key={link.label}>{link.label}</Link>)}
         </nav>
         <nav aria-label="Social media">
           <a href="mailto:hello@humanhere.co?subject=Instagram">Instagram</a>

@@ -1,17 +1,20 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BrandMark } from "./BrandMark";
 
 const navigation = [
-  { label: "Stories", href: "#stories" },
-  { label: "About", href: "#about" },
-  { label: "Get involved", href: "#involved" },
-  { label: "Give", href: "#give" },
+  { label: "People", href: "/people" },
+  { label: "About", href: "/about" },
+  { label: "Get involved", href: "/get-involved" },
+  { label: "Give", href: "/give" },
 ];
 
 export function Header() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!open) return;
@@ -29,12 +32,12 @@ export function Header() {
   return (
     <header className="site-header">
       <a className="skip-link" href="#main-content">Skip to content</a>
-      <a className="header-brand" href="#top" aria-label="HUMAN:HERE home">
+      <Link className="header-brand" href="/" aria-label="HUMAN:HERE home" onClick={() => setOpen(false)}>
         <BrandMark showTagline={false} />
-      </a>
+      </Link>
 
       <nav className="desktop-nav" aria-label="Primary navigation">
-        {navigation.map((item) => <a key={item.href} href={item.href}>{item.label}</a>)}
+        {navigation.map((item) => <Link key={item.href} href={item.href} aria-current={pathname === item.href ? "page" : undefined}>{item.label}</Link>)}
       </nav>
 
       <button
@@ -52,10 +55,10 @@ export function Header() {
       <div id="mobile-menu" className={`mobile-menu ${open ? "is-open" : ""}`} aria-hidden={!open} inert={!open ? true : undefined}>
         <nav aria-label="Mobile navigation">
           {navigation.map((item) => (
-            <a key={item.href} href={item.href} onClick={() => setOpen(false)}>{item.label}<span aria-hidden="true">↗</span></a>
+            <Link key={item.href} href={item.href} aria-current={pathname === item.href ? "page" : undefined} onClick={() => setOpen(false)}>{item.label}<span aria-hidden="true">↗</span></Link>
           ))}
         </nav>
-        <p>Human connection cannot be automated.</p>
+        <p>People need people.</p>
       </div>
     </header>
   );

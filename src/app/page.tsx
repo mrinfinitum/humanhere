@@ -1,23 +1,23 @@
-import { ActionField } from "@/components/ActionField";
+import { FeaturedPerson } from "@/components/FeaturedPerson";
 import { Footer } from "@/components/Footer";
+import { GetInvolvedLinks } from "@/components/GetInvolvedLinks";
 import { Header } from "@/components/Header";
-import { HeroPortrait } from "@/components/HeroPortrait";
-import { LoveLooks } from "@/components/LoveLooks";
 import { Manifesto } from "@/components/Manifesto";
-import { PortraitWall } from "@/components/PortraitWall";
-import { StoryFeature } from "@/components/StoryFeature";
+import { PortraitField } from "@/components/PortraitField";
+import { DEV_FIXTURE_PEOPLE } from "@/data/people";
 
 export default function Home() {
+  const featured = DEV_FIXTURE_PEOPLE.find((person) => person.featured) ?? DEV_FIXTURE_PEOPLE[0];
+  const archivePeople = DEV_FIXTURE_PEOPLE.filter((person) => person.slug !== featured.slug);
+
   return (
     <>
       <Header />
       <main id="main-content">
-        <HeroPortrait />
+        <FeaturedPerson person={featured} />
+        <PortraitField people={archivePeople} />
         <Manifesto />
-        <PortraitWall />
-        <StoryFeature />
-        <LoveLooks />
-        <ActionField />
+        <GetInvolvedLinks compact />
       </main>
       <Footer />
     </>
