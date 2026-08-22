@@ -2,10 +2,10 @@ import { ActionField } from "@/components/ActionField";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { HeroPortrait } from "@/components/HeroPortrait";
+import { LoveLooks } from "@/components/LoveLooks";
 import { Manifesto } from "@/components/Manifesto";
 import { PortraitWall } from "@/components/PortraitWall";
 import { StoryFeature } from "@/components/StoryFeature";
-import { WhatWeDoSequence } from "@/components/WhatWeDoSequence";
 
 export default function Home() {
   return (
@@ -13,10 +13,10 @@ export default function Home() {
       <Header />
       <main id="main-content">
         <HeroPortrait />
-        <PortraitWall />
         <Manifesto />
+        <PortraitWall />
         <StoryFeature />
-        <WhatWeDoSequence />
+        <LoveLooks />
         <ActionField />
       </main>
       <Footer />

@@ -23,7 +23,6 @@ export function PortraitWall() {
           </figure>
         ))}
       </div>
-      <p className="portrait-wall__aside">Every number has a name.</p>
     </section>
   );
 }

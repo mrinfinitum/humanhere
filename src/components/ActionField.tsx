@@ -1,6 +1,6 @@
 const actions = [
   { label: "Give", href: "mailto:hello@humanhere.co?subject=I%20want%20to%20give" },
-  { label: "Serve", href: "mailto:hello@humanhere.co?subject=I%20want%20to%20serve" },
+  { label: "Volunteer", href: "mailto:hello@humanhere.co?subject=I%20want%20to%20volunteer" },
   { label: "Partner", href: "mailto:hello@humanhere.co?subject=I%20want%20to%20partner" },
   { label: "Pray", href: "mailto:hello@humanhere.co?subject=How%20can%20I%20pray%3F" },
 ];

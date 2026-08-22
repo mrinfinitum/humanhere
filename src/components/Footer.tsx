@@ -12,8 +12,8 @@ export function Footer() {
   return (
     <footer className="site-footer">
       <div className="site-footer__identity">
-        <BrandMark inverse />
-        <p>Be human.<br />Be here<span>.</span></p>
+        <BrandMark inverse showTagline={false} />
+        <p>People need people<span>.</span></p>
       </div>
       <div className="site-footer__navigation">
         <nav aria-label="Footer navigation">

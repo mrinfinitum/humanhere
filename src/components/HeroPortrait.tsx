@@ -19,7 +19,6 @@ export function HeroPortrait() {
           <a href="#stories">Meet someone <span aria-hidden="true">→</span></a>
         </div>
       </div>
-      <p className="hero-portrait__name">Maya / Tulsa</p>
     </section>
   );
 }
