@@ -33,6 +33,16 @@ export default function Home() {
           <p>HUMAN:HERE brings people, churches, businesses, volunteers, and community organizations together to meet real needs with compassion, dignity, and presence.</p>
         </StatementSection>
 
+        <aside className="street-ribbon" aria-label="HUMAN:HERE movement statements">
+          <div>
+            <span>See people.</span>
+            <span aria-hidden="true">:</span>
+            <span>Love requires presence.</span>
+            <span aria-hidden="true">:</span>
+            <span>Show up for someone.</span>
+          </div>
+        </aside>
+
         <PortraitGrid />
 
         <section className="story-statement" aria-labelledby="story-heading">
@@ -59,6 +69,7 @@ export default function Home() {
             <div className="work-section__heading">
               <p className="eyebrow">04 / What we do</p>
               <h2 id="work-heading">Presence into practice.</h2>
+              <p className="work-section__note">Built with people.<br />Never just for them.</p>
             </div>
             <div className="work-grid">
               {work.map((item, index) => (
@@ -82,6 +93,7 @@ export default function Home() {
               <h2 id="faith-heading">Why we show up</h2>
               <p>Jesus taught us to see people others pass by, love our neighbors, and serve with humility.</p>
               <p>Our faith is why we act.<br />Our help is offered with dignity and without condition.</p>
+              <p className="faith-section__note">Love looks like showing up.</p>
               <a className="text-link" href="mailto:hello@humanhere.co?subject=Tell%20me%20more%20about%20your%20why">Our why <span aria-hidden="true">→</span></a>
             </div>
           </div>
@@ -94,6 +106,7 @@ export default function Home() {
           <div className="page-shell social-section__heading">
             <p className="eyebrow">Made to move</p>
             <h2 id="social-heading">A message bigger than a feed.</h2>
+            <p>Screenshot it. Print it. Pass it on.</p>
           </div>
           <div className="social-track page-shell">
             <SocialCard variant="portrait" image="/images/portrait-james.jpg" imageAlt="Portrait of James" headline={<>Don&apos;t<br />scroll<br />past me<span className="headline-period">.</span></>} />

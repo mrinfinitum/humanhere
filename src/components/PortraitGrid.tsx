@@ -7,7 +7,7 @@ export function PortraitGrid() {
       <div className="page-shell faces-section__intro">
         <p className="eyebrow">02 / People</p>
         <h2 id="faces-heading">Who needs help?</h2>
-        <p>You can&apos;t always tell.<br />That&apos;s the point.</p>
+        <p>You can&apos;t always tell.<br />That&apos;s the point.<span className="human-aside">Any of us. Any day.</span></p>
       </div>
       <div className="portrait-track page-shell" role="list" aria-label="Community portraits">
         {portraits.map((portrait, index) => (

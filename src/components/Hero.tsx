@@ -39,6 +39,7 @@ export function Hero() {
         <p className="hero__support">Human connection cannot be automated.</p>
         <a className="text-link text-link--inverse" href="#stories">Meet someone <span aria-hidden="true">→</span></a>
       </div>
+      <p className="hero__hand-note">You matter here.</p>
       <div className="hero__caption" aria-hidden="true">People need people.</div>
     </section>
   );
