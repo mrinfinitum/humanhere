@@ -14,8 +14,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEV_FIXTURE_PEOPLE } from "@/data/people";
 
 const ZOOM_LEVELS = [0.1, 0.25, 0.7, 1] as const;
-const DEFAULT_LEVEL = 2;
-const BUFFER = 900;
+const DEFAULT_LEVEL = 0;
+const BUFFER = 1400;
 
 type ThemeKey = "care" | "notice" | "belong";
 type FragmentStyle = "image" | "title" | "snippet" | "extract";
@@ -89,6 +89,96 @@ const supportingFragments: FragmentDefinition[] = [
   { id: "invitation", title: "Show up", subtitle: "An invitation", category: "invitation", style: "title", themes: [9, 6, 9], links: ["james", "maya", "lena", "miguel"], width: 265, height: 155, color: "hsl(17 64% 61%)", quote: "Make room for one more human story." },
 ];
 
+const archiveSeeds: Array<[string, string]> = [
+  ["Listening", "Listen long enough for the rehearsed answer to end."],
+  ["Recognition", "Every person deserves to be met as more than a category."],
+  ["A shared table", "Belonging often begins with a chair pulled closer."],
+  ["Small mercies", "The smallest kindness can still change the direction of a day."],
+  ["Ask twice", "Sometimes the honest answer arrives after the first one."],
+  ["Stay curious", "Curiosity makes room where certainty closes it."],
+  ["Common ground", "We need not be identical to stand beside one another."],
+  ["The long view", "A person is larger than the moment in which we meet them."],
+  ["Make time", "Attention cannot always be made more efficient."],
+  ["An open door", "Welcome is a practice, not a sign on the wall."],
+  ["Repair", "Trust returns through many small, consistent acts."],
+  ["Hold the story", "Receive what is shared without trying to own it."],
+  ["Mutual aid", "Everyone has something to offer and something they need."],
+  ["Look again", "The familiar becomes visible when we slow down."],
+  ["A good question", "What would help you feel more at home here?"],
+  ["Room to change", "No one should be trapped inside an old version of themselves."],
+  ["Shared attention", "What we notice together begins to shape a world."],
+  ["Gentleness", "Care can be precise without becoming hard."],
+  ["The first hello", "Connection often begins before we know where it will lead."],
+  ["Ordinary courage", "Showing up again is its own form of bravery."],
+  ["Keep company", "Not every difficult moment asks to be fixed."],
+  ["Remembering", "A community is partly made of the stories it refuses to lose."],
+  ["Shared work", "Working alongside someone changes how we understand them."],
+  ["Permission", "People open differently when they are not being hurried."],
+  ["The front porch", "Some spaces quietly teach us how to be neighbors."],
+  ["Carry together", "A burden changes when more than one person names it."],
+  ["Notice joy", "Flourishing is also made of delight, play, and surprise."],
+  ["A place to return", "Belonging means knowing your absence would be noticed."],
+  ["Practice welcome", "Hospitality is built through repetition."],
+  ["Speak plainly", "Clarity can be a form of respect."],
+  ["Let silence work", "A pause can hold what language cannot yet carry."],
+  ["Begin nearby", "The human scale starts with the person already in front of us."],
+  ["Across difference", "Understanding does not require agreement."],
+  ["The whole person", "Strength and need can occupy the same life."],
+  ["Trust slowly", "Real trust grows at the speed of kept promises."],
+  ["A familiar face", "Repeated encounters turn strangers into part of a place."],
+  ["Shared rituals", "Small repeated acts give shape to life together."],
+  ["Care in public", "A humane city makes concern visible in its design."],
+  ["Be reachable", "Connection depends on leaving some room for interruption."],
+  ["Many ways to help", "Support begins by asking rather than assuming."],
+  ["Offer dignity", "Respect belongs at the beginning, not the end."],
+  ["Pay attention", "What we attend to becomes part of what we value."],
+  ["Build with", "Participation is different from consultation."],
+  ["Make room", "A generous space can change who feels able to enter."],
+  ["Tell the truth", "Honesty and tenderness can share the same sentence."],
+  ["Be remembered", "To remember someone is to affirm that they mattered here."],
+  ["Try again", "Repair remains possible after a missed connection."],
+  ["Human scale", "Start with bodies, time, relationships, and actual lives."],
+];
+
+const archivePalette = [
+  "hsl(42 48% 80%)",
+  "hsl(27 38% 79%)",
+  "hsl(61 16% 78%)",
+  "hsl(23 47% 82%)",
+  "hsl(70 12% 79%)",
+  "hsl(36 70% 82%)",
+  "hsl(24 43% 78%)",
+  "hsl(48 34% 84%)",
+];
+
+const archiveFragments: FragmentDefinition[] = archiveSeeds.map(([title, quote], index) => {
+  const id = `archive-${index + 1}`;
+  const anchorIds = ["dignity", "presence", "reciprocity", "witness", "ordinary", "name", "neighbor", "invitation"];
+  const personId = DEV_FIXTURE_PEOPLE[index % DEV_FIXTURE_PEOPLE.length].slug;
+  const previousId = index === 0 ? "ordinary" : `archive-${index}`;
+  const styles: FragmentStyle[] = ["title", "snippet", "extract", "snippet", "title"];
+  const widths = [205, 235, 270, 220, 190, 250];
+  const heights = [118, 155, 188, 142, 108, 165];
+
+  return {
+    id,
+    title,
+    subtitle: index % 7 === 0 ? "A field note" : "Human practice",
+    category: index % 13 === 12 ? "invitation" : "principle",
+    style: styles[index % styles.length],
+    themes: [
+      3 + (index * 7) % 8,
+      2 + (index * 5 + 3) % 9,
+      3 + (index * 3 + 1) % 8,
+    ],
+    links: [anchorIds[index % anchorIds.length], personId, previousId],
+    width: widths[index % widths.length],
+    height: heights[index % heights.length],
+    color: archivePalette[index % archivePalette.length],
+    quote,
+  };
+});
+
 const personFragments: FragmentDefinition[] = DEV_FIXTURE_PEOPLE.map((person, index) => ({
   id: person.slug,
   title: person.firstName,
@@ -107,7 +197,7 @@ const personFragments: FragmentDefinition[] = DEV_FIXTURE_PEOPLE.map((person, in
   personIndex: index,
 }));
 
-const fragmentDefinitions = [...personFragments, ...supportingFragments];
+const fragmentDefinitions = [...personFragments, ...supportingFragments, ...archiveFragments];
 const themeDefinitions: Array<{ id: ThemeKey; title: string }> = [
   { id: "care", title: "Care" },
   { id: "notice", title: "Notice" },
@@ -115,9 +205,9 @@ const themeDefinitions: Array<{ id: ThemeKey; title: string }> = [
 ];
 
 function buildLayout(): Layout {
-  const simulationWidth = 1100;
-  const simulationHeight = 850;
-  const radius = 300;
+  const simulationWidth = 1500;
+  const simulationHeight = 1120;
+  const radius = 430;
   const themeNodes: LayoutNode[] = themeDefinitions.map((theme, index) => {
     const angle = index / themeDefinitions.length * Math.PI * 2 - Math.PI / 2;
     const x = simulationWidth / 2 + Math.cos(angle) * radius;
@@ -135,9 +225,9 @@ function buildLayout(): Layout {
   const links: LayoutLink[] = nodes.flatMap(node => node.themeLinks.map(link => ({ source: node.id, target: link.id, value: link.value })));
   const simulation = forceSimulation(allNodes)
     .randomSource(randomLcg(0.426))
-    .force("link", forceLink<LayoutNode, LayoutLink>(links).id(node => node.id).strength(link => link.value * .095))
-    .force("collision", forceCollide<LayoutNode>().radius(node => node.fragment?.style === "image" ? 48 : 35).strength(1).iterations(3))
-    .force("charge", forceManyBody().strength(-720))
+    .force("link", forceLink<LayoutNode, LayoutLink>(links).id(node => node.id).distance(link => 100 + (10 - link.value) * 12).strength(link => link.value * .052))
+    .force("collision", forceCollide<LayoutNode>().radius(node => node.fragment?.style === "image" ? 58 : 43).strength(1).iterations(3))
+    .force("charge", forceManyBody().strength(-1050).distanceMax(900))
     .force("theme-attraction", () => {
       nodes.forEach(node => {
         node.themeLinks.forEach(link => {
@@ -151,11 +241,11 @@ function buildLayout(): Layout {
     .alphaDecay(.01)
     .stop();
 
-  for (let index = 0; index < 1600; index += 1) simulation.tick();
+  for (let index = 0; index < 2000; index += 1) simulation.tick();
 
   const minX = Math.min(...allNodes.map(node => node.x ?? 0));
   const minY = Math.min(...allNodes.map(node => node.y ?? 0));
-  const factor = 4.1;
+  const factor = 5.8;
   const place = (node: LayoutNode) => ({ x: ((node.x ?? 0) - minX) * factor + BUFFER, y: ((node.y ?? 0) - minY) * factor + BUFFER });
   const fragments = nodes.map(node => ({ ...node.fragment!, ...place(node) }));
   const themes = themeNodes.map((node, index) => ({ ...themeDefinitions[index], ...place(node) }));
@@ -223,9 +313,9 @@ export function PeopleField({ activeIndex, onSelect }: PeopleFieldProps) {
       const dx = fragment.x * currentScale + x - centerX;
       const dy = fragment.y * currentScale + y - centerY;
       const ratio = Math.min(1, Math.hypot(dx, dy) / maxDistance);
-      const visibleThreshold = levelRef.current <= 1 ? .08 : .28;
-      const opacity = ratio <= visibleThreshold ? 1 : Math.max(.08, 1 - (ratio - visibleThreshold) / (1 - visibleThreshold));
-      const depth = 1 - .18 * Math.pow(ratio, 1.5);
+      const visibleThreshold = levelRef.current <= 1 ? .68 : .36;
+      const opacity = ratio <= visibleThreshold ? 1 : Math.max(.32, 1 - (ratio - visibleThreshold) / (1 - visibleThreshold));
+      const depth = 1 - .12 * Math.pow(ratio, 1.5);
       const card = element.querySelector<HTMLElement>(".spatial-fragment__card");
       if (card) { card.style.opacity = String(opacity); card.style.setProperty("--depth-scale", String(depth)); }
     });
