@@ -1,51 +1,67 @@
+import Image from "next/image";
 import Link from "next/link";
-import { ArchiveRows } from "@/components/ArchiveRows";
-import { EditorialShell } from "@/components/EditorialShell";
-import { PanelFooter } from "@/components/PanelFooter";
-import { DEV_FIXTURE_PEOPLE } from "@/data/people";
+import { PeopleGrid } from "@/components/PeopleGrid";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
 
 export default function Home() {
   return (
-    <EditorialShell current="Welcome">
-      <article className="panel-document">
-        <section className="panel-introduction">
-          <h1>Welcome to HUMAN:HERE</h1>
-          <p>We are a human-centered nonprofit built around a simple belief: in a world shaped by technology, people still need people.</p>
-          <p>We help people, churches, businesses, volunteers, and community organizations show up for real people — <Link href="/about">read why</Link>.</p>
+    <>
+      <SiteHeader overlay />
+      <main>
+        <section className="home-hero">
+          <Image src="/images/community-table.jpg" alt="Neighbors sharing a meal around a table" fill priority sizes="100vw" />
+          <div className="home-hero__shade" />
+          <div className="shell home-hero__content">
+            <h1>Because people still need people.</h1>
+            <Link href="/about" className="text-link text-link--light">Find out why <span>→</span></Link>
+          </div>
+          <div className="hero-location"><span>Tulsa, Oklahoma</span><i aria-hidden="true">⌖</i></div>
+          <span className="hero-rule" aria-hidden="true" />
+          <a className="scroll-cue" href="#about" aria-label="Scroll to about">↓</a>
         </section>
 
-        <section className="panel-section">
-          <h2>Meet people</h2>
-          <p className="section-description">The beginning of a human archive. Every public entry will become a real, consented portrait and story.</p>
-          <ArchiveRows people={DEV_FIXTURE_PEOPLE} />
+        <section className="mission-section shell" id="about">
+          <div className="section-heading"><p className="eyebrow">About</p><h2>HUMAN:HERE is a human-centered nonprofit.</h2></div>
+          <div className="mission-copy"><p>We bring people, churches, businesses, volunteers, and community organizations together to meet real needs with dignity and presence.</p><p>Why? Because technology can connect us and systems can support us—but people still have to show up.</p></div>
         </section>
 
-        <section className="panel-section">
-          <h2>Starting points</h2>
-          <p className="section-description">Two ways into the work and the belief behind it.</p>
-          <div className="collection-links">
-            <Link href="/people"><strong>People</strong><span>Meet the human beings at the center of the work.</span><small>Archive · {DEV_FIXTURE_PEOPLE.length} entries</small></Link>
-            <Link href="/about"><strong>People need people</strong><span>Why presence still matters.</span><small>About · Our belief</small></Link>
+        <section className="split-feature split-feature--navy">
+          <div className="split-feature__copy">
+            <p className="eyebrow">The challenge</p>
+            <h2>It is possible to be surrounded—and still unseen.</h2>
+            <p>Too many people are known by a circumstance before they are known by a name. Distance grows when stories become statistics and care becomes a transaction.</p>
+            <Link href="/about" className="text-link text-link--light">Read more <span>→</span></Link>
+          </div>
+          <figure><Image src="/images/hero-maya.jpg" alt="Portrait fixture representing a person being seen" fill sizes="(max-width: 800px) 100vw, 50vw" /></figure>
+        </section>
+
+        <section className="approach-section">
+          <div className="shell">
+            <p className="eyebrow">How we begin</p>
+            <div className="approach-heading"><h2>See <span>+</span> Stand with <span>+</span> Show up</h2></div>
+            <div className="approach-grid">
+              <article><span>01</span><h3>See the person</h3><p>Begin with a name, a face, a story, dignity, and worth.</p></article>
+              <article><span>02</span><h3>Stand with them</h3><p>Listen first. Let relationship—not assumption—shape the response.</p></article>
+              <article><span>03</span><h3>Show up together</h3><p>Turn shared concern into practical, faithful, human action.</p></article>
+            </div>
           </div>
         </section>
 
-        <section className="panel-section statement-panel">
-          <h2>What we believe</h2>
-          <blockquote>Technology can connect us. Systems can support us. But people still have to show up.</blockquote>
+        <section className="impact-section">
+          <div className="shell"><div className="impact-title"><p className="eyebrow">Our beginning</p><h2>Small numbers.<br />Real people.</h2></div><div className="impact-stats"><article><strong>4</strong><span>Development stories</span></article><article><strong>1</strong><span>City to begin in</span></article><article><strong>1</strong><span>Shared belief</span></article></div></div>
         </section>
 
-        <section className="panel-section">
-          <h2>Show up</h2>
-          <p className="section-description">Choose a way to stand with someone.</p>
-          <nav className="action-list" aria-label="Ways to get involved">
-            <Link href="/give"><span>Give</span><small>Support the work</small></Link>
-            <Link href="/contact?interest=volunteer"><span>Volunteer</span><small>Offer your time</small></Link>
-            <Link href="/contact?interest=partner"><span>Partner</span><small>Work together</small></Link>
-            <Link href="/contact?interest=pray"><span>Pray</span><small>Stand with people</small></Link>
-          </nav>
+        <section className="featured-section shell">
+          <div className="section-topline"><div><p className="eyebrow">People</p><h2>Meet the people at the center.</h2></div><Link href="/people" className="text-link">View all <span>→</span></Link></div>
+          <PeopleGrid limit={3} />
         </section>
-        <PanelFooter />
-      </article>
-    </EditorialShell>
+
+        <section className="promise-section">
+          <div className="shell"><p className="eyebrow">Our promise</p><blockquote>We will tell stories with people, not about them. We will protect dignity, ask permission, and never make pain perform for attention.</blockquote><Link href="/get-involved" className="round-link" aria-label="Get involved">↗</Link></div>
+        </section>
+      </main>
+      <SiteFooter />
+    </>
   );
 }

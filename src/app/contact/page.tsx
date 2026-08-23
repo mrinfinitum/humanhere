@@ -1,18 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { EditorialShell } from "@/components/EditorialShell";
-import { PanelFooter } from "@/components/PanelFooter";
+import { PageHero } from "@/components/PageHero";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export const metadata: Metadata = { title: "Contact", description: "Contact HUMAN:HERE." };
-
-export default function ContactPage() {
-  return (
-    <EditorialShell current="Contact">
-      <article className="panel-document">
-        <header className="document-header"><p>Connect</p><h1>Let&apos;s talk</h1></header>
-        <section className="panel-introduction"><p>Tulsa, Oklahoma</p><p><Link href="mailto:hello@humanhere.co">hello@humanhere.co ↗</Link></p></section>
-        <PanelFooter />
-      </article>
-    </EditorialShell>
-  );
-}
+export default function ContactPage() { return <><main><PageHero eyebrow="Contact" title="Let’s talk." image="/images/portrait-james.jpg" imageAlt="Portrait fixture" imagePosition="center 28%" />
+  <section className="contact-section shell"><div><p className="eyebrow">Connect</p><h2>Start with a hello.</h2></div><div className="contact-details"><a href="mailto:hello@humanhere.co">hello@humanhere.co <span>↗</span></a><p>Tulsa, Oklahoma</p><p>For volunteering, partnerships, prayer, giving, or simply learning more.</p></div></section>
+  </main><SiteFooter /></>; }

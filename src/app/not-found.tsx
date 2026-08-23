@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { EditorialShell } from "@/components/EditorialShell";
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
 
-export default function NotFound() {
-  return <EditorialShell current="Not found"><article className="panel-document"><header className="document-header"><p>404</p><h1>Not here</h1></header><section className="panel-introduction"><p><Link href="/people">Meet someone instead →</Link></p></section></article></EditorialShell>;
-}
+export default function NotFound() { return <><SiteHeader /><main className="not-found shell"><p className="eyebrow">404</p><h1>This page isn&apos;t here.</h1><Link className="text-link" href="/">Return home <span>→</span></Link></main><SiteFooter /></>; }

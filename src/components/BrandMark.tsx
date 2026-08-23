@@ -1,30 +1,10 @@
-type BrandMarkProps = {
-  compact?: boolean;
-  inverse?: boolean;
-  showTagline?: boolean;
-  className?: string;
-};
+import Link from "next/link";
 
-export function BrandMark({
-  compact = false,
-  inverse = false,
-  showTagline = true,
-  className = "",
-}: BrandMarkProps) {
-  if (compact) {
-    return (
-      <span className={`compact-mark ${inverse ? "is-inverse" : ""} ${className}`} aria-label="HUMAN:HERE">
-        H<span className="brand-colon" aria-hidden="true">:</span>H
-      </span>
-    );
-  }
-
+export function BrandMark({ light = false }: { light?: boolean }) {
   return (
-    <span className={`brand-lockup ${inverse ? "is-inverse" : ""} ${className}`}>
-      <span className="brand-wordmark" aria-label="HUMAN:HERE">
-        HUMAN<span className="brand-colon" aria-hidden="true">:</span>HERE
-      </span>
-      {showTagline && <span className="brand-tagline">People need people.</span>}
-    </span>
+    <Link href="/" className={`brand-mark ${light ? "brand-mark--light" : ""}`} aria-label="HUMAN:HERE home">
+      <span className="brand-mark__icon" aria-hidden="true"><i>H</i><b /><i>H</i></span>
+      <span className="brand-mark__name">HUMAN<span>:</span>HERE</span>
+    </Link>
   );
 }
