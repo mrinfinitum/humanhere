@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ArchiveField } from "@/components/archive/ArchiveField";
-import { humanArchiveRepository } from "@/lib/archive/repository";
+import { getHomepageHumans } from "@/lib/archive/repository";
 
 export const metadata: Metadata = {
   title: "HUMAN:HERE — People Need People",
@@ -8,6 +8,6 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const initialBatch = await humanArchiveRepository.list({ limit: 20 });
+  const initialBatch = await getHomepageHumans(24);
   return <ArchiveField initialBatch={initialBatch} />;
 }

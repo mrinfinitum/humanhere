@@ -1,0 +1,4 @@
+import { AdminQueue } from "@/components/admin/AdminQueue";
+import { getSocialQueue } from "@/lib/admin/queries";
+import { ingestSocialUrl } from "./actions";
+export default async function Page({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) { const q = await searchParams; const cursor = typeof q.cursor === "string" ? q.cursor : undefined; const result = await getSocialQueue(cursor); return <><form action={ingestSocialUrl} className="admin-ingest"><label htmlFor="social-url">Add a social URL for private review</label><div><input id="social-url" name="url" type="url" required placeholder="https://…" /><button>Add to queue</button></div><small>Hashtag use is not consent. Official platform APIs run asynchronously, never during public rendering.</small></form><AdminQueue title="Social discovery" rows={result.rows} nextHref={result.next ? `/admin/social?cursor=${encodeURIComponent(result.next)}` : undefined} /></>; }

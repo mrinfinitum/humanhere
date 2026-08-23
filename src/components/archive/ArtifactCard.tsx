@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import type { HumanEntry } from "@/lib/archive/types";
+import { resolveMediaUrl } from "@/lib/media/resolver";
 
 const columnStarts = [2, 9, 5, 1, 8, 4, 10, 3, 7, 1, 6, 9, 2, 8, 4, 10];
 const spanBySize = { xs: 2, sm: 3, md: 4, lg: 5, xl: 8 } as const;
@@ -25,16 +26,17 @@ export function ArtifactCard({ entry, index, priority = false }: { entry: HumanE
   const style = { "--artifact-column": column, "--artifact-span": span, "--artifact-delay": `${Math.min(index, 10) * 55}ms` } as CSSProperties;
   const label = entry.person?.anonymous ? "Anonymous" : entry.person?.displayName ?? entry.headline ?? entry.type;
   const meta = [entry.person?.age, entry.person?.location].filter(Boolean).join(" / ");
-  const hasImage = Boolean(entry.thumbnail?.src);
+  const mediaUrl = resolveMediaUrl(entry.thumbnail, "thumbnail");
+  const hasImage = entry.thumbnail.kind === "image" && Boolean(mediaUrl);
   const visualText = entry.headline ?? entry.quote;
 
   return (
     <article className={`archive-artifact artifact--${entry.type} artifact--${size} artifact--${entry.layout?.crop ?? "auto"} artifact--${entry.layout?.tone ?? "paper"}`} style={style} data-sequence={index}>
       <Link href={entryHref(entry)} prefetch={false} scroll={false} aria-label={`View ${label}`}>
         <div className="artifact-visual">
-          {hasImage && entry.thumbnail ? (
+          {hasImage ? (
             <Image
-              src={entry.thumbnail.src}
+              src={mediaUrl}
               alt={entry.thumbnail.alt}
               fill
               priority={priority}
@@ -45,9 +47,9 @@ export function ArtifactCard({ entry, index, priority = false }: { entry: HumanE
             <span className="artifact-text">{visualText?.split("\n").map(line => <span key={line}>{line}</span>)}</span>
           )}
           {entry.type === "video" && <span className="artifact-play" aria-hidden="true">Play <i>▶</i></span>}
-          {entry.type === "audio" && <AudioMark duration={entry.thumbnail?.duration} />}
+          {entry.type === "audio" && <AudioMark duration={entry.thumbnail.duration} />}
           {entry.type === "note" && <span className="artifact-note-rule" aria-hidden="true" />}
-          <span className="fixture-stamp">Dev_fixture</span>
+          {entry.fixture && <span className="fixture-stamp">Dev_fixture</span>}
         </div>
         <div className="artifact-meta">
           <span><b>{label}</b>{meta && <i>{meta}</i>}</span>

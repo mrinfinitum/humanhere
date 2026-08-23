@@ -1,18 +1,23 @@
 import type { HumanArtifactType, HumanEntry, MediaAsset } from "./types";
 
 const media = {
-  james: { src: "/images/portrait-james.jpg", alt: "Development portrait fixture of James", width: 1200, height: 1600, kind: "image", objectPosition: "center 32%" },
-  maya: { src: "/images/hero-maya.jpg", alt: "Development portrait fixture of Maya", width: 1536, height: 1024, kind: "image", objectPosition: "center 42%" },
-  lena: { src: "/images/portrait-lena.jpg", alt: "Development portrait fixture of Lena", width: 1200, height: 1600, kind: "image", objectPosition: "center 34%" },
-  miguel: { src: "/images/portrait-miguel.jpg", alt: "Development portrait fixture of Miguel", width: 1200, height: 1600, kind: "image", objectPosition: "center 30%" },
-  table: { src: "/images/community-table.jpg", alt: "Development documentary fixture of neighbors at a shared table", width: 1600, height: 1067, kind: "image", objectPosition: "center" },
+  james: { id: "dev-james-image", provider: "local", path: "/images/portrait-james.jpg", alt: "Development portrait fixture of James", mimeType: "image/jpeg", width: 1200, height: 1600, kind: "image", objectPosition: "center 32%" },
+  maya: { id: "dev-maya-image", provider: "local", path: "/images/hero-maya.jpg", alt: "Development portrait fixture of Maya", mimeType: "image/jpeg", width: 1536, height: 1024, kind: "image", objectPosition: "center 42%" },
+  lena: { id: "dev-lena-image", provider: "local", path: "/images/portrait-lena.jpg", alt: "Development portrait fixture of Lena", mimeType: "image/jpeg", width: 1200, height: 1600, kind: "image", objectPosition: "center 34%" },
+  miguel: { id: "dev-miguel-image", provider: "local", path: "/images/portrait-miguel.jpg", alt: "Development portrait fixture of Miguel", mimeType: "image/jpeg", width: 1200, height: 1600, kind: "image", objectPosition: "center 30%" },
+  table: { id: "dev-table-image", provider: "local", path: "/images/community-table.jpg", alt: "Development documentary fixture of neighbors at a shared table", mimeType: "image/jpeg", width: 1600, height: 1067, kind: "image", objectPosition: "center" },
 } satisfies Record<string, MediaAsset>;
 
 const base = {
-  consentStatus: "pending" as const,
+  consentVerified: false,
   published: false,
-  source: "DEV_FIXTURE" as const,
+  source: "editorial" as const,
+  createdAt: "2026-08-23T00:00:00.000Z",
+  publishedAt: "2026-08-23T00:00:00.000Z",
+  fixture: true,
 };
+
+const textThumbnail = (alt: string): MediaAsset => ({ id: `dev-text-${alt.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40)}`, provider: "local", path: "", alt, mimeType: "text/plain", width: 800, height: 800, kind: "text" });
 
 const people: HumanEntry[] = [
   {
@@ -131,7 +136,7 @@ const fragmentEntries: HumanEntry[] = fragments.map((fragment, index) => ({
   slug: fragment.slug,
   type: fragment.type,
   person: fragment.person,
-  thumbnail: fragment.thumbnail,
+  thumbnail: fragment.thumbnail ?? textThumbnail(`Development ${fragment.type} fixture: ${fragment.headline ?? fragment.quote ?? fragment.slug}`),
   headline: fragment.headline,
   quote: fragment.quote,
   story: "This archive object is development fixture content. Real media and words require editorial review and explicit consent before publication.",

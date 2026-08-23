@@ -1,42 +1,124 @@
+import "server-only";
+
+import { cacheLife, cacheTag } from "next/cache";
 import { DEV_FIXTURE_HUMAN_ENTRIES } from "./fixtures";
+import { decodeHumanCursor, encodeHumanCursor } from "./cursor";
+import { HUMAN_CACHE_TAGS } from "./cache";
+import { toHumanEntry, type PublicHumanRow } from "./public-dto";
 import type { ArchiveBatch, ArchiveQuery, HumanArchiveRepository, HumanEntry } from "./types";
+import { hasSupabasePublicEnvironment } from "@/lib/supabase/env";
+import { createSupabasePublicClient } from "@/lib/supabase/public";
 
-const decodeCursor = (cursor?: string) => {
-  if (!cursor) return 0;
-  const parsed = Number.parseInt(cursor, 10);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
-};
+const PUBLIC_COLUMNS = "id,slug,type,source,public_name,first_name,age,display_location,anonymous,thumbnail,media,headline,quote,story,featured,layout,source_platform,source_url,created_at,published_at";
 
-/**
- * Development provider only. It intentionally returns visibly marked fixtures.
- * A production provider must enforce approved consent and published status in its
- * server-side query before implementing this interface.
- */
-class FixtureHumanArchiveRepository implements HumanArchiveRepository {
-  async list(query: ArchiveQuery = {}): Promise<ArchiveBatch> {
-    const offset = decodeCursor(query.cursor);
-    const limit = Math.min(Math.max(query.limit ?? 18, 1), 48);
-    const filtered = query.types?.length
-      ? DEV_FIXTURE_HUMAN_ENTRIES.filter(entry => query.types?.includes(entry.type))
-      : DEV_FIXTURE_HUMAN_ENTRIES;
-    const entries = filtered.slice(offset, offset + limit);
-    const nextOffset = offset + entries.length;
-    return { entries, nextCursor: nextOffset < filtered.length ? String(nextOffset) : null, total: filtered.length };
-  }
-
-  async getBySlug(slug: string) {
-    return DEV_FIXTURE_HUMAN_ENTRIES.find(entry => entry.slug === slug);
-  }
-
-  async getAdjacent(slug: string) {
-    const stories = DEV_FIXTURE_HUMAN_ENTRIES.filter(entry => entry.type === "story" || entry.type === "portrait");
-    const index = stories.findIndex(entry => entry.slug === slug || entry.slug === DEV_FIXTURE_HUMAN_ENTRIES.find(candidate => candidate.slug === slug)?.relatedStorySlug);
-    if (index < 0) return {};
-    return {
-      previous: stories[(index - 1 + stories.length) % stories.length],
-      next: stories[(index + 1) % stories.length],
-    } satisfies { previous?: HumanEntry; next?: HumanEntry };
-  }
+function boundedLimit(limit?: number) {
+  return Math.min(Math.max(limit ?? 24, 1), 40);
 }
 
-export const humanArchiveRepository: HumanArchiveRepository = new FixtureHumanArchiveRepository();
+function fixtureBatch(query: ArchiveQuery): ArchiveBatch {
+  const limit = boundedLimit(query.limit);
+  const offset = Number.parseInt(query.cursor ?? "0", 10) || 0;
+  const filtered = query.types?.length ? DEV_FIXTURE_HUMAN_ENTRIES.filter(entry => query.types?.includes(entry.type)) : DEV_FIXTURE_HUMAN_ENTRIES;
+  const entries = filtered.slice(offset, offset + limit);
+  const next = offset + entries.length;
+  return { entries, nextCursor: next < filtered.length ? String(next) : null, total: filtered.length };
+}
+
+export async function getPublishedHumanBatch(query: ArchiveQuery = {}): Promise<ArchiveBatch> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(HUMAN_CACHE_TAGS.list);
+
+  if (!hasSupabasePublicEnvironment()) return fixtureBatch(query);
+
+  const limit = boundedLimit(query.limit);
+  const cursor = decodeHumanCursor(query.cursor);
+  let request = createSupabasePublicClient()
+    .from("human_entries_public")
+    .select(PUBLIC_COLUMNS)
+    .order("published_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(limit + 1);
+
+  if (query.types?.length) request = request.in("type", query.types);
+  if (cursor) {
+    request = request.or(`published_at.lt.${cursor.publishedAt},and(published_at.eq.${cursor.publishedAt},id.lt.${cursor.id})`);
+  }
+
+  const { data, error } = await request;
+  if (error) throw new Error(`Public archive query failed: ${error.code}`);
+  const rows = (data ?? []) as unknown as PublicHumanRow[];
+  const hasNext = rows.length > limit;
+  const visibleRows = rows.slice(0, limit);
+  const last = visibleRows.at(-1);
+
+  return {
+    entries: visibleRows.map(toHumanEntry),
+    nextCursor: hasNext && last ? encodeHumanCursor({ publishedAt: last.published_at, id: last.id }) : null,
+  };
+}
+
+export async function getPublishedHumanBySlug(slug: string): Promise<HumanEntry | undefined> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(HUMAN_CACHE_TAGS.entry(slug));
+
+  if (!hasSupabasePublicEnvironment()) return DEV_FIXTURE_HUMAN_ENTRIES.find(entry => entry.slug === slug);
+  const { data, error } = await createSupabasePublicClient().from("human_entries_public").select(PUBLIC_COLUMNS).eq("slug", slug).maybeSingle();
+  if (error) throw new Error(`Public story query failed: ${error.code}`);
+  return data ? toHumanEntry(data as unknown as PublicHumanRow) : undefined;
+}
+
+export async function getFeaturedHumans(limit = 24): Promise<HumanEntry[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(HUMAN_CACHE_TAGS.featured, HUMAN_CACHE_TAGS.homepage);
+  if (!hasSupabasePublicEnvironment()) return DEV_FIXTURE_HUMAN_ENTRIES.filter(entry => entry.featured).slice(0, boundedLimit(limit));
+  const { data, error } = await createSupabasePublicClient().from("human_entries_public").select(PUBLIC_COLUMNS).eq("featured", true).order("published_at", { ascending: false }).order("id", { ascending: false }).limit(boundedLimit(limit));
+  if (error) throw new Error(`Featured archive query failed: ${error.code}`);
+  return ((data ?? []) as unknown as PublicHumanRow[]).map(toHumanEntry);
+}
+
+export async function getHomepageHumans(limit = 24): Promise<ArchiveBatch> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(HUMAN_CACHE_TAGS.homepage);
+  const bounded = boundedLimit(limit);
+  if (!hasSupabasePublicEnvironment()) return fixtureBatch({ limit: bounded });
+  const [featured, recent] = await Promise.all([getFeaturedHumans(bounded), getPublishedHumanBatch({ limit: bounded })]);
+  const entries = [...featured, ...recent.entries].filter((entry, index, all) => all.findIndex(candidate => candidate.id === entry.id) === index).slice(0, bounded);
+  return { entries, nextCursor: recent.nextCursor };
+}
+
+async function getPublishedAdjacent(slug: string) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(HUMAN_CACHE_TAGS.entry(slug), HUMAN_CACHE_TAGS.list);
+  const current = await getPublishedHumanBySlug(slug);
+  if (!current?.publishedAt) return {};
+  if (!hasSupabasePublicEnvironment()) {
+    const entries = DEV_FIXTURE_HUMAN_ENTRIES.filter(entry => entry.type === "story" || entry.type === "portrait");
+    const index = entries.findIndex(entry => entry.slug === slug);
+    return index < 0 ? {} : { previous: entries[index - 1], next: entries[index + 1] };
+  }
+
+  const client = createSupabasePublicClient();
+  const newer = client.from("human_entries_public").select(PUBLIC_COLUMNS)
+    .or(`published_at.gt.${current.publishedAt},and(published_at.eq.${current.publishedAt},id.gt.${current.id})`)
+    .order("published_at", { ascending: true }).order("id", { ascending: true }).limit(1).maybeSingle();
+  const older = client.from("human_entries_public").select(PUBLIC_COLUMNS)
+    .or(`published_at.lt.${current.publishedAt},and(published_at.eq.${current.publishedAt},id.lt.${current.id})`)
+    .order("published_at", { ascending: false }).order("id", { ascending: false }).limit(1).maybeSingle();
+  const [{ data: previous, error: previousError }, { data: next, error: nextError }] = await Promise.all([newer, older]);
+  if (previousError || nextError) throw new Error(`Adjacent story query failed: ${previousError?.code ?? nextError?.code}`);
+  return {
+    previous: previous ? toHumanEntry(previous as unknown as PublicHumanRow) : undefined,
+    next: next ? toHumanEntry(next as unknown as PublicHumanRow) : undefined,
+  };
+}
+
+export const humanArchiveRepository: HumanArchiveRepository = {
+  listPublished: getPublishedHumanBatch,
+  getPublishedBySlug: getPublishedHumanBySlug,
+  getPublishedAdjacent,
+};

@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function ConsentThankYouPage() { return <main className="removal-page"><Link href="/">HUMAN<span>:</span>HERE</Link><section><p className="eyebrow">Consent recorded</p><h1>Thank you.</h1><p>Your choices have been recorded separately. A HUMAN:HERE editor will review the story; nothing publishes automatically.</p><Link href="/humans">Enter the archive →</Link></section></main>; }

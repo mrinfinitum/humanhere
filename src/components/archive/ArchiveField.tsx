@@ -20,7 +20,7 @@ export function ArchiveField({ initialBatch, mode = "home" }: { initialBatch: Ar
       const response = await fetch(`/api/humans?cursor=${encodeURIComponent(cursor)}&limit=12`);
       if (!response.ok) throw new Error("Archive batch unavailable");
       const batch = await response.json() as ArchiveBatch;
-      setEntries(current => [...current, ...batch.entries]);
+      setEntries(current => [...current, ...batch.entries].filter((entry, index, all) => all.findIndex(candidate => candidate.id === entry.id) === index));
       setCursor(batch.nextCursor);
     } finally {
       setLoading(false);
