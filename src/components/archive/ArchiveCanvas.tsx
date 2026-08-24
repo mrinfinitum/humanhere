@@ -10,10 +10,10 @@ import { BrandMark } from "@/components/BrandMark";
 
 const WORLD_WIDTH = 5600;
 const WORLD_HEIGHT = 4300;
-const widths = [176, 216, 148, 194, 238, 158, 220, 138, 232, 184, 204, 152];
-const COLUMNS = 7;
-const CELL_WIDTH = 760;
-const CELL_HEIGHT = 660;
+const widths = [136, 172, 118, 152, 190, 126, 174, 112, 184, 146, 164, 122];
+const COLUMNS = 15;
+const CELL_WIDTH = 345;
+const CELL_HEIGHT = 350;
 
 function entryHref(entry: HumanEntry) {
   if (entry.slug === "people-need-people" || entry.slug === "why-we-show-up") return "/about";
@@ -23,13 +23,13 @@ function entryHref(entry: HumanEntry) {
 }
 
 function placement(index: number, entry: HumanEntry) {
-  const width = widths[index % widths.length] + (entry.layout?.size === "lg" ? 28 : entry.layout?.size === "xl" ? 48 : 0);
-  const column = (index * 3) % COLUMNS;
+  const width = widths[index % widths.length] + (entry.layout?.size === "lg" ? 20 : entry.layout?.size === "xl" ? 36 : 0);
+  const column = (index * 7) % COLUMNS;
   const row = Math.floor(index / COLUMNS);
-  const jitterX = ((index * 83) % 190) - 95;
-  const jitterY = ((index * 137) % 260) - 130;
-  const x = 170 + column * CELL_WIDTH + jitterX;
-  const y = 190 + row * CELL_HEIGHT + jitterY;
+  const jitterX = ((index * 83) % 90) - 45;
+  const jitterY = ((index * 137) % 140) - 70;
+  const x = 110 + column * CELL_WIDTH + jitterX;
+  const y = 125 + row * CELL_HEIGHT + jitterY;
   const rotate = ((index * 7) % 9) - 4;
   return { width, x, y, rotate };
 }

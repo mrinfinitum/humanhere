@@ -26,14 +26,15 @@ button { cursor: pointer; }
 
 /* Living archive */
 .archive-canvas-shell { --archive-panel-width: 620px; position: relative; height: 100svh; overflow: hidden; background: var(--human-ink); color: var(--human-paper); isolation: isolate; }
-.archive-canvas-shell::before { position: absolute; inset: 0 var(--archive-panel-width) 0 0; background: radial-gradient(circle at 28% 24%, rgb(48 70 165 / .18), transparent 31%), radial-gradient(circle at 70% 78%, rgb(242 235 221 / .07), transparent 28%); content: ""; pointer-events: none; }
+.archive-canvas-shell::before { position: absolute; inset: 0 var(--archive-panel-width) 0 0; background: radial-gradient(ellipse at 50% 47%, rgb(242 235 221 / .14) 0, rgb(242 235 221 / .055) 34%, transparent 69%), radial-gradient(circle at 18% 18%, rgb(48 70 165 / .1), transparent 38%); content: ""; pointer-events: none; }
 .archive-canvas { position: absolute; inset: 0 var(--archive-panel-width) 0 0; overflow: hidden; cursor: grab; touch-action: none; }
+.archive-canvas::after { position: absolute; inset: 0; z-index: 20; background: radial-gradient(ellipse at 50% 46%, rgb(242 235 221 / .08), transparent 58%); content: ""; mix-blend-mode: screen; pointer-events: none; }
 .archive-canvas:active { cursor: grabbing; }
-.archive-canvas__grid { position: absolute; inset: 0; background-image: linear-gradient(rgb(242 235 221 / .11) 1px, transparent 1px), linear-gradient(90deg, rgb(242 235 221 / .11) 1px, transparent 1px); background-size: 130px 130px; }
+.archive-canvas__grid { position: absolute; inset: 0; background-image: linear-gradient(rgb(242 235 221 / .035) 1px, transparent 1px), linear-gradient(90deg, rgb(242 235 221 / .035) 1px, transparent 1px); background-size: 130px 130px; }
 .archive-canvas__world { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
 .archive-orbit { position: absolute; border: 1px solid rgb(242 235 221 / .25); border-radius: 50%; pointer-events: none; }
-.archive-orbit--one { top: 130px; left: 350px; width: 1250px; height: 1250px; }
-.archive-orbit--two { top: 880px; left: 1840px; width: 940px; height: 940px; border-color: rgb(48 70 165 / .45); transform: rotate(31deg); }
+.archive-orbit--one { top: 80px; left: 180px; width: 2300px; height: 2050px; }
+.archive-orbit--two { top: 1480px; left: 2920px; width: 1450px; height: 1320px; border-color: rgb(48 70 165 / .38); transform: rotate(31deg); }
 .canvas-artifact { position: absolute; top: var(--canvas-y); left: var(--canvas-x); width: var(--canvas-w); opacity: 0; animation: canvas-arrive 700ms var(--ease) var(--canvas-delay) forwards; transform: rotate(var(--canvas-r)); }
 @keyframes canvas-arrive { from { opacity: 0; transform: translateY(8px) rotate(var(--canvas-r)); } to { opacity: 1; transform: translateY(0) rotate(var(--canvas-r)); } }
 .canvas-artifact > button { display: block; width: 100%; padding: 6px 6px 7px; overflow: hidden; border: 0; border-radius: 4px; background: var(--human-paper); color: var(--human-ink); box-shadow: 0 0 20px rgb(0 0 0 / .1); text-align: left; transition: background-color 180ms ease, transform 500ms var(--ease); }
