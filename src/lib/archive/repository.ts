@@ -87,7 +87,10 @@ export async function getHomepageHumans(limit = 24): Promise<ArchiveBatch> {
   if (!hasSupabasePublicEnvironment()) return fixtureBatch({ limit: bounded });
   const [featured, recent] = await Promise.all([getFeaturedHumans(bounded), getPublishedHumanBatch({ limit: bounded })]);
   const entries = [...featured, ...recent.entries].filter((entry, index, all) => all.findIndex(candidate => candidate.id === entry.id) === index).slice(0, bounded);
-  if (!entries.length && process.env.NODE_ENV === "development") return fixtureBatch({ limit: bounded });
+  // Keep the homepage visually useful before the first real story is published.
+  // These records are explicitly marked as fixtures in the public UI and never
+  // enter Supabase or masquerade as approved archive entries.
+  if (!entries.length) return fixtureBatch({ limit: bounded });
   return { entries, nextCursor: recent.nextCursor };
 }
 

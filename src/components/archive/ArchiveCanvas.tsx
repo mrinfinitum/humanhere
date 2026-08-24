@@ -74,6 +74,7 @@ function CanvasArtifact({ entry, index, onOpen }: {
           ) : (
             <span>{entry.headline ?? entry.quote ?? "A human story"}</span>
           )}
+          {entry.fixture && <span className="canvas-artifact__fixture">Visual preview</span>}
         </span>
         <span className="canvas-artifact__caption"><b>{label}</b><i>{entry.type}</i></span>
       </button>
