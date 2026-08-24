@@ -2,11 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ArchiveBatch } from "@/lib/archive/types";
+import { ArchiveCanvas } from "./ArchiveCanvas";
 import { ArchiveChrome } from "./ArchiveChrome";
 import { ArchiveIdentity } from "./ArchiveIdentity";
 import { ArtifactCard } from "./ArtifactCard";
 
 export function ArchiveField({ initialBatch, mode = "home" }: { initialBatch: ArchiveBatch; mode?: "home" | "index" }) {
+  if (mode === "home") return <ArchiveCanvas initialBatch={initialBatch} />;
+  return <ArchiveIndex initialBatch={initialBatch} />;
+}
+
+function ArchiveIndex({ initialBatch }: { initialBatch: ArchiveBatch }) {
   const [entries, setEntries] = useState(initialBatch.entries);
   const [cursor, setCursor] = useState(initialBatch.nextCursor);
   const [loading, setLoading] = useState(false);
@@ -44,7 +50,7 @@ export function ArchiveField({ initialBatch, mode = "home" }: { initialBatch: Ar
   const remainder = entries.slice(5);
 
   return (
-    <main className={`human-field human-field--${mode}`} id="human-archive">
+    <main className="human-field human-field--index" id="human-archive">
       <a className="archive-skip" href="#archive-progress">Skip archive objects</a>
       <ArchiveChrome count={entries.length} total={initialBatch.total} />
       <section className="archive-grid" aria-label="Human archive artifacts">

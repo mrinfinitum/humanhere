@@ -8,6 +8,6 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const initialBatch = await getHomepageHumans(24);
+  const initialBatch = await getHomepageHumans(40);
   return <ArchiveField initialBatch={initialBatch} />;
 }
