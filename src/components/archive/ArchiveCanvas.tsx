@@ -331,9 +331,10 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
           <div className="archive-orbit archive-orbit--two" aria-hidden="true" />
           {connection && (
             <svg className="archive-connection" width={WORLD_WIDTH} height={WORLD_HEIGHT} aria-hidden="true">
-              <path d={connection.path} />
-              <circle cx={connection.start.x} cy={connection.start.y} r="4" />
-              <circle cx={connection.end.x} cy={connection.end.y} r="4" />
+              <path className="archive-connection__rail" d={connection.path} />
+              <path className="archive-connection__signal" d={connection.path} />
+              <circle cx={connection.start.x} cy={connection.start.y} r="5" />
+              <circle cx={connection.end.x} cy={connection.end.y} r="5" />
             </svg>
           )}
           {simulatedEntries.map((entry, index) => {
@@ -359,9 +360,9 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
         </div>
         <p className="archive-canvas__instruction">Drag to explore · ⌘/ctrl + scroll to zoom</p>
         <div className="archive-canvas__controls" aria-label="Archive view controls">
-          <button type="button" onClick={() => zoom(0.1)} aria-label="Zoom in">+</button>
-          <span>{Math.round(scale * 100)}%</span>
           <button type="button" onClick={() => zoom(-0.1)} aria-label="Zoom out">−</button>
+          <span>{Math.round(scale * 100)}%</span>
+          <button type="button" onClick={() => zoom(0.1)} aria-label="Zoom in">+</button>
           <button type="button" onClick={center}>Center</button>
         </div>
       </section>
