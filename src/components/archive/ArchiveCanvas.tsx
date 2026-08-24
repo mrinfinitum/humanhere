@@ -251,7 +251,8 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
         <nav aria-label="Primary navigation">
           <Link href="/share">+ Add your story</Link>
           <Link href="/humans">View the archive</Link>
-          <Link href="/about">Why we show up</Link>
+          <Link href="/mission">Our mission</Link>
+          <Link href="/support">Support the work</Link>
         </nav>
         <footer>
           <span>{entries.length} records loaded</span>
