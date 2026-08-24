@@ -27,25 +27,51 @@ function placement(index: number, entry: HumanEntry) {
   return { width, x, y, rotate };
 }
 
-function CanvasArtifact({ entry, index, onOpen }: { entry: HumanEntry; index: number; onOpen: () => void }) {
-  const mediaUrl = resolveMediaUrl(entry.thumbnail, "thumbnail");
-  const hasImage = entry.thumbnail.kind === "image" && Boolean(mediaUrl);
+function artifactGeometry(index: number, entry: HumanEntry) {
   const item = placement(index, entry);
   const ratio = entry.thumbnail.width && entry.thumbnail.height ? entry.thumbnail.width / entry.thumbnail.height : 1;
-  const height = Math.max(76, Math.round(item.width / ratio));
+  return { ...item, height: Math.max(76, Math.round(item.width / ratio)) };
+}
+
+function CanvasArtifact({ entry, index, focused, connected, onFocusChange, onOpen }: {
+  entry: HumanEntry;
+  index: number;
+  focused: boolean;
+  connected: boolean;
+  onFocusChange: (index: number | null) => void;
+  onOpen: () => void;
+}) {
+  const mediaUrl = resolveMediaUrl(entry.thumbnail, "thumbnail");
+  const hasImage = entry.thumbnail.kind === "image" && Boolean(mediaUrl);
+  const item = artifactGeometry(index, entry);
   const style = {
     "--canvas-x": `${item.x}px`,
     "--canvas-y": `${item.y}px`,
     "--canvas-w": `${item.width}px`,
-    "--canvas-h": `${height}px`,
+    "--canvas-h": `${item.height}px`,
     "--canvas-r": `${item.rotate * 0.24}deg`,
     "--canvas-delay": `${(index % 20) * 28}ms`,
+    "--canvas-float-x": `${((index * 13) % 11) - 5}px`,
+    "--canvas-float-y": `${6 + (index % 7)}px`,
+    "--canvas-float-duration": `${5.5 + (index % 9) * 0.55}s`,
+    "--canvas-float-delay": `${-(index % 11) * 0.63}s`,
   } as CSSProperties;
   const label = entry.person?.anonymous ? "Anonymous" : entry.person?.displayName ?? entry.headline ?? "Human artifact";
 
   return (
-    <article className={`canvas-artifact canvas-artifact--${entry.type}`} style={style}>
-      <button type="button" onClick={onOpen} aria-label={`Preview ${label}`}>
+    <article
+      className={`canvas-artifact canvas-artifact--${entry.type}${focused ? " is-focused" : ""}${connected ? " is-connected" : ""}`}
+      style={style}
+      onPointerEnter={() => onFocusChange(index)}
+      onPointerLeave={() => onFocusChange(null)}
+    >
+      <button
+        type="button"
+        onClick={onOpen}
+        onFocus={() => onFocusChange(index)}
+        onBlur={() => onFocusChange(null)}
+        aria-label={`Preview ${label}`}
+      >
         <span className="canvas-artifact__index">{String(index + 1).padStart(3, "0")}</span>
         <span className={`canvas-artifact__visual artifact--${entry.layout?.tone ?? "paper"}`}>
           {hasImage ? (
@@ -71,6 +97,7 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
   const [cursor, setCursor] = useState(initialBatch.nextCursor);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState<HumanEntry | null>(null);
+  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
   const [scale, setScale] = useState(0.72);
   const [pan, setPan] = useState({ x: -120, y: -90 });
   const drag = useRef<{ pointerId: number; x: number; y: number; panX: number; panY: number } | null>(null);
@@ -80,6 +107,36 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
     const count = typeof initialBatch.total === "number" && initialBatch.total > 100 ? 144 : entries.length;
     return Array.from({ length: count }, (_, index) => entries[index % entries.length]);
   }, [entries, initialBatch.total]);
+
+  const connection = useMemo(() => {
+    if (focusedIndex === null || simulatedEntries.length < 2) return null;
+    const from = artifactGeometry(focusedIndex, simulatedEntries[focusedIndex]);
+    const fromCenter = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
+    const nearby = simulatedEntries
+      .map((entry, index) => {
+        const item = artifactGeometry(index, entry);
+        const center = { x: item.x + item.width / 2, y: item.y + item.height / 2 };
+        return { index, isImage: entry.thumbnail.kind === "image", distance: Math.hypot(center.x - fromCenter.x, center.y - fromCenter.y) };
+      })
+      .filter(candidate => candidate.isImage && candidate.index !== focusedIndex && candidate.distance > 260 && candidate.distance < 900);
+    const fallbackImageIndex = simulatedEntries.findIndex((entry, index) => index !== focusedIndex && entry.thumbnail.kind === "image");
+    const connectedIndex = nearby.length
+      ? nearby[(focusedIndex * 7 + 3) % nearby.length].index
+      : fallbackImageIndex >= 0 ? fallbackImageIndex : (focusedIndex + 1) % simulatedEntries.length;
+    const to = artifactGeometry(connectedIndex, simulatedEntries[connectedIndex]);
+    const start = fromCenter;
+    const end = { x: to.x + to.width / 2, y: to.y + to.height / 2 };
+    const control = {
+      x: (start.x + end.x) / 2 + (end.y - start.y) * 0.12,
+      y: Math.min(start.y, end.y) - 110 - Math.abs(end.x - start.x) * 0.04,
+    };
+    return {
+      connectedIndex,
+      path: `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`,
+      start,
+      end,
+    };
+  }, [focusedIndex, simulatedEntries]);
 
   const loadNext = useCallback(async () => {
     if (!cursor || loading) return;
@@ -147,13 +204,28 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
       >
         <div className="archive-canvas__grid" aria-hidden="true" />
         <div
-          className="archive-canvas__world"
+          className={`archive-canvas__world${focusedIndex === null ? "" : " archive-canvas__world--focused"}`}
           style={{ width: WORLD_WIDTH, height: WORLD_HEIGHT, transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${scale})` }}
         >
           <div className="archive-orbit archive-orbit--one" aria-hidden="true" />
           <div className="archive-orbit archive-orbit--two" aria-hidden="true" />
+          {connection && (
+            <svg className="archive-connection" width={WORLD_WIDTH} height={WORLD_HEIGHT} aria-hidden="true">
+              <path d={connection.path} />
+              <circle cx={connection.start.x} cy={connection.start.y} r="6" />
+              <circle cx={connection.end.x} cy={connection.end.y} r="6" />
+            </svg>
+          )}
           {simulatedEntries.map((entry, index) => (
-            <CanvasArtifact key={`${entry.id}-${index}`} entry={entry} index={index} onOpen={() => setActive(entry)} />
+            <CanvasArtifact
+              key={`${entry.id}-${index}`}
+              entry={entry}
+              index={index}
+              focused={focusedIndex === index}
+              connected={connection?.connectedIndex === index}
+              onFocusChange={setFocusedIndex}
+              onOpen={() => setActive(entry)}
+            />
           ))}
         </div>
         <p className="archive-canvas__instruction">Drag to explore · ⌘/ctrl + scroll to zoom</p>
