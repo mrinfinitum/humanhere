@@ -23,7 +23,7 @@ export function ArtifactCard({ entry, index, priority = false }: { entry: HumanE
   const span = spanBySize[size];
   const maxStart = 13 - span;
   const column = Math.min(columnStarts[index % columnStarts.length], maxStart);
-  const style = { "--artifact-column": column, "--artifact-span": span, "--artifact-delay": `${Math.min(index, 10) * 55}ms` } as CSSProperties;
+  const style = { "--artifact-column": column, "--artifact-span": span, "--artifact-delay": `${(index % 12) * 55}ms` } as CSSProperties;
   const label = entry.person?.anonymous ? "Anonymous" : entry.person?.displayName ?? entry.headline ?? entry.type;
   const meta = [entry.person?.age, entry.person?.location].filter(Boolean).join(" / ");
   const mediaUrl = resolveMediaUrl(entry.thumbnail, "thumbnail");
@@ -31,7 +31,7 @@ export function ArtifactCard({ entry, index, priority = false }: { entry: HumanE
   const visualText = entry.headline ?? entry.quote;
 
   return (
-    <article className={`archive-artifact artifact--${entry.type} artifact--${size} artifact--${entry.layout?.crop ?? "auto"} artifact--${entry.layout?.tone ?? "paper"}`} style={style} data-sequence={index}>
+    <article className={`archive-artifact ${Number(entry.layout?.emphasis ?? 0) >= 9 ? "artifact--surface" : ""} artifact--${entry.type} artifact--${size} artifact--${entry.layout?.crop ?? "auto"} artifact--${entry.layout?.tone ?? "paper"}`} style={style} data-sequence={index}>
       <Link href={entryHref(entry)} prefetch={false} scroll={false} aria-label={`View ${label}`}>
         <div className="artifact-visual">
           {hasImage ? (

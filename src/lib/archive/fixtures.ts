@@ -145,4 +145,43 @@ const fragmentEntries: HumanEntry[] = fragments.map((fragment, index) => ({
   blocks: fragment.quote ? [{ id: `${fragment.slug}-quote`, type: "quote", quote: fragment.quote }] : undefined,
 }));
 
-export const DEV_FIXTURE_HUMAN_ENTRIES: HumanEntry[] = [...people, ...fragmentEntries];
+const portraitMedia = [media.james, media.maya, media.lena, media.miguel, media.table];
+const densityCrops = ["portrait", "eyes", "square", "landscape"] as const;
+const densitySizes = ["xs", "sm", "xs", "md", "sm", "xs", "sm", "md"] as const;
+
+/**
+ * A scale fixture for art direction and pagination—not production content.
+ * It deliberately reuses the five local development images so the repository
+ * can simulate hundreds of records without introducing unlicensed imagery.
+ */
+const densityEntries: HumanEntry[] = Array.from({ length: 224 }, (_, index) => {
+  const sequence = index + 1;
+  const source = portraitMedia[index % portraitMedia.length];
+  const isPlace = index % 13 === 0;
+  const isVideo = index % 19 === 0;
+  const emphasized = index % 23 === 0;
+  const type: HumanArtifactType = isPlace ? "place" : isVideo ? "video" : "portrait";
+
+  return {
+    ...base,
+    id: `dev-density-${String(sequence).padStart(3, "0")}`,
+    slug: `human-field-study-${String(sequence).padStart(3, "0")}`,
+    type,
+    person: isPlace ? undefined : { displayName: `Human study ${String(sequence).padStart(3, "0")}` },
+    thumbnail: {
+      ...source,
+      id: `${source.id}-study-${String(sequence).padStart(3, "0")}`,
+      alt: `DEV_FIXTURE archive image study ${sequence}`,
+    },
+    headline: isPlace ? `Human place study ${String(sequence).padStart(3, "0")}` : undefined,
+    quote: isVideo ? `A human moment / 00:${String(12 + index % 40).padStart(2, "0")}` : undefined,
+    story: "Development scale fixture. Replace with a real, consented human artifact before publication.",
+    layout: {
+      size: emphasized ? (index % 46 === 0 ? "lg" : "md") : densitySizes[index % densitySizes.length],
+      emphasis: emphasized ? 10 : 2 + index % 7,
+      crop: densityCrops[index % densityCrops.length],
+    },
+  };
+});
+
+export const DEV_FIXTURE_HUMAN_ENTRIES: HumanEntry[] = [...people, ...fragmentEntries, ...densityEntries];
