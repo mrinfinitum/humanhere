@@ -151,6 +151,18 @@ const fragmentEntries: HumanEntry[] = fragments.map((fragment, index) => ({
 const portraitMedia = [media.james, media.maya, media.lena, media.miguel, media.table];
 const densityCrops = ["portrait", "eyes", "square", "landscape"] as const;
 const densitySizes = ["xs", "sm", "xs", "md", "sm", "xs", "sm", "md"] as const;
+const prototypeNames = ["Avery", "Noah", "Elena", "Micah", "Nadia", "Theo", "June", "Amara", "Jonah", "Mae", "Elias", "Iris", "Caleb", "Sofia", "Rowan", "Mina"];
+const prototypePlaces = ["Tulsa", "Dallas", "Atlanta", "Chicago", "Los Angeles", "New York"];
+const prototypeLines = [
+  "Someone stayed long enough to listen.",
+  "There is more to every person than the hardest day.",
+  "Care begins when attention becomes action.",
+  "I remembered I did not have to carry it alone.",
+  "A name can be the beginning of being seen.",
+  "The door was open. So I walked through it.",
+  "We made room at the table.",
+  "Hope looked ordinary that morning.",
+];
 
 /**
  * A scale fixture for art direction and pagination—not production content.
@@ -160,6 +172,8 @@ const densitySizes = ["xs", "sm", "xs", "md", "sm", "xs", "sm", "md"] as const;
 const densityEntries: HumanEntry[] = Array.from({ length: 224 }, (_, index) => {
   const sequence = index + 1;
   const source = portraitMedia[index % portraitMedia.length];
+  const name = prototypeNames[index % prototypeNames.length];
+  const place = prototypePlaces[(index * 5) % prototypePlaces.length];
   const isPlace = index % 13 === 0;
   const isVideo = index % 19 === 0;
   const emphasized = index % 23 === 0;
@@ -170,15 +184,15 @@ const densityEntries: HumanEntry[] = Array.from({ length: 224 }, (_, index) => {
     id: `dev-density-${String(sequence).padStart(3, "0")}`,
     slug: `human-field-study-${String(sequence).padStart(3, "0")}`,
     type,
-    person: isPlace ? undefined : { displayName: `Human study ${String(sequence).padStart(3, "0")}` },
+    person: isPlace ? undefined : { displayName: name, firstName: name, location: place },
     thumbnail: {
       ...source,
       id: `${source.id}-study-${String(sequence).padStart(3, "0")}`,
-      alt: `DEV_FIXTURE archive image study ${sequence}`,
+      alt: `Fictional editorial prototype portrait for ${name}`,
     },
-    headline: isPlace ? `Human place study ${String(sequence).padStart(3, "0")}` : undefined,
-    quote: isVideo ? `A human moment / 00:${String(12 + index % 40).padStart(2, "0")}` : undefined,
-    story: "Development scale fixture. Replace with a real, consented human artifact before publication.",
+    headline: isPlace ? `${place} / a place where people showed up` : undefined,
+    quote: isVideo ? `${prototypeLines[index % prototypeLines.length]} / 00:${String(12 + index % 40).padStart(2, "0")}` : prototypeLines[index % prototypeLines.length],
+    story: "Fictional editorial prototype data used only to art-direct the HUMAN:HERE archive before consented stories are published.",
     layout: {
       size: emphasized ? (index % 46 === 0 ? "lg" : "md") : densitySizes[index % densitySizes.length],
       emphasis: emphasized ? 10 : 2 + index % 7,

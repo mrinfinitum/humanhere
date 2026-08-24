@@ -49,7 +49,7 @@ export function ArtifactCard({ entry, index, priority = false }: { entry: HumanE
           {entry.type === "video" && <span className="artifact-play" aria-hidden="true">Play <i>▶</i></span>}
           {entry.type === "audio" && <AudioMark duration={entry.thumbnail?.duration} />}
           {entry.type === "note" && <span className="artifact-note-rule" aria-hidden="true" />}
-          {entry.fixture && <span className="fixture-stamp">Dev_fixture</span>}
+          {entry.fixture && <span className="fixture-stamp">Prototype</span>}
         </div>
         <div className="artifact-meta">
           <span><b>{label}</b>{meta && <i>{meta}</i>}</span>

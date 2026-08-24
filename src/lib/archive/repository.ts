@@ -16,7 +16,7 @@ function boundedLimit(limit?: number) {
 }
 
 function fixtureBatch(query: ArchiveQuery): ArchiveBatch {
-  const limit = boundedLimit(query.limit);
+  const limit = Math.min(Math.max(query.limit ?? 24, 1), 120);
   const offset = Number.parseInt(query.cursor ?? "0", 10) || 0;
   const filtered = query.types?.length ? DEV_FIXTURE_HUMAN_ENTRIES.filter(entry => query.types?.includes(entry.type)) : DEV_FIXTURE_HUMAN_ENTRIES;
   const entries = filtered.slice(offset, offset + limit);
@@ -91,13 +91,14 @@ export async function getHomepageHumans(limit = 24): Promise<ArchiveBatch> {
   cacheLife("hours");
   cacheTag(HUMAN_CACHE_TAGS.homepage);
   const bounded = boundedLimit(limit);
-  if (!hasSupabasePublicEnvironment()) return fixtureBatch({ limit: bounded });
+  const prototypeLimit = Math.min(Math.max(limit, 1), 96);
+  if (!hasSupabasePublicEnvironment()) return fixtureBatch({ limit: prototypeLimit });
   const [featured, recent] = await Promise.all([getFeaturedHumans(bounded), getPublishedHumanBatch({ limit: bounded })]);
   const entries = [...featured, ...recent.entries].filter((entry, index, all) => all.findIndex(candidate => candidate.id === entry.id) === index).slice(0, bounded);
   // Keep the homepage visually useful before the first real story is published.
   // These records are explicitly marked as fixtures in the public UI and never
   // enter Supabase or masquerade as approved archive entries.
-  if (!entries.length) return fixtureBatch({ limit: bounded });
+  if (!entries.length || entries.every(entry => entry.fixture)) return fixtureBatch({ limit: prototypeLimit });
   return { entries, nextCursor: recent.nextCursor };
 }
 
