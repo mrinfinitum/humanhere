@@ -24,6 +24,10 @@ function fixtureBatch(query: ArchiveQuery): ArchiveBatch {
   return { entries, nextCursor: next < filtered.length ? String(next) : null, total: filtered.length };
 }
 
+function isPublicArchiveUnavailable(error: { code?: string } | null) {
+  return error?.code === "PGRST205" || error?.code === "42P01";
+}
+
 export async function getPublishedHumanBatch(query: ArchiveQuery = {}): Promise<ArchiveBatch> {
   "use cache";
   cacheLife("hours");
@@ -46,6 +50,7 @@ export async function getPublishedHumanBatch(query: ArchiveQuery = {}): Promise<
   }
 
   const { data, error } = await request;
+  if (isPublicArchiveUnavailable(error)) return fixtureBatch(query);
   if (error) throw new Error(`Public archive query failed: ${error.code}`);
   const rows = (data ?? []) as unknown as PublicHumanRow[];
   const hasNext = rows.length > limit;
@@ -65,6 +70,7 @@ export async function getPublishedHumanBySlug(slug: string): Promise<HumanEntry 
 
   if (!hasSupabasePublicEnvironment()) return DEV_FIXTURE_HUMAN_ENTRIES.find(entry => entry.slug === slug);
   const { data, error } = await createSupabasePublicClient().from("human_entries_public").select(PUBLIC_COLUMNS).eq("slug", slug).maybeSingle();
+  if (isPublicArchiveUnavailable(error)) return DEV_FIXTURE_HUMAN_ENTRIES.find(entry => entry.slug === slug);
   if (error) throw new Error(`Public story query failed: ${error.code}`);
   return data ? toHumanEntry(data as unknown as PublicHumanRow) : undefined;
 }
@@ -75,6 +81,7 @@ export async function getFeaturedHumans(limit = 24): Promise<HumanEntry[]> {
   cacheTag(HUMAN_CACHE_TAGS.featured, HUMAN_CACHE_TAGS.homepage);
   if (!hasSupabasePublicEnvironment()) return DEV_FIXTURE_HUMAN_ENTRIES.filter(entry => entry.featured).slice(0, boundedLimit(limit));
   const { data, error } = await createSupabasePublicClient().from("human_entries_public").select(PUBLIC_COLUMNS).eq("featured", true).order("published_at", { ascending: false }).order("id", { ascending: false }).limit(boundedLimit(limit));
+  if (isPublicArchiveUnavailable(error)) return DEV_FIXTURE_HUMAN_ENTRIES.filter(entry => entry.featured).slice(0, boundedLimit(limit));
   if (error) throw new Error(`Featured archive query failed: ${error.code}`);
   return ((data ?? []) as unknown as PublicHumanRow[]).map(toHumanEntry);
 }

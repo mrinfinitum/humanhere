@@ -8,9 +8,12 @@ import type { ArchiveBatch, HumanEntry } from "@/lib/archive/types";
 import { resolveMediaUrl } from "@/lib/media/resolver";
 import { BrandMark } from "@/components/BrandMark";
 
-const WORLD_WIDTH = 3900;
-const WORLD_HEIGHT = 2600;
-const widths = [260, 320, 220, 300, 380, 240, 340, 200, 360, 280, 310, 230];
+const WORLD_WIDTH = 5600;
+const WORLD_HEIGHT = 4300;
+const widths = [176, 216, 148, 194, 238, 158, 220, 138, 232, 184, 204, 152];
+const COLUMNS = 7;
+const CELL_WIDTH = 760;
+const CELL_HEIGHT = 660;
 
 function entryHref(entry: HumanEntry) {
   if (entry.slug === "people-need-people" || entry.slug === "why-we-show-up") return "/about";
@@ -20,9 +23,13 @@ function entryHref(entry: HumanEntry) {
 }
 
 function placement(index: number, entry: HumanEntry) {
-  const width = widths[index % widths.length] + (entry.layout?.size === "lg" ? 44 : entry.layout?.size === "xl" ? 72 : 0);
-  const x = 40 + ((index * 347 + Math.floor(index / 8) * 163) % (WORLD_WIDTH - 280));
-  const y = 45 + ((index * 229 + Math.floor(index / 7) * 191) % (WORLD_HEIGHT - 340));
+  const width = widths[index % widths.length] + (entry.layout?.size === "lg" ? 28 : entry.layout?.size === "xl" ? 48 : 0);
+  const column = (index * 3) % COLUMNS;
+  const row = Math.floor(index / COLUMNS);
+  const jitterX = ((index * 83) % 190) - 95;
+  const jitterY = ((index * 137) % 260) - 130;
+  const x = 170 + column * CELL_WIDTH + jitterX;
+  const y = 190 + row * CELL_HEIGHT + jitterY;
   const rotate = ((index * 7) % 9) - 4;
   return { width, x, y, rotate };
 }
@@ -87,8 +94,8 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
   const [cursor, setCursor] = useState(initialBatch.nextCursor);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState<HumanEntry | null>(null);
-  const [scale, setScale] = useState(0.54);
-  const [pan, setPan] = useState({ x: -70, y: -60 });
+  const [scale, setScale] = useState(0.62);
+  const [pan, setPan] = useState({ x: -40, y: -25 });
   const drag = useRef<{ pointerId: number; x: number; y: number; panX: number; panY: number } | null>(null);
 
   const simulatedEntries = useMemo(() => {
@@ -112,8 +119,8 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
   }, [cursor, loading]);
 
   const center = useCallback(() => {
-    setScale(0.54);
-    setPan({ x: -70, y: -60 });
+    setScale(0.62);
+    setPan({ x: -40, y: -25 });
   }, []);
 
   useEffect(() => {
