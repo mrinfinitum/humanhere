@@ -37,10 +37,14 @@ button { cursor: pointer; }
 .archive-orbit--two { top: 1480px; left: 2920px; width: 1450px; height: 1320px; border-color: rgb(48 70 165 / .38); transform: rotate(31deg); }
 .archive-connection { position: absolute; inset: 0; z-index: 3; overflow: visible; pointer-events: none; }
 .archive-connection path { fill: none; vector-effect: non-scaling-stroke; }
-.archive-connection__rail { stroke: rgb(242 235 221 / .36); stroke-width: 1; }
-.archive-connection__signal { stroke: rgb(48 70 165 / .72); stroke-width: 1.25; stroke-dasharray: 3 13; animation: connection-signal 14s linear infinite; }
-.archive-connection circle { fill: var(--human-ink); stroke: rgb(242 235 221 / .72); stroke-width: 1.25; opacity: .9; vector-effect: non-scaling-stroke; }
-@keyframes connection-signal { to { stroke-dashoffset: -120; } }
+.archive-connection__rail { stroke: rgb(242 235 221 / .3); stroke-width: 1; }
+.archive-connection__signal { stroke: rgb(242 235 221 / .56); stroke-width: 1; stroke-dasharray: 13 5 2 7; animation: connection-signal 9s linear infinite; }
+.archive-connection__pulse { stroke: var(--lapis); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 9 91; filter: drop-shadow(0 0 4px rgb(48 70 165 / .7)); animation: connection-pulse 5.4s linear infinite; }
+.archive-connection__node { fill: var(--human-ink); stroke: rgb(242 235 221 / .82); stroke-width: 1.25; opacity: .92; vector-effect: non-scaling-stroke; transform-box: fill-box; transform-origin: center; animation: connection-node 2.8s ease-in-out infinite alternate; }
+.archive-connection__node--target { animation-delay: -1.4s; }
+@keyframes connection-signal { to { stroke-dashoffset: -108; } }
+@keyframes connection-pulse { from { stroke-dashoffset: 100; } to { stroke-dashoffset: -100; } }
+@keyframes connection-node { from { opacity: .62; transform: scale(.82); } to { opacity: 1; transform: scale(1.12); } }
 .canvas-artifact { position: absolute; top: var(--canvas-y); left: var(--canvas-x); z-index: 2; width: var(--canvas-w); opacity: 0; animation: canvas-arrive 700ms var(--ease) var(--canvas-delay) forwards; transform: rotate(var(--canvas-r)); }
 .canvas-artifact.is-selected, .canvas-artifact.is-linked { z-index: 4; }
 @keyframes canvas-arrive { from { opacity: 0; transform: translateY(8px) rotate(var(--canvas-r)); } to { opacity: 1; transform: translateY(0) rotate(var(--canvas-r)); } }

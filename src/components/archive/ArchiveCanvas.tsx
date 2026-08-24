@@ -333,8 +333,9 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
             <svg className="archive-connection" width={WORLD_WIDTH} height={WORLD_HEIGHT} aria-hidden="true">
               <path className="archive-connection__rail" d={connection.path} />
               <path className="archive-connection__signal" d={connection.path} />
-              <circle cx={connection.start.x} cy={connection.start.y} r="5" />
-              <circle cx={connection.end.x} cy={connection.end.y} r="5" />
+              <path className="archive-connection__pulse" pathLength="100" d={connection.path} />
+              <circle className="archive-connection__node" cx={connection.start.x} cy={connection.start.y} r="5" />
+              <circle className="archive-connection__node archive-connection__node--target" cx={connection.end.x} cy={connection.end.y} r="5" />
             </svg>
           )}
           {simulatedEntries.map((entry, index) => {
