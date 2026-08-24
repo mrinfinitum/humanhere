@@ -22,6 +22,15 @@ type ArtifactGeometry = {
 };
 
 type ViewportSize = { width: number; height: number };
+type PointerPoint = { x: number; y: number };
+type PinchGesture = { distance: number; scale: number; worldX: number; worldY: number };
+
+const MIN_SCALE = 0.28;
+const MAX_SCALE = 1.08;
+
+function clampScale(value: number) {
+  return Math.min(MAX_SCALE, Math.max(MIN_SCALE, value));
+}
 
 function entryHref(entry: HumanEntry) {
   if (entry.slug === "people-need-people" || entry.slug === "why-we-show-up") return "/about";
@@ -192,6 +201,8 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
   const [pan, setPan] = useState({ x: -1326, y: -883 });
   const [viewport, setViewport] = useState<ViewportSize>({ width: 820, height: 900 });
   const drag = useRef<{ pointerId: number; x: number; y: number; panX: number; panY: number } | null>(null);
+  const touchPointers = useRef(new Map<number, PointerPoint>());
+  const pinch = useRef<PinchGesture | null>(null);
 
   const simulatedEntries = useMemo(() => {
     return entries;
@@ -286,21 +297,60 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
   }, [center, closeActive, syncViewport]);
 
   const beginPan = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "touch") {
+      touchPointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      event.currentTarget.setPointerCapture(event.pointerId);
+
+      if (touchPointers.current.size >= 2) {
+        const [first, second] = Array.from(touchPointers.current.values());
+        const midpoint = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
+        pinch.current = {
+          distance: Math.max(1, Math.hypot(second.x - first.x, second.y - first.y)),
+          scale,
+          worldX: (midpoint.x - pan.x) / scale,
+          worldY: (midpoint.y - pan.y) / scale,
+        };
+        drag.current = null;
+        return;
+      }
+    }
+
     if ((event.target as HTMLElement).closest("button, a")) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     drag.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, panX: pan.x, panY: pan.y };
   };
 
   const movePan = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "touch" && touchPointers.current.has(event.pointerId)) {
+      touchPointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (pinch.current && touchPointers.current.size >= 2) {
+        const [first, second] = Array.from(touchPointers.current.values());
+        const midpoint = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
+        const distance = Math.max(1, Math.hypot(second.x - first.x, second.y - first.y));
+        const nextScale = clampScale(pinch.current.scale * distance / pinch.current.distance);
+        setScale(nextScale);
+        setPan({
+          x: midpoint.x - pinch.current.worldX * nextScale,
+          y: midpoint.y - pinch.current.worldY * nextScale,
+        });
+        event.preventDefault();
+        return;
+      }
+    }
+
     if (!drag.current || drag.current.pointerId !== event.pointerId) return;
     setPan({ x: drag.current.panX + event.clientX - drag.current.x, y: drag.current.panY + event.clientY - drag.current.y });
   };
 
   const endPan = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "touch") {
+      touchPointers.current.delete(event.pointerId);
+      if (touchPointers.current.size < 2) pinch.current = null;
+    }
     if (drag.current?.pointerId === event.pointerId) drag.current = null;
   };
 
-  const zoom = (amount: number) => setScale(current => Math.min(1.08, Math.max(0.28, Number((current + amount).toFixed(2)))));
+  const zoom = (amount: number) => setScale(current => clampScale(Number((current + amount).toFixed(2))));
   const wheelZoom = (event: ReactWheelEvent<HTMLDivElement>) => {
     if (!event.ctrlKey && !event.metaKey) return;
     event.preventDefault();
@@ -315,7 +365,7 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
       <a className="archive-skip" href="#archive-introduction">Skip the visual archive</a>
       <section
         className="archive-canvas"
-        aria-label="Spatial human archive. Drag to move through the field."
+        aria-label="Spatial human archive. Drag to move through the field. Pinch with two fingers to zoom."
         onPointerDown={beginPan}
         onPointerMove={movePan}
         onPointerUp={endPan}
@@ -359,7 +409,7 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
             );
           })}
         </div>
-        <p className="archive-canvas__instruction">Drag to explore · ⌘/ctrl + scroll to zoom</p>
+        <p className="archive-canvas__instruction">Drag to explore · pinch or ⌘/ctrl + scroll to zoom</p>
         <div className="archive-canvas__controls" aria-label="Archive view controls">
           <button type="button" onClick={() => zoom(-0.1)} aria-label="Zoom out">−</button>
           <span>{Math.round(scale * 100)}%</span>
