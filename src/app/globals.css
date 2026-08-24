@@ -33,11 +33,12 @@ button { cursor: pointer; }
 .archive-canvas__grid { position: absolute; inset: 0; background-image: linear-gradient(rgb(242 235 221 / .035) 1px, transparent 1px), linear-gradient(90deg, rgb(242 235 221 / .035) 1px, transparent 1px); background-size: 130px 130px; }
 .archive-canvas__world { position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform; }
 .archive-orbit { position: absolute; border: 1px solid rgb(242 235 221 / .25); border-radius: 50%; pointer-events: none; }
-.archive-orbit--one { top: 80px; left: 180px; width: 2300px; height: 2050px; }
+.archive-orbit--one { top: 1125px; left: 1650px; width: 2300px; height: 2050px; }
 .archive-orbit--two { top: 1480px; left: 2920px; width: 1450px; height: 1320px; border-color: rgb(48 70 165 / .38); transform: rotate(31deg); }
 .canvas-artifact { position: absolute; top: var(--canvas-y); left: var(--canvas-x); width: var(--canvas-w); opacity: 0; animation: canvas-arrive 700ms var(--ease) var(--canvas-delay) forwards; transform: rotate(var(--canvas-r)); }
 @keyframes canvas-arrive { from { opacity: 0; transform: translateY(8px) rotate(var(--canvas-r)); } to { opacity: 1; transform: translateY(0) rotate(var(--canvas-r)); } }
-.canvas-artifact > button { display: block; width: 100%; padding: 6px 6px 7px; overflow: hidden; border: 0; border-radius: 4px; background: var(--human-paper); color: var(--human-ink); box-shadow: 0 0 20px rgb(0 0 0 / .1); text-align: left; transition: background-color 180ms ease, transform 500ms var(--ease); }
+.canvas-artifact > button { display: block; width: 100%; padding: 6px 6px 7px; overflow: hidden; border: 0; border-radius: 4px; background: var(--human-paper); color: var(--human-ink); box-shadow: 0 0 20px rgb(0 0 0 / .1); text-align: left; animation: canvas-float var(--canvas-float-duration) ease-in-out var(--canvas-float-delay) infinite alternate; transition: background-color 180ms ease, transform 500ms var(--ease); }
+@keyframes canvas-float { from { transform: translate3d(calc(var(--canvas-float-x) * -.45), calc(var(--canvas-float-y) * -.5), 0); } to { transform: translate3d(var(--canvas-float-x), var(--canvas-float-y), 0); } }
 .canvas-artifact > button:hover, .canvas-artifact > button:focus-visible { background: #f8f5ee; transform: translateY(-1px); }
 .canvas-artifact__index { display: none; }
 .canvas-artifact__visual { position: relative; display: grid; width: 100%; height: var(--canvas-h); overflow: hidden; place-items: center; border-radius: 3px; background: var(--human-paper); color: var(--human-ink); }

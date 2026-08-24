@@ -10,10 +10,16 @@ import { BrandMark } from "@/components/BrandMark";
 
 const WORLD_WIDTH = 5600;
 const WORLD_HEIGHT = 4300;
+const DEFAULT_SCALE = 0.62;
 const widths = [136, 172, 118, 152, 190, 126, 174, 112, 184, 146, 164, 122];
-const COLUMNS = 15;
-const CELL_WIDTH = 345;
-const CELL_HEIGHT = 350;
+
+type ArtifactGeometry = {
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+  rotate: number;
+};
 
 function entryHref(entry: HumanEntry) {
   if (entry.slug === "people-need-people" || entry.slug === "why-we-show-up") return "/about";
@@ -22,32 +28,101 @@ function entryHref(entry: HumanEntry) {
   return `/humans/${entry.slug}`;
 }
 
-function placement(index: number, entry: HumanEntry) {
+function hashUnit(value: number) {
+  let hash = value | 0;
+  hash = Math.imul(hash ^ (hash >>> 16), 0x45d9f3b);
+  hash = Math.imul(hash ^ (hash >>> 16), 0x45d9f3b);
+  return ((hash ^ (hash >>> 16)) >>> 0) / 4294967295;
+}
+
+function artifactSize(index: number, entry: HumanEntry) {
   const width = widths[index % widths.length] + (entry.layout?.size === "lg" ? 20 : entry.layout?.size === "xl" ? 36 : 0);
-  const column = (index * 7) % COLUMNS;
-  const row = Math.floor(index / COLUMNS);
-  const jitterX = ((index * 83) % 90) - 45;
-  const jitterY = ((index * 137) % 140) - 70;
-  const x = 110 + column * CELL_WIDTH + jitterX;
-  const y = 125 + row * CELL_HEIGHT + jitterY;
-  const rotate = ((index * 7) % 9) - 4;
-  return { width, x, y, rotate };
-}
-
-function artifactGeometry(index: number, entry: HumanEntry) {
-  const item = placement(index, entry);
   const ratio = entry.thumbnail?.width && entry.thumbnail.height ? entry.thumbnail.width / entry.thumbnail.height : 1;
-  return { ...item, height: Math.max(76, Math.round(item.width / ratio)) };
+  return { width, height: Math.max(76, Math.round(width / ratio)) };
 }
 
-function CanvasArtifact({ entry, index, onOpen }: {
+function buildOrganicLayout(entries: HumanEntry[]): ArtifactGeometry[] {
+  const centerX = WORLD_WIDTH / 2;
+  const centerY = WORLD_HEIGHT / 2;
+  const nodes = entries.map((entry, index) => {
+    const { width, height } = artifactSize(index, entry);
+    const progress = Math.sqrt((index + 0.5) / Math.max(entries.length, 1));
+    const angle = index * 2.399963 + (hashUnit(index * 17 + 11) - 0.5) * 1.15;
+    const radius = 150 + progress * (1700 + hashUnit(index * 29 + 7) * 430);
+    const anchorX = centerX + Math.cos(angle) * radius;
+    const anchorY = centerY + Math.sin(angle) * radius * 0.78;
+    return {
+      width,
+      height,
+      x: anchorX - width / 2,
+      y: anchorY - height / 2,
+      anchorX,
+      anchorY,
+      collisionRadius: Math.hypot(width, height) / 2 + 58,
+      rotate: ((index * 7) % 9) - 4,
+    };
+  });
+
+  // A small deterministic force pass mirrors the reference's center + collision
+  // simulation while keeping server and client rendering identical.
+  for (let iteration = 0; iteration < 72; iteration += 1) {
+    for (let a = 0; a < nodes.length; a += 1) {
+      const first = nodes[a];
+      for (let b = a + 1; b < nodes.length; b += 1) {
+        const second = nodes[b];
+        const firstX = first.x + first.width / 2;
+        const firstY = first.y + first.height / 2;
+        const secondX = second.x + second.width / 2;
+        const secondY = second.y + second.height / 2;
+        let deltaX = secondX - firstX;
+        let deltaY = secondY - firstY;
+        let distance = Math.hypot(deltaX, deltaY);
+        const minimum = first.collisionRadius + second.collisionRadius;
+        if (distance >= minimum) continue;
+        if (distance < 0.001) {
+          deltaX = hashUnit(a * 101 + b * 17) - 0.5;
+          deltaY = hashUnit(a * 67 + b * 31) - 0.5;
+          distance = Math.hypot(deltaX, deltaY) || 1;
+        }
+        const push = (minimum - distance) * 0.48;
+        const moveX = (deltaX / distance) * push;
+        const moveY = (deltaY / distance) * push;
+        first.x -= moveX;
+        first.y -= moveY;
+        second.x += moveX;
+        second.y += moveY;
+      }
+    }
+
+    for (const node of nodes) {
+      node.x += (node.anchorX - (node.x + node.width / 2)) * 0.012;
+      node.y += (node.anchorY - (node.y + node.height / 2)) * 0.012;
+      node.x = Math.min(WORLD_WIDTH - node.width - 80, Math.max(80, node.x));
+      node.y = Math.min(WORLD_HEIGHT - node.height - 80, Math.max(80, node.y));
+    }
+  }
+
+  return nodes.map(({ width, height, x, y, rotate }) => ({ width, height, x, y, rotate }));
+}
+
+function placement(index: number, entry: HumanEntry, geometry?: ArtifactGeometry) {
+  if (geometry) return geometry;
+  const { width, height } = artifactSize(index, entry);
+  const x = WORLD_WIDTH / 2 - width / 2;
+  const y = WORLD_HEIGHT / 2 - height / 2;
+  const rotate = ((index * 7) % 9) - 4;
+  return { width, height, x, y, rotate };
+}
+
+function CanvasArtifact({ entry, index, geometry, onOpen }: {
   entry: HumanEntry;
   index: number;
+  geometry: ArtifactGeometry;
   onOpen: () => void;
 }) {
   const mediaUrl = entry.thumbnail ? resolveMediaUrl(entry.thumbnail, "thumbnail") : undefined;
   const hasImage = entry.thumbnail?.kind === "image" && Boolean(mediaUrl);
-  const item = artifactGeometry(index, entry);
+  const item = placement(index, entry, geometry);
   const style = {
     "--canvas-x": `${item.x}px`,
     "--canvas-y": `${item.y}px`,
@@ -55,6 +130,10 @@ function CanvasArtifact({ entry, index, onOpen }: {
     "--canvas-h": `${item.height}px`,
     "--canvas-r": `${item.rotate * 0.24}deg`,
     "--canvas-delay": `${(index % 20) * 28}ms`,
+    "--canvas-float-x": `${(hashUnit(index * 47 + 3) - 0.5) * 8}px`,
+    "--canvas-float-y": `${3 + hashUnit(index * 53 + 5) * 5}px`,
+    "--canvas-float-duration": `${6 + hashUnit(index * 61 + 9) * 5}s`,
+    "--canvas-float-delay": `${-hashUnit(index * 71 + 13) * 8}s`,
   } as CSSProperties;
   const label = entry.person?.anonymous ? "Anonymous" : entry.person?.displayName ?? entry.headline ?? "Human artifact";
 
@@ -94,8 +173,8 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
   const [cursor, setCursor] = useState(initialBatch.nextCursor);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState<HumanEntry | null>(null);
-  const [scale, setScale] = useState(0.62);
-  const [pan, setPan] = useState({ x: -40, y: -25 });
+  const [scale, setScale] = useState(DEFAULT_SCALE);
+  const [pan, setPan] = useState({ x: -1326, y: -883 });
   const drag = useRef<{ pointerId: number; x: number; y: number; panX: number; panY: number } | null>(null);
 
   const simulatedEntries = useMemo(() => {
@@ -103,6 +182,8 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
     const count = typeof initialBatch.total === "number" && initialBatch.total > 100 ? 144 : entries.length;
     return Array.from({ length: count }, (_, index) => entries[index % entries.length]);
   }, [entries, initialBatch.total]);
+
+  const organicLayout = useMemo(() => buildOrganicLayout(simulatedEntries), [simulatedEntries]);
 
   const loadNext = useCallback(async () => {
     if (!cursor || loading) return;
@@ -119,17 +200,27 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
   }, [cursor, loading]);
 
   const center = useCallback(() => {
-    setScale(0.62);
-    setPan({ x: -40, y: -25 });
+    const desktop = window.innerWidth > 900;
+    const viewportWidth = desktop ? window.innerWidth - 620 : window.innerWidth;
+    const viewportHeight = desktop ? window.innerHeight : window.innerWidth * 1.25;
+    setScale(DEFAULT_SCALE);
+    setPan({
+      x: viewportWidth / 2 - WORLD_WIDTH * DEFAULT_SCALE / 2,
+      y: viewportHeight / 2 - WORLD_HEIGHT * DEFAULT_SCALE / 2,
+    });
   }, []);
 
   useEffect(() => {
+    const centerFrame = window.requestAnimationFrame(center);
     const close = (event: KeyboardEvent) => {
       if (event.key === "Escape") setActive(null);
     };
     window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
-  }, []);
+    return () => {
+      window.cancelAnimationFrame(centerFrame);
+      window.removeEventListener("keydown", close);
+    };
+  }, [center]);
 
   const beginPan = (event: ReactPointerEvent<HTMLDivElement>) => {
     if ((event.target as HTMLElement).closest("button, a")) return;
@@ -180,6 +271,7 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
               key={`${entry.id}-${index}`}
               entry={entry}
               index={index}
+              geometry={organicLayout[index]}
               onOpen={() => setActive(entry)}
             />
           ))}
