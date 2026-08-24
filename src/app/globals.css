@@ -37,12 +37,13 @@ button { cursor: pointer; }
 .archive-orbit--two { top: 1480px; left: 2920px; width: 1450px; height: 1320px; border-color: rgb(48 70 165 / .38); transform: rotate(31deg); }
 .archive-connection { position: absolute; inset: 0; z-index: 3; overflow: visible; pointer-events: none; }
 .archive-connection path { fill: none; vector-effect: non-scaling-stroke; }
-.archive-connection__rail { stroke: rgb(242 235 221 / .3); stroke-width: 1; }
-.archive-connection__signal { stroke: rgb(242 235 221 / .56); stroke-width: 1; stroke-dasharray: 13 5 2 7; animation: connection-signal 9s linear infinite; }
-.archive-connection__pulse { stroke: var(--lapis); stroke-width: 2; stroke-linecap: round; stroke-dasharray: 9 91; filter: drop-shadow(0 0 4px rgb(48 70 165 / .7)); animation: connection-pulse 5.4s linear infinite; }
-.archive-connection__node { fill: var(--human-ink); stroke: rgb(242 235 221 / .82); stroke-width: 1.25; opacity: .92; vector-effect: non-scaling-stroke; transform-box: fill-box; transform-origin: center; animation: connection-node 2.8s ease-in-out infinite alternate; }
+.archive-connection__rail { stroke: rgb(242 235 221 / .26); stroke-width: 1; }
+.archive-connection__signal { stroke: rgb(242 235 221 / .68); stroke-width: 1; stroke-linecap: round; stroke-dasharray: 5 4; animation: connection-signal 7s linear infinite; }
+.archive-connection__pulse { stroke: rgb(48 70 165 / .95); stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 7 93; filter: drop-shadow(0 0 2px rgb(48 70 165 / .5)); animation: connection-pulse 5.8s linear infinite; }
+.archive-connection__node { fill: var(--human-ink); stroke: rgb(242 235 221 / .78); stroke-width: 1; opacity: .9; vector-effect: non-scaling-stroke; transform-box: fill-box; transform-origin: center; animation: connection-node 3.4s ease-in-out infinite alternate; }
 .archive-connection__node--target { animation-delay: -1.4s; }
-@keyframes connection-signal { to { stroke-dashoffset: -108; } }
+.archive-connection__core { fill: var(--lapis); stroke: none; opacity: .95; }
+@keyframes connection-signal { to { stroke-dashoffset: -72; } }
 @keyframes connection-pulse { from { stroke-dashoffset: 100; } to { stroke-dashoffset: -100; } }
 @keyframes connection-node { from { opacity: .62; transform: scale(.82); } to { opacity: 1; transform: scale(1.12); } }
 .canvas-artifact { position: absolute; top: var(--canvas-y); left: var(--canvas-x); z-index: 2; width: var(--canvas-w); opacity: 0; animation: canvas-arrive 700ms var(--ease) var(--canvas-delay) forwards; transform: rotate(var(--canvas-r)); }

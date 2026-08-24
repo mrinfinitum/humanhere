@@ -200,6 +200,7 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
   const [scale, setScale] = useState(DEFAULT_SCALE);
   const [pan, setPan] = useState({ x: -1326, y: -883 });
   const [viewport, setViewport] = useState<ViewportSize>({ width: 820, height: 900 });
+  const canvasRef = useRef<HTMLElement | null>(null);
   const drag = useRef<{ pointerId: number; x: number; y: number; panX: number; panY: number } | null>(null);
   const touchPointers = useRef(new Map<number, PointerPoint>());
   const pinch = useRef<PinchGesture | null>(null);
@@ -233,12 +234,13 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
     const end = { x: target.geometry.x + target.geometry.width / 2, y: target.geometry.y + target.geometry.height / 2 };
     const deltaX = end.x - start.x;
     const deltaY = end.y - start.y;
-    const curve = (hashUnit(activeIndex * 193 + connectionSeed * 7) - 0.5) * 0.34;
-    const control = {
-      x: (start.x + end.x) / 2 - deltaY * curve,
-      y: (start.y + end.y) / 2 + deltaX * curve,
-    };
-    return { targetIndex: target.index, start, end, path: `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}` };
+    const distance = Math.max(1, Math.hypot(deltaX, deltaY));
+    const direction = hashUnit(activeIndex * 193 + connectionSeed * 7) > 0.5 ? 1 : -1;
+    const bend = Math.min(distance * 0.22, 170) * direction;
+    const normal = { x: -deltaY / distance, y: deltaX / distance };
+    const controlOne = { x: start.x + deltaX * 0.32 + normal.x * bend, y: start.y + deltaY * 0.32 + normal.y * bend };
+    const controlTwo = { x: start.x + deltaX * 0.68 + normal.x * bend, y: start.y + deltaY * 0.68 + normal.y * bend };
+    return { targetIndex: target.index, start, end, path: `M ${start.x} ${start.y} C ${controlOne.x} ${controlOne.y} ${controlTwo.x} ${controlTwo.y} ${end.x} ${end.y}` };
   }, [activeIndex, connectionSeed, organicLayout]);
 
   const loadNext = useCallback(async () => {
@@ -295,6 +297,27 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
       window.removeEventListener("resize", syncViewport);
     };
   }, [center, closeActive, syncViewport]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const preventTouchZoom = (event: TouchEvent) => {
+      if (event.touches.length > 1) event.preventDefault();
+    };
+    const preventSafariGesture = (event: Event) => event.preventDefault();
+    canvas.addEventListener("touchstart", preventTouchZoom, { passive: false });
+    canvas.addEventListener("touchmove", preventTouchZoom, { passive: false });
+    canvas.addEventListener("gesturestart", preventSafariGesture, { passive: false });
+    canvas.addEventListener("gesturechange", preventSafariGesture, { passive: false });
+    canvas.addEventListener("gestureend", preventSafariGesture, { passive: false });
+    return () => {
+      canvas.removeEventListener("touchstart", preventTouchZoom);
+      canvas.removeEventListener("touchmove", preventTouchZoom);
+      canvas.removeEventListener("gesturestart", preventSafariGesture);
+      canvas.removeEventListener("gesturechange", preventSafariGesture);
+      canvas.removeEventListener("gestureend", preventSafariGesture);
+    };
+  }, []);
 
   const beginPan = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "touch") {
@@ -364,6 +387,7 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
     <main className="archive-canvas-shell">
       <a className="archive-skip" href="#archive-introduction">Skip the visual archive</a>
       <section
+        ref={canvasRef}
         className="archive-canvas"
         aria-label="Spatial human archive. Drag to move through the field. Pinch with two fingers to zoom."
         onPointerDown={beginPan}
@@ -386,6 +410,8 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
               <path className="archive-connection__pulse" pathLength="100" d={connection.path} />
               <circle className="archive-connection__node" cx={connection.start.x} cy={connection.start.y} r="5" />
               <circle className="archive-connection__node archive-connection__node--target" cx={connection.end.x} cy={connection.end.y} r="5" />
+              <circle className="archive-connection__core" cx={connection.start.x} cy={connection.start.y} r="1.6" />
+              <circle className="archive-connection__core" cx={connection.end.x} cy={connection.end.y} r="1.6" />
             </svg>
           )}
           {simulatedEntries.map((entry, index) => {
