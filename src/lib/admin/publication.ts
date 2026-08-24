@@ -12,8 +12,21 @@ type PrivateMediaRow = { id: string; storage_path: string; mime_type: string; wi
 export async function publishApprovedSubmission(submissionId: string, slug: string) {
   await requireStaff(["editor", "admin"]);
   const admin = createSupabaseAdminClient();
+  const [{ data: submission, error: submissionError }, { data: consent, error: consentError }] = await Promise.all([
+    admin.from("submissions").select("status,media_withheld").eq("id", submissionId).maybeSingle(),
+    admin.from("consent_records").select("publish_story,publish_media,verified_at,verified_by,revoked_at").eq("submission_id", submissionId).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  if (submissionError || consentError) throw new Error(`Publication preflight failed: ${submissionError?.code ?? consentError?.code}`);
+  const publishableSubmission = submission as { status: string; media_withheld: boolean } | null;
+  const latestConsent = consent as { publish_story: boolean; publish_media: boolean; verified_at: string | null; verified_by: string | null; revoked_at: string | null } | null;
+  if (publishableSubmission?.status !== "approved" || !latestConsent?.publish_story || !latestConsent.verified_at || !latestConsent.verified_by || latestConsent.revoked_at) {
+    throw new Error("Publication preflight failed: verified current consent is required");
+  }
   const { data: mediaRows, error: mediaError } = await admin.from("submission_media").select("id,storage_path,mime_type,width,height,duration_seconds,blur_data_url,caption,media_type").eq("submission_id", submissionId).order("sort_order");
   if (mediaError) throw new Error(`Publication media query failed: ${mediaError.code}`);
+  if ((mediaRows?.length ?? 0) > 0 && (!latestConsent.publish_media || publishableSubmission.media_withheld)) {
+    throw new Error("Publication preflight failed: media cannot be published");
+  }
 
   const copied: string[] = [];
   const assets: MediaAsset[] = [];
@@ -33,11 +46,12 @@ export async function publishApprovedSubmission(submissionId: string, slug: stri
       });
     }
 
-    const thumbnail = assets.find(asset => asset.kind === "image") ?? { id: `text-${submissionId}`, provider: "local" as const, path: "", alt: "Text-only HUMAN:HERE story", mimeType: "text/plain", kind: "text" as const };
+    const thumbnail = assets.find(asset => asset.kind === "image") ?? null;
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.rpc("publish_submission", {
       p_submission_id: submissionId, p_slug: slug, p_thumbnail: thumbnail as unknown as Json,
-      p_media: assets as unknown as Json, p_type: "story", p_layout: { size: "md" },
+      p_media: assets.length ? assets as unknown as Json : null, p_type: "story", p_layout: { size: "md" },
+      p_sensitive_story: false,
     });
     if (error) throw new Error(`Publication transaction failed: ${error.code}`);
     revalidatePublishedHuman(slug);

@@ -10,7 +10,7 @@ import { BrandMark } from "@/components/BrandMark";
 
 const WORLD_WIDTH = 3900;
 const WORLD_HEIGHT = 2600;
-const widths = [92, 116, 138, 104, 172, 126, 154, 86, 194, 112, 146, 128];
+const widths = [260, 320, 220, 300, 380, 240, 340, 200, 360, 280, 310, 230];
 
 function entryHref(entry: HumanEntry) {
   if (entry.slug === "people-need-people" || entry.slug === "why-we-show-up") return "/about";
@@ -29,20 +29,17 @@ function placement(index: number, entry: HumanEntry) {
 
 function artifactGeometry(index: number, entry: HumanEntry) {
   const item = placement(index, entry);
-  const ratio = entry.thumbnail.width && entry.thumbnail.height ? entry.thumbnail.width / entry.thumbnail.height : 1;
+  const ratio = entry.thumbnail?.width && entry.thumbnail.height ? entry.thumbnail.width / entry.thumbnail.height : 1;
   return { ...item, height: Math.max(76, Math.round(item.width / ratio)) };
 }
 
-function CanvasArtifact({ entry, index, focused, connected, onFocusChange, onOpen }: {
+function CanvasArtifact({ entry, index, onOpen }: {
   entry: HumanEntry;
   index: number;
-  focused: boolean;
-  connected: boolean;
-  onFocusChange: (index: number | null) => void;
   onOpen: () => void;
 }) {
-  const mediaUrl = resolveMediaUrl(entry.thumbnail, "thumbnail");
-  const hasImage = entry.thumbnail.kind === "image" && Boolean(mediaUrl);
+  const mediaUrl = entry.thumbnail ? resolveMediaUrl(entry.thumbnail, "thumbnail") : undefined;
+  const hasImage = entry.thumbnail?.kind === "image" && Boolean(mediaUrl);
   const item = artifactGeometry(index, entry);
   const style = {
     "--canvas-x": `${item.x}px`,
@@ -51,36 +48,28 @@ function CanvasArtifact({ entry, index, focused, connected, onFocusChange, onOpe
     "--canvas-h": `${item.height}px`,
     "--canvas-r": `${item.rotate * 0.24}deg`,
     "--canvas-delay": `${(index % 20) * 28}ms`,
-    "--canvas-float-x": `${((index * 13) % 11) - 5}px`,
-    "--canvas-float-y": `${6 + (index % 7)}px`,
-    "--canvas-float-duration": `${5.5 + (index % 9) * 0.55}s`,
-    "--canvas-float-delay": `${-(index % 11) * 0.63}s`,
   } as CSSProperties;
   const label = entry.person?.anonymous ? "Anonymous" : entry.person?.displayName ?? entry.headline ?? "Human artifact";
 
   return (
     <article
-      className={`canvas-artifact canvas-artifact--${entry.type}${focused ? " is-focused" : ""}${connected ? " is-connected" : ""}`}
+      className={`canvas-artifact canvas-artifact--${entry.type}`}
       style={style}
-      onPointerEnter={() => onFocusChange(index)}
-      onPointerLeave={() => onFocusChange(null)}
     >
       <button
         type="button"
         onClick={onOpen}
-        onFocus={() => onFocusChange(index)}
-        onBlur={() => onFocusChange(null)}
         aria-label={`Preview ${label}`}
       >
         <span className="canvas-artifact__index">{String(index + 1).padStart(3, "0")}</span>
         <span className={`canvas-artifact__visual artifact--${entry.layout?.tone ?? "paper"}`}>
           {hasImage ? (
             <Image
-              src={mediaUrl}
-              alt={entry.thumbnail.alt}
+              src={mediaUrl!}
+              alt={entry.thumbnail?.alt ?? label}
               fill
               sizes="(max-width: 800px) 32vw, 190px"
-              style={{ objectPosition: entry.thumbnail.objectPosition }}
+              style={{ objectPosition: entry.thumbnail?.objectPosition }}
             />
           ) : (
             <span>{entry.headline ?? entry.quote ?? "A human story"}</span>
@@ -97,9 +86,8 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
   const [cursor, setCursor] = useState(initialBatch.nextCursor);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState<HumanEntry | null>(null);
-  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
-  const [scale, setScale] = useState(0.72);
-  const [pan, setPan] = useState({ x: -120, y: -90 });
+  const [scale, setScale] = useState(0.54);
+  const [pan, setPan] = useState({ x: -70, y: -60 });
   const drag = useRef<{ pointerId: number; x: number; y: number; panX: number; panY: number } | null>(null);
 
   const simulatedEntries = useMemo(() => {
@@ -107,36 +95,6 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
     const count = typeof initialBatch.total === "number" && initialBatch.total > 100 ? 144 : entries.length;
     return Array.from({ length: count }, (_, index) => entries[index % entries.length]);
   }, [entries, initialBatch.total]);
-
-  const connection = useMemo(() => {
-    if (focusedIndex === null || simulatedEntries.length < 2) return null;
-    const from = artifactGeometry(focusedIndex, simulatedEntries[focusedIndex]);
-    const fromCenter = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
-    const nearby = simulatedEntries
-      .map((entry, index) => {
-        const item = artifactGeometry(index, entry);
-        const center = { x: item.x + item.width / 2, y: item.y + item.height / 2 };
-        return { index, isImage: entry.thumbnail.kind === "image", distance: Math.hypot(center.x - fromCenter.x, center.y - fromCenter.y) };
-      })
-      .filter(candidate => candidate.isImage && candidate.index !== focusedIndex && candidate.distance > 260 && candidate.distance < 900);
-    const fallbackImageIndex = simulatedEntries.findIndex((entry, index) => index !== focusedIndex && entry.thumbnail.kind === "image");
-    const connectedIndex = nearby.length
-      ? nearby[(focusedIndex * 7 + 3) % nearby.length].index
-      : fallbackImageIndex >= 0 ? fallbackImageIndex : (focusedIndex + 1) % simulatedEntries.length;
-    const to = artifactGeometry(connectedIndex, simulatedEntries[connectedIndex]);
-    const start = fromCenter;
-    const end = { x: to.x + to.width / 2, y: to.y + to.height / 2 };
-    const control = {
-      x: (start.x + end.x) / 2 + (end.y - start.y) * 0.12,
-      y: Math.min(start.y, end.y) - 110 - Math.abs(end.x - start.x) * 0.04,
-    };
-    return {
-      connectedIndex,
-      path: `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`,
-      start,
-      end,
-    };
-  }, [focusedIndex, simulatedEntries]);
 
   const loadNext = useCallback(async () => {
     if (!cursor || loading) return;
@@ -153,8 +111,8 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
   }, [cursor, loading]);
 
   const center = useCallback(() => {
-    setScale(0.72);
-    setPan({ x: -120, y: -90 });
+    setScale(0.54);
+    setPan({ x: -70, y: -60 });
   }, []);
 
   useEffect(() => {
@@ -180,15 +138,15 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
     if (drag.current?.pointerId === event.pointerId) drag.current = null;
   };
 
-  const zoom = (amount: number) => setScale(current => Math.min(1.18, Math.max(0.36, Number((current + amount).toFixed(2)))));
+  const zoom = (amount: number) => setScale(current => Math.min(1.08, Math.max(0.28, Number((current + amount).toFixed(2)))));
   const wheelZoom = (event: ReactWheelEvent<HTMLDivElement>) => {
     if (!event.ctrlKey && !event.metaKey) return;
     event.preventDefault();
     zoom(event.deltaY > 0 ? -0.06 : 0.06);
   };
 
-  const activeUrl = active ? resolveMediaUrl(active.thumbnail, "display") : undefined;
-  const activeHasImage = active?.thumbnail.kind === "image" && Boolean(activeUrl);
+  const activeUrl = active?.thumbnail ? resolveMediaUrl(active.thumbnail, "display") : undefined;
+  const activeHasImage = active?.thumbnail?.kind === "image" && Boolean(activeUrl);
 
   return (
     <main className="archive-canvas-shell">
@@ -204,26 +162,16 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
       >
         <div className="archive-canvas__grid" aria-hidden="true" />
         <div
-          className={`archive-canvas__world${focusedIndex === null ? "" : " archive-canvas__world--focused"}`}
+          className="archive-canvas__world"
           style={{ width: WORLD_WIDTH, height: WORLD_HEIGHT, transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${scale})` }}
         >
           <div className="archive-orbit archive-orbit--one" aria-hidden="true" />
           <div className="archive-orbit archive-orbit--two" aria-hidden="true" />
-          {connection && (
-            <svg className="archive-connection" width={WORLD_WIDTH} height={WORLD_HEIGHT} aria-hidden="true">
-              <path d={connection.path} />
-              <circle cx={connection.start.x} cy={connection.start.y} r="6" />
-              <circle cx={connection.end.x} cy={connection.end.y} r="6" />
-            </svg>
-          )}
           {simulatedEntries.map((entry, index) => (
             <CanvasArtifact
               key={`${entry.id}-${index}`}
               entry={entry}
               index={index}
-              focused={focusedIndex === index}
-              connected={connection?.connectedIndex === index}
-              onFocusChange={setFocusedIndex}
               onOpen={() => setActive(entry)}
             />
           ))}
@@ -242,12 +190,28 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
           <BrandMark />
           <span>Living archive · {String(initialBatch.total ?? entries.length).padStart(3, "0")}</span>
         </header>
-        <div className="archive-intro__copy">
-          <p className="eyebrow">People need people.</p>
-          <h1>Every person is more than the moment you meet them in.</h1>
-          <p>HUMAN:HERE is a growing archive of faces, voices, notes, places, and stories—shared with consent and held with care.</p>
-          <p>Move through the field. Choose a person. Stay long enough to see more.</p>
-        </div>
+        {active ? (
+          <article className="archive-intro__story">
+            <button type="button" onClick={() => setActive(null)}>← Back to introduction</button>
+            {activeHasImage && activeUrl && (
+              <figure>
+                <Image src={activeUrl} alt={active.thumbnail?.alt ?? "HUMAN:HERE story"} fill loading="eager" sizes="(max-width: 768px) 100vw, 480px" style={{ objectPosition: active.thumbnail?.objectPosition }} />
+              </figure>
+            )}
+            <p className="eyebrow">{active.type} · HUMAN:HERE</p>
+            <h1>{active.person?.anonymous ? "Anonymous" : active.person?.displayName ?? active.headline ?? "A human story"}</h1>
+            {(active.quote || active.headline) && <blockquote>{active.quote ?? active.headline}</blockquote>}
+            {active.story && <p>{active.story}</p>}
+            <Link href={entryHref(active)} prefetch={false}>Meet this human →</Link>
+          </article>
+        ) : (
+          <div className="archive-intro__copy">
+            <p className="eyebrow">Welcome to HUMAN:HERE</p>
+            <h1>People need people.</h1>
+            <p>We are a living archive of real people and real stories, built to help us see one another more clearly.</p>
+            <p>Move through the field. Choose a person. Stay long enough to see more.</p>
+          </div>
+        )}
         <nav aria-label="Primary navigation">
           <Link href="/share">+ Add your story</Link>
           <Link href="/humans">View the archive</Link>
@@ -259,25 +223,6 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
           {cursor ? <button type="button" onClick={() => void loadNext()} disabled={loading}>{loading ? "Loading…" : "Bring in more"}</button> : <span>Archive edge</span>}
         </footer>
       </aside>
-
-      {active && (
-        <section className="archive-pop" role="dialog" aria-modal="true" aria-label={`Preview ${active.person?.displayName ?? active.headline ?? "human story"}`}>
-          <button className="archive-pop__close" type="button" onClick={() => setActive(null)} aria-label="Close preview">×</button>
-          <div className={`archive-pop__media artifact--${active.layout?.tone ?? "paper"}`}>
-            {activeHasImage && activeUrl ? (
-              <Image src={activeUrl} alt={active.thumbnail.alt} fill loading="eager" sizes="(max-width: 800px) 78vw, 38vw" style={{ objectPosition: active.thumbnail.objectPosition }} />
-            ) : (
-              <blockquote>{active.headline ?? active.quote}</blockquote>
-            )}
-          </div>
-          <div className="archive-pop__meta">
-            <p className="eyebrow">{active.type} · HUMAN:HERE</p>
-            <h2>{active.person?.anonymous ? "Anonymous" : active.person?.displayName ?? active.headline ?? "A human story"}</h2>
-            {(active.quote || active.headline) && <p>{active.quote ?? active.headline}</p>}
-            <Link href={entryHref(active)} prefetch={false}>Meet this human →</Link>
-          </div>
-        </section>
-      )}
     </main>
   );
 }

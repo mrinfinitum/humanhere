@@ -1,8 +1,8 @@
 import "server-only";
 
-import { createHash, randomBytes } from "node:crypto";
+import { createHash } from "node:crypto";
 import { requireStaff } from "@/lib/auth/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/supabase/env";
 
 export function hashCreatorConsentToken(token: string) {
@@ -10,15 +10,12 @@ export function hashCreatorConsentToken(token: string) {
 }
 
 export async function createCreatorConsentLink(socialDiscoveryPostId: string) {
-  const { user } = await requireStaff();
-  const token = randomBytes(32).toString("base64url");
-  const admin = createSupabaseAdminClient();
-  const { error } = await admin.from("social_creator_consent_tokens").insert({
-    social_discovery_post_id: socialDiscoveryPostId,
-    token_hash: hashCreatorConsentToken(token),
-    expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-    created_by: user.id,
+  await requireStaff(["editor", "admin"]);
+  const supabase = await createSupabaseServerClient();
+  const { data: token, error } = await supabase.rpc("issue_social_creator_consent_token", {
+    p_social_discovery_post_id: socialDiscoveryPostId,
+    p_expires_in: "14 days",
   });
-  if (error) throw new Error(`Consent token creation failed: ${error.code}`);
+  if (error || !token) throw new Error(`Consent token creation failed: ${error?.code ?? "missing_token"}`);
   return `${getSiteUrl()}/consent/${token}`;
 }

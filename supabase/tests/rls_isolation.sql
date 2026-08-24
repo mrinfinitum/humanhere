@@ -10,28 +10,145 @@ values
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001', true);
 
-insert into public.submissions (id, user_id, status, story)
-values ('11000000-0000-0000-0000-000000000001', auth.uid(), 'draft', 'private test one');
+insert into public.submissions (user_id, story)
+values (auth.uid(), 'private test one');
+
+do $$
+begin
+  begin
+    update public.profiles set role = 'admin' where id = auth.uid();
+    raise exception 'RLS FAILURE: normal user changed profiles.role';
+  exception when insufficient_privilege then
+    null;
+  end;
+end;
+$$;
 
 reset role;
+do $$
+begin
+  if (select role from public.profiles where id = '10000000-0000-0000-0000-000000000001') <> 'user' then
+    raise exception 'RLS FAILURE: profile role escalated';
+  end if;
+end;
+$$;
+
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '20000000-0000-0000-0000-000000000002', true);
 
 do $$
 begin
-  if exists (select 1 from public.submissions where id = '11000000-0000-0000-0000-000000000001') then
+  if exists (select 1 from public.submissions where story = 'private test one') then
     raise exception 'RLS FAILURE: user two can read user one submission';
   end if;
 end;
 $$;
 
-insert into public.submissions (id, user_id, status, story)
-values ('22000000-0000-0000-0000-000000000002', auth.uid(), 'draft', 'private test two');
+insert into public.submissions (user_id, story)
+values (auth.uid(), 'private test two');
 
 do $$
 begin
   if (select count(*) from public.submissions) <> 1 then
     raise exception 'RLS FAILURE: user two should see exactly one owned submission';
+  end if;
+end;
+$$;
+
+do $$
+declare
+  own_submission_id uuid;
+begin
+  select id into own_submission_id from public.submissions where user_id = auth.uid() limit 1;
+  begin
+    execute format(
+      'insert into public.consent_records (submission_id, user_id, publish_story, verified_at, verified_by) values (%L, %L, true, now(), %L)',
+      own_submission_id, auth.uid(), auth.uid()
+    );
+    raise exception 'RLS FAILURE: normal user forged verified consent';
+  exception when insufficient_privilege then
+    null;
+  end;
+end;
+$$;
+
+reset role;
+insert into public.human_entries (
+  id, slug, type, source, first_name, display_location, subject_user_id,
+  allow_private_notes, published, published_at
+) values (
+  '30000000-0000-0000-0000-000000000003', 'rls-test-human', 'story', 'editorial',
+  'One', 'Tulsa', '10000000-0000-0000-0000-000000000001', true, true, now()
+);
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '20000000-0000-0000-0000-000000000002', true);
+insert into public.human_entry_loves (human_entry_id, user_id)
+values ('30000000-0000-0000-0000-000000000003', auth.uid());
+
+do $$
+begin
+  begin
+    insert into public.human_entry_loves (human_entry_id, user_id)
+    values ('30000000-0000-0000-0000-000000000003', auth.uid());
+    raise exception 'RLS FAILURE: duplicate love was accepted';
+  exception when unique_violation then
+    null;
+  end;
+end;
+$$;
+
+select public.submit_private_note('30000000-0000-0000-0000-000000000003', 'I see you.');
+
+reset role;
+do $$
+begin
+  if (select love_count from public.human_entries where id = '30000000-0000-0000-0000-000000000003') <> 1 then
+    raise exception 'RLS FAILURE: aggregate love count did not increment';
+  end if;
+end;
+$$;
+
+update public.human_entry_notes
+set moderation_status = 'approved', approved_at = now(), recipient_visible = true
+where human_entry_id = '30000000-0000-0000-0000-000000000003';
+
+set local role authenticated;
+select set_config('request.jwt.claim.sub', '10000000-0000-0000-0000-000000000001', true);
+
+do $$
+begin
+  if exists (select 1 from public.human_entry_loves) then
+    raise exception 'RLS FAILURE: user one can see user two love rows';
+  end if;
+  if exists (select 1 from public.human_entry_notes) then
+    raise exception 'RLS FAILURE: recipient can query private note base rows';
+  end if;
+  if (select count(*) from public.notes_for_me()) <> 1 then
+    raise exception 'RLS FAILURE: approved recipient note was not delivered through safe projection';
+  end if;
+end;
+$$;
+
+reset role;
+set local role anon;
+do $$
+begin
+  if (select count(*) from public.human_entries_public where slug = 'rls-test-human') <> 1 then
+    raise exception 'RLS FAILURE: published public entry is not readable';
+  end if;
+end;
+$$;
+
+reset role;
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'human_entries_public'
+      and column_name in ('public_name', 'age', 'source_url', 'subject_user_id', 'consent_verified')
+  ) then
+    raise exception 'PUBLIC PROJECTION FAILURE: private or unnecessary fields are exposed';
   end if;
 end;
 $$;

@@ -10,12 +10,14 @@ type Table<Row, Insert = Partial<Row>, Update = Partial<Insert>> = {
 export type Database = {
   public: {
     Tables: {
-      profiles: Table<{ id: string; display_name: string | null; role: Database["public"]["Enums"]["account_role"]; created_at: string; updated_at: string }>;
+      profiles: Table<{ id: string; display_name: string | null; role: Database["public"]["Enums"]["account_role"]; notes_suspended_at: string | null; notes_suspension_reason: string | null; notes_suspended_by: string | null; created_at: string; updated_at: string }>;
       human_entries: Table<Record<string, Json | undefined>>;
       submissions: Table<{
         id: string; user_id: string; intent: string | null; artifact_type: string | null; identity_mode: string | null;
         public_name: string | null; anonymous: boolean; location: string | null; headline: string | null; story: string | null;
-        what_they_need: string[] | null; need_category: string | null; status: string; created_at: string; updated_at: string; submitted_at: string | null;
+        what_they_need: string[] | null; need_category: string | null; is_minor: boolean; guardian_consent_verified: boolean;
+        location_withheld: boolean; media_withheld: boolean; requested_publish_after: string | null; allow_private_notes: boolean;
+        status: string; created_at: string; updated_at: string; submitted_at: string | null;
       }>;
       submission_media: Table<Record<string, Json | undefined>>;
       social_discovery_posts: Table<Record<string, Json | undefined>>;
@@ -25,6 +27,9 @@ export type Database = {
       partner_referrals: Table<Record<string, Json | undefined>>;
       social_creator_consent_tokens: Table<Record<string, Json | undefined>>;
       social_creator_consent_records: Table<Record<string, Json | undefined>>;
+      human_entry_loves: Table<Record<string, Json | undefined>>;
+      human_entry_share_events: Table<Record<string, Json | undefined>>;
+      human_entry_notes: Table<Record<string, Json | undefined>>;
     };
     Views: {
       human_entries_public: {
@@ -33,9 +38,7 @@ export type Database = {
           slug: string | null;
           type: Database["public"]["Enums"]["human_entry_type"] | null;
           source: Database["public"]["Enums"]["human_entry_source"] | null;
-          public_name: string | null;
           first_name: string | null;
-          age: number | null;
           display_location: string | null;
           anonymous: boolean | null;
           thumbnail: Json | null;
@@ -45,8 +48,9 @@ export type Database = {
           story: string | null;
           featured: boolean | null;
           layout: Json | null;
-          source_platform: string | null;
-          source_url: string | null;
+          love_count: number | null;
+          allow_private_notes: boolean | null;
+          social_image_allowed: boolean | null;
           created_at: string | null;
           published_at: string | null;
         };
@@ -56,8 +60,17 @@ export type Database = {
     Functions: {
       current_account_role: { Args: Record<PropertyKey, never>; Returns: Database["public"]["Enums"]["account_role"] };
       is_staff: { Args: { allowed?: Database["public"]["Enums"]["account_role"][] }; Returns: boolean };
-      publish_submission: { Args: { p_submission_id: string; p_slug: string; p_thumbnail: Json; p_media?: Json; p_type?: Database["public"]["Enums"]["human_entry_type"]; p_layout?: Json }; Returns: string };
+      publish_submission: { Args: { p_submission_id: string; p_slug: string; p_thumbnail: Json; p_media?: Json; p_type?: Database["public"]["Enums"]["human_entry_type"]; p_layout?: Json; p_sensitive_story?: boolean }; Returns: string };
       revoke_owned_submission_consent: { Args: { p_submission_id: string }; Returns: string[] };
+      unpublish_human_entry: { Args: { p_human_entry_id: string }; Returns: string };
+      issue_social_creator_consent_token: { Args: { p_social_discovery_post_id: string; p_expires_in?: string }; Returns: string };
+      accept_social_creator_consent: { Args: { p_token: string; p_publish_story: boolean; p_publish_media: boolean; p_social_reuse: boolean; p_creator_name: string; p_creator_email: string }; Returns: string };
+      revoke_social_creator_consent: { Args: { p_social_discovery_post_id: string }; Returns: string[] };
+      submit_private_note: { Args: { p_human_entry_id: string; p_body: string }; Returns: string };
+      notes_for_me: { Args: { p_limit?: number; p_before_created_at?: string; p_before_id?: string }; Returns: Array<{ note_id: string; human_entry_id: string; story_slug: string; recipient_first_name: string | null; body: string; created_at: string; read_at: string | null }> };
+      mark_private_note_read: { Args: { p_note_id: string }; Returns: boolean };
+      hide_private_note: { Args: { p_note_id: string }; Returns: boolean };
+      report_private_note: { Args: { p_note_id: string }; Returns: boolean };
     };
     Enums: {
       account_role: "user" | "moderator" | "editor" | "admin";

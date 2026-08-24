@@ -5,7 +5,7 @@ import { resolveMediaUrl } from "@/lib/media/resolver";
 
 export function StoryViewer({ entry, previous, next }: { entry: HumanEntry; previous?: HumanEntry; next?: HumanEntry }) {
   const identity = entry.person?.anonymous ? "Anonymous" : entry.person?.displayName ?? entry.headline ?? "Human";
-  const imageAssets = [entry.thumbnail, ...(entry.media ?? [])].filter((asset, index, all) => asset.kind === "image" && all.findIndex(item => item.id === asset.id) === index);
+  const imageAssets = [...(entry.thumbnail ? [entry.thumbnail] : []), ...(entry.media ?? [])].filter((asset, index, all) => asset.kind === "image" && all.findIndex(item => item.id === asset.id) === index);
   return <main className="story-viewer">
     <header><Link href="/humans" scroll={false}>← Archive</Link><Link className="story-mark" href="/">HUMAN<span>:</span>HERE</Link><Link href="/share">Be seen →</Link></header>
     <article>

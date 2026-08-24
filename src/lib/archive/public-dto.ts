@@ -6,20 +6,19 @@ export type PublicHumanRow = {
   slug: string;
   type: HumanEntry["type"];
   source: HumanEntry["source"];
-  public_name: string | null;
   first_name: string | null;
-  age: number | null;
   display_location: string | null;
   anonymous: boolean;
-  thumbnail: MediaAsset;
+  thumbnail: MediaAsset | null;
   media: MediaAsset[] | null;
   headline: string | null;
   quote: string | null;
   story: string | null;
   featured: boolean;
   layout: HumanEntry["layout"] | null;
-  source_platform: string | null;
-  source_url: string | null;
+  love_count: number;
+  allow_private_notes: boolean;
+  social_image_allowed: boolean;
   created_at: string;
   published_at: string;
 };
@@ -30,14 +29,13 @@ export function toHumanEntry(row: PublicHumanRow): HumanEntry {
     slug: row.slug,
     type: row.type,
     source: row.source,
-    person: row.public_name ? {
-      displayName: row.public_name,
+    person: row.anonymous || row.first_name ? {
+      displayName: row.anonymous ? "ANONYMOUS" : row.first_name ?? "ANONYMOUS",
       firstName: row.first_name ?? undefined,
-      age: row.age ?? undefined,
       location: row.display_location ?? undefined,
       anonymous: row.anonymous,
     } : undefined,
-    thumbnail: row.thumbnail,
+    thumbnail: row.thumbnail ?? undefined,
     media: row.media ?? undefined,
     headline: row.headline ?? undefined,
     quote: row.quote ?? undefined,
@@ -45,9 +43,10 @@ export function toHumanEntry(row: PublicHumanRow): HumanEntry {
     consentVerified: true,
     published: true,
     featured: row.featured,
+    loveCount: row.love_count,
+    allowPrivateNotes: row.allow_private_notes,
+    socialImageAllowed: row.social_image_allowed,
     layout: row.layout ?? undefined,
-    sourcePlatform: row.source_platform ?? undefined,
-    sourceUrl: row.source_url ?? undefined,
     createdAt: row.created_at,
     publishedAt: row.published_at,
   };

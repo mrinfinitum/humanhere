@@ -26,8 +26,8 @@ export function ArtifactCard({ entry, index, priority = false }: { entry: HumanE
   const style = { "--artifact-column": column, "--artifact-span": span, "--artifact-delay": `${(index % 12) * 55}ms` } as CSSProperties;
   const label = entry.person?.anonymous ? "Anonymous" : entry.person?.displayName ?? entry.headline ?? entry.type;
   const meta = [entry.person?.age, entry.person?.location].filter(Boolean).join(" / ");
-  const mediaUrl = resolveMediaUrl(entry.thumbnail, "thumbnail");
-  const hasImage = entry.thumbnail.kind === "image" && Boolean(mediaUrl);
+  const mediaUrl = entry.thumbnail ? resolveMediaUrl(entry.thumbnail, "thumbnail") : undefined;
+  const hasImage = entry.thumbnail?.kind === "image" && Boolean(mediaUrl);
   const visualText = entry.headline ?? entry.quote;
 
   return (
@@ -36,18 +36,18 @@ export function ArtifactCard({ entry, index, priority = false }: { entry: HumanE
         <div className="artifact-visual">
           {hasImage ? (
             <Image
-              src={mediaUrl}
-              alt={entry.thumbnail.alt}
+              src={mediaUrl!}
+              alt={entry.thumbnail?.alt ?? label}
               fill
               priority={priority}
               sizes={size === "xl" ? "(max-width: 720px) 100vw, 70vw" : size === "lg" ? "(max-width: 720px) 100vw, 44vw" : "(max-width: 720px) 82vw, 30vw"}
-              style={{ objectPosition: entry.thumbnail.objectPosition }}
+              style={{ objectPosition: entry.thumbnail?.objectPosition }}
             />
           ) : (
             <span className="artifact-text">{visualText?.split("\n").map(line => <span key={line}>{line}</span>)}</span>
           )}
           {entry.type === "video" && <span className="artifact-play" aria-hidden="true">Play <i>▶</i></span>}
-          {entry.type === "audio" && <AudioMark duration={entry.thumbnail.duration} />}
+          {entry.type === "audio" && <AudioMark duration={entry.thumbnail?.duration} />}
           {entry.type === "note" && <span className="artifact-note-rule" aria-hidden="true" />}
           {entry.fixture && <span className="fixture-stamp">Dev_fixture</span>}
         </div>

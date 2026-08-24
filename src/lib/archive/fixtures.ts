@@ -14,6 +14,9 @@ const base = {
   source: "editorial" as const,
   createdAt: "2026-08-23T00:00:00.000Z",
   publishedAt: "2026-08-23T00:00:00.000Z",
+  loveCount: 0,
+  allowPrivateNotes: false,
+  socialImageAllowed: false,
   fixture: true,
 };
 

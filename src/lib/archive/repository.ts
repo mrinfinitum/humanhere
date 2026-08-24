@@ -9,7 +9,7 @@ import type { ArchiveBatch, ArchiveQuery, HumanArchiveRepository, HumanEntry } f
 import { hasSupabasePublicEnvironment } from "@/lib/supabase/env";
 import { createSupabasePublicClient } from "@/lib/supabase/public";
 
-const PUBLIC_COLUMNS = "id,slug,type,source,public_name,first_name,age,display_location,anonymous,thumbnail,media,headline,quote,story,featured,layout,source_platform,source_url,created_at,published_at";
+const PUBLIC_COLUMNS = "id,slug,type,source,first_name,display_location,anonymous,thumbnail,media,headline,quote,story,featured,layout,love_count,allow_private_notes,social_image_allowed,created_at,published_at";
 
 function boundedLimit(limit?: number) {
   return Math.min(Math.max(limit ?? 24, 1), 40);
@@ -87,6 +87,7 @@ export async function getHomepageHumans(limit = 24): Promise<ArchiveBatch> {
   if (!hasSupabasePublicEnvironment()) return fixtureBatch({ limit: bounded });
   const [featured, recent] = await Promise.all([getFeaturedHumans(bounded), getPublishedHumanBatch({ limit: bounded })]);
   const entries = [...featured, ...recent.entries].filter((entry, index, all) => all.findIndex(candidate => candidate.id === entry.id) === index).slice(0, bounded);
+  if (!entries.length && process.env.NODE_ENV === "development") return fixtureBatch({ limit: bounded });
   return { entries, nextCursor: recent.nextCursor };
 }
 

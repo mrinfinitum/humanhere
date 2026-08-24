@@ -53,7 +53,7 @@ export type HumanEntry = {
   type: HumanArtifactType;
   source: "direct" | "editorial" | "social";
   person?: HumanIdentity;
-  thumbnail: MediaAsset;
+  thumbnail?: MediaAsset;
   media?: MediaAsset[];
   headline?: string;
   quote?: string;
@@ -61,6 +61,9 @@ export type HumanEntry = {
   consentVerified: boolean;
   published: boolean;
   featured?: boolean;
+  loveCount: number;
+  allowPrivateNotes: boolean;
+  socialImageAllowed: boolean;
   layout?: {
     size: "xs" | "sm" | "md" | "lg" | "xl";
     emphasis?: number;

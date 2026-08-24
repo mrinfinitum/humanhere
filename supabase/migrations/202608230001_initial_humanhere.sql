@@ -37,7 +37,7 @@ create table public.human_entries (
   age smallint check (age is null or age between 0 and 125),
   display_location text check (display_location is null or length(display_location) <= 160),
   anonymous boolean not null default false,
-  thumbnail jsonb not null check (jsonb_typeof(thumbnail) = 'object' and thumbnail ?& array['id', 'provider', 'path', 'alt', 'mimeType', 'kind']),
+  thumbnail jsonb check (thumbnail is null or (jsonb_typeof(thumbnail) = 'object' and thumbnail ?& array['id', 'provider', 'path', 'alt', 'mimeType', 'kind'])),
   media jsonb check (media is null or jsonb_typeof(media) = 'array'),
   headline text check (headline is null or length(headline) <= 300),
   quote text check (quote is null or length(quote) <= 2000),
@@ -48,13 +48,26 @@ create table public.human_entries (
   source_url text,
   submission_id uuid,
   social_discovery_post_id uuid,
+  subject_user_id uuid references auth.users(id) on delete set null,
   consent_verified boolean not null default false,
+  is_minor boolean not null default false,
+  guardian_consent_verified boolean not null default false,
+  sensitive_story boolean not null default false,
+  location_withheld boolean not null default false,
+  media_withheld boolean not null default false,
+  publish_after timestamptz,
+  allow_private_notes boolean not null default false,
+  social_image_allowed boolean not null default false,
+  love_count bigint not null default 0 check (love_count >= 0),
   published boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   published_at timestamptz,
   constraint published_requires_date check (not published or published_at is not null),
-  constraint sourced_content_requires_consent check (not published or source = 'editorial' or consent_verified)
+  constraint sourced_content_requires_consent check (not published or source = 'editorial' or consent_verified),
+  constraint minors_require_guardian_consent check (not published or not is_minor or guardian_consent_verified),
+  constraint withheld_location_is_private check (not location_withheld or display_location is null),
+  constraint withheld_media_is_private check (not media_withheld or (thumbnail is null and media is null))
 );
 
 create table public.submissions (
@@ -70,6 +83,12 @@ create table public.submissions (
   story text check (story is null or length(story) <= 50000),
   what_they_need public.help_preference[],
   need_category public.need_category,
+  is_minor boolean not null default false,
+  guardian_consent_verified boolean not null default false,
+  location_withheld boolean not null default false,
+  media_withheld boolean not null default false,
+  requested_publish_after timestamptz,
+  allow_private_notes boolean not null default false,
   status public.submission_status not null default 'draft',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -184,11 +203,16 @@ create index human_entries_public_type_cursor_idx on public.human_entries (type,
 create index human_entries_featured_cursor_idx on public.human_entries (published_at desc, id desc)
   where published = true and featured = true and (source = 'editorial' or consent_verified = true);
 create index human_entries_source_idx on public.human_entries (source, created_at desc);
+create unique index human_entries_submission_unique_idx on public.human_entries (submission_id) where submission_id is not null;
+create unique index human_entries_social_unique_idx on public.human_entries (social_discovery_post_id) where social_discovery_post_id is not null;
 create index submissions_owner_cursor_idx on public.submissions (user_id, created_at desc, id desc);
 create index submissions_status_cursor_idx on public.submissions (status, created_at asc, id asc);
 create index submission_media_submission_order_idx on public.submission_media (submission_id, sort_order, id);
 create index social_moderation_cursor_idx on public.social_discovery_posts (moderation_status, created_at asc, id asc);
 create index social_editorial_cursor_idx on public.social_discovery_posts (editorial_status, consent_status, created_at asc, id asc);
+create unique index social_manual_active_source_unique_idx
+  on public.social_discovery_posts (platform, lower(rtrim(btrim(source_url), '/')))
+  where platform_post_id is null and editorial_status in ('pending', 'approved');
 create index consent_submission_created_idx on public.consent_records (submission_id, created_at desc, id desc);
 create index moderation_submission_idx on public.moderation_flags (submission_id, created_at desc) where submission_id is not null;
 create index moderation_social_idx on public.moderation_flags (social_discovery_post_id, created_at desc) where social_discovery_post_id is not null;
@@ -251,6 +275,10 @@ $$;
 
 revoke all on function public.current_account_role() from public;
 revoke all on function public.is_staff(public.account_role[]) from public;
+revoke all on function public.handle_new_user() from public, anon, authenticated;
+revoke all on function public.set_updated_at() from public, anon, authenticated;
+revoke all on function public.current_account_role() from anon;
+revoke all on function public.is_staff(public.account_role[]) from anon;
 grant execute on function public.current_account_role() to authenticated;
 grant execute on function public.is_staff(public.account_role[]) to authenticated;
 
@@ -305,9 +333,10 @@ create policy moderation_staff_only on public.moderation_flags for all to authen
 create policy consent_read_own on public.consent_records for select to authenticated using (user_id = auth.uid());
 create policy consent_insert_own on public.consent_records for insert to authenticated
   with check (user_id = auth.uid() and exists (select 1 from public.submissions s where s.id = submission_id and s.user_id = auth.uid()));
-create policy consent_update_own on public.consent_records for update to authenticated
-  using (user_id = auth.uid()) with check (user_id = auth.uid());
-create policy consent_staff_all on public.consent_records for all to authenticated using (public.is_staff()) with check (public.is_staff());
+create policy consent_staff_read on public.consent_records for select to authenticated using (public.is_staff());
+create policy consent_staff_manage on public.consent_records for all to authenticated
+  using (public.is_staff(array['editor', 'admin']::public.account_role[]))
+  with check (public.is_staff(array['editor', 'admin']::public.account_role[]));
 
 create policy removal_create_own on public.removal_requests for insert to authenticated with check (user_id = auth.uid());
 create policy removal_read_own on public.removal_requests for select to authenticated using (user_id = auth.uid());
@@ -318,25 +347,61 @@ create policy referrals_create_own on public.partner_referrals for insert to aut
   with check (user_id = auth.uid() and (submission_id is null or exists (select 1 from public.submissions s where s.id = submission_id and s.user_id = auth.uid())));
 create policy referrals_staff_all on public.partner_referrals for all to authenticated using (public.is_staff()) with check (public.is_staff());
 
-revoke update on public.profiles from authenticated;
+revoke all on public.profiles from anon, authenticated;
+grant select on public.profiles to authenticated;
 grant update (display_name) on public.profiles to authenticated;
-revoke update on public.consent_records from authenticated;
-grant update (publish_story, publish_media, social_reuse, may_contact, partner_referral, revoked_at, updated_at) on public.consent_records to authenticated;
+
+revoke all on public.consent_records from anon, authenticated;
+grant select on public.consent_records to authenticated;
+grant insert (submission_id, user_id, publish_story, publish_media, social_reuse, may_contact, partner_referral, consented_at)
+  on public.consent_records to authenticated;
+
+revoke all on public.removal_requests from anon, authenticated;
+grant select on public.removal_requests to authenticated;
+grant insert (human_entry_id, user_id, requester_name, requester_email, reason, message)
+  on public.removal_requests to authenticated;
+
+revoke all on public.partner_referrals from anon, authenticated;
+grant select on public.partner_referrals to authenticated;
+grant insert (user_id, submission_id, need_category, private_notes)
+  on public.partner_referrals to authenticated;
+
+revoke all on public.human_entries from anon, authenticated;
+grant select (
+  id, slug, type, source, first_name, display_location, anonymous, thumbnail, media,
+  headline, quote, story, featured, layout, created_at, published_at, published, consent_verified,
+  love_count, allow_private_notes, social_image_allowed
+) on public.human_entries to anon, authenticated;
+
+revoke all on public.submissions from anon, authenticated;
+grant select on public.submissions to authenticated;
+grant insert (
+  user_id, intent, artifact_type, identity_mode, public_name, anonymous, location,
+  headline, story, what_they_need, need_category, is_minor, location_withheld,
+  media_withheld, requested_publish_after, allow_private_notes
+) on public.submissions to authenticated;
+grant update (
+  intent, artifact_type, identity_mode, public_name, anonymous, location, headline,
+  story, what_they_need, need_category, is_minor, location_withheld, media_withheld,
+  requested_publish_after, allow_private_notes, status, submitted_at
+) on public.submissions to authenticated;
+
+revoke all on public.submission_media from anon, authenticated;
+grant select, insert, update, delete on public.submission_media to authenticated;
 
 create or replace view public.human_entries_public
 with (security_invoker = true)
 as
 select
-  id, slug, type, source, public_name, first_name, age, display_location, anonymous,
-  thumbnail, media, headline, quote, story, featured, layout, source_platform,
-  source_url, created_at, published_at
+  id, slug, type, source, first_name, display_location, anonymous,
+  thumbnail, media, headline, quote, story, featured, layout, love_count,
+  allow_private_notes, social_image_allowed, created_at, published_at
 from public.human_entries
 where published = true
   and published_at is not null
   and (source = 'editorial' or consent_verified = true);
 
 grant select on public.human_entries_public to anon, authenticated;
-grant select (id, slug, type, source, public_name, first_name, age, display_location, anonymous, thumbnail, media, headline, quote, story, featured, layout, source_platform, source_url, created_at, published_at, published, consent_verified) on public.human_entries to anon, authenticated;
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values
@@ -346,7 +411,14 @@ values
 on conflict (id) do update set public = excluded.public, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
 
 create policy storage_submission_read_own on storage.objects for select to authenticated
-  using (bucket_id = 'submission-private' and (storage.foldername(name))[1] = auth.uid()::text);
+  using (
+    bucket_id = 'submission-private'
+    and (storage.foldername(name))[1] = auth.uid()::text
+    and exists (
+      select 1 from public.submissions s
+      where s.id::text = (storage.foldername(name))[2] and s.user_id = auth.uid()
+    )
+  );
 create policy storage_submission_upload_own on storage.objects for insert to authenticated
   with check (
     bucket_id = 'submission-private'
@@ -358,10 +430,31 @@ create policy storage_submission_upload_own on storage.objects for insert to aut
     )
   );
 create policy storage_submission_update_own on storage.objects for update to authenticated
-  using (bucket_id = 'submission-private' and (storage.foldername(name))[1] = auth.uid()::text)
-  with check (bucket_id = 'submission-private' and (storage.foldername(name))[1] = auth.uid()::text);
+  using (
+    bucket_id = 'submission-private'
+    and (storage.foldername(name))[1] = auth.uid()::text
+    and exists (
+      select 1 from public.submissions s
+      where s.id::text = (storage.foldername(name))[2] and s.user_id = auth.uid() and s.status = 'draft'
+    )
+  )
+  with check (
+    bucket_id = 'submission-private'
+    and (storage.foldername(name))[1] = auth.uid()::text
+    and exists (
+      select 1 from public.submissions s
+      where s.id::text = (storage.foldername(name))[2] and s.user_id = auth.uid() and s.status = 'draft'
+    )
+  );
 create policy storage_submission_delete_own on storage.objects for delete to authenticated
-  using (bucket_id = 'submission-private' and (storage.foldername(name))[1] = auth.uid()::text);
+  using (
+    bucket_id = 'submission-private'
+    and (storage.foldername(name))[1] = auth.uid()::text
+    and exists (
+      select 1 from public.submissions s
+      where s.id::text = (storage.foldername(name))[2] and s.user_id = auth.uid() and s.status = 'draft'
+    )
+  );
 create policy storage_submission_staff_review on storage.objects for select to authenticated
   using (bucket_id = 'submission-private' and public.is_staff());
 create policy storage_social_staff on storage.objects for all to authenticated
