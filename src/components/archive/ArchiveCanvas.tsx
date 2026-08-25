@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ArchiveBatch, HumanEntry } from "@/lib/archive/types";
 import { resolveMediaUrl } from "@/lib/media/resolver";
@@ -201,6 +201,8 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
   const [pan, setPan] = useState({ x: -1326, y: -883 });
   const [viewport, setViewport] = useState<ViewportSize>({ width: 820, height: 900 });
   const canvasRef = useRef<HTMLElement | null>(null);
+  const scaleRef = useRef(DEFAULT_SCALE);
+  const panRef = useRef({ x: -1326, y: -883 });
   const drag = useRef<{ pointerId: number; x: number; y: number; panX: number; panY: number } | null>(null);
   const touchPointers = useRef(new Map<number, PointerPoint>());
   const pinch = useRef<PinchGesture | null>(null);
@@ -261,11 +263,14 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
     const desktop = window.innerWidth > 900;
     const viewportWidth = desktop ? window.innerWidth - 620 : window.innerWidth;
     const viewportHeight = desktop ? window.innerHeight : window.innerWidth * 1.25;
-    setScale(DEFAULT_SCALE);
-    setPan({
+    const nextPan = {
       x: viewportWidth / 2 - WORLD_WIDTH * DEFAULT_SCALE / 2,
       y: viewportHeight / 2 - WORLD_HEIGHT * DEFAULT_SCALE / 2,
-    });
+    };
+    scaleRef.current = DEFAULT_SCALE;
+    panRef.current = nextPan;
+    setScale(DEFAULT_SCALE);
+    setPan(nextPan);
   }, []);
 
   const syncViewport = useCallback(() => {
@@ -305,14 +310,38 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
       if (event.touches.length > 1) event.preventDefault();
     };
     const preventSafariGesture = (event: Event) => event.preventDefault();
+    const handleTrackpadPinch = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+
+      const bounds = canvas.getBoundingClientRect();
+      const focalPoint = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+      const currentScale = scaleRef.current;
+      const currentPan = panRef.current;
+      const nextScale = clampScale(currentScale * Math.exp(-event.deltaY * 0.004));
+      const worldPoint = {
+        x: (focalPoint.x - currentPan.x) / currentScale,
+        y: (focalPoint.y - currentPan.y) / currentScale,
+      };
+      const nextPan = {
+        x: focalPoint.x - worldPoint.x * nextScale,
+        y: focalPoint.y - worldPoint.y * nextScale,
+      };
+      scaleRef.current = nextScale;
+      panRef.current = nextPan;
+      setScale(nextScale);
+      setPan(nextPan);
+    };
     canvas.addEventListener("touchstart", preventTouchZoom, { passive: false });
     canvas.addEventListener("touchmove", preventTouchZoom, { passive: false });
+    canvas.addEventListener("wheel", handleTrackpadPinch, { passive: false });
     canvas.addEventListener("gesturestart", preventSafariGesture, { passive: false });
     canvas.addEventListener("gesturechange", preventSafariGesture, { passive: false });
     canvas.addEventListener("gestureend", preventSafariGesture, { passive: false });
     return () => {
       canvas.removeEventListener("touchstart", preventTouchZoom);
       canvas.removeEventListener("touchmove", preventTouchZoom);
+      canvas.removeEventListener("wheel", handleTrackpadPinch);
       canvas.removeEventListener("gesturestart", preventSafariGesture);
       canvas.removeEventListener("gesturechange", preventSafariGesture);
       canvas.removeEventListener("gestureend", preventSafariGesture);
@@ -329,9 +358,9 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
         const midpoint = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
         pinch.current = {
           distance: Math.max(1, Math.hypot(second.x - first.x, second.y - first.y)),
-          scale,
-          worldX: (midpoint.x - pan.x) / scale,
-          worldY: (midpoint.y - pan.y) / scale,
+          scale: scaleRef.current,
+          worldX: (midpoint.x - panRef.current.x) / scaleRef.current,
+          worldY: (midpoint.y - panRef.current.y) / scaleRef.current,
         };
         drag.current = null;
         return;
@@ -351,18 +380,23 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
         const midpoint = { x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 };
         const distance = Math.max(1, Math.hypot(second.x - first.x, second.y - first.y));
         const nextScale = clampScale(pinch.current.scale * distance / pinch.current.distance);
-        setScale(nextScale);
-        setPan({
+        const nextPan = {
           x: midpoint.x - pinch.current.worldX * nextScale,
           y: midpoint.y - pinch.current.worldY * nextScale,
-        });
+        };
+        scaleRef.current = nextScale;
+        panRef.current = nextPan;
+        setScale(nextScale);
+        setPan(nextPan);
         event.preventDefault();
         return;
       }
     }
 
     if (!drag.current || drag.current.pointerId !== event.pointerId) return;
-    setPan({ x: drag.current.panX + event.clientX - drag.current.x, y: drag.current.panY + event.clientY - drag.current.y });
+    const nextPan = { x: drag.current.panX + event.clientX - drag.current.x, y: drag.current.panY + event.clientY - drag.current.y };
+    panRef.current = nextPan;
+    setPan(nextPan);
   };
 
   const endPan = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -373,11 +407,10 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
     if (drag.current?.pointerId === event.pointerId) drag.current = null;
   };
 
-  const zoom = (amount: number) => setScale(current => clampScale(Number((current + amount).toFixed(2))));
-  const wheelZoom = (event: ReactWheelEvent<HTMLDivElement>) => {
-    if (!event.ctrlKey && !event.metaKey) return;
-    event.preventDefault();
-    zoom(event.deltaY > 0 ? -0.06 : 0.06);
+  const zoom = (amount: number) => {
+    const nextScale = clampScale(Number((scaleRef.current + amount).toFixed(2)));
+    scaleRef.current = nextScale;
+    setScale(nextScale);
   };
 
   const activeUrl = active?.thumbnail ? resolveMediaUrl(active.thumbnail, "display") : undefined;
@@ -394,7 +427,6 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
         onPointerMove={movePan}
         onPointerUp={endPan}
         onPointerCancel={endPan}
-        onWheel={wheelZoom}
       >
         <div className="archive-canvas__grid" aria-hidden="true" />
         <div
