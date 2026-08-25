@@ -32,21 +32,20 @@ button { cursor: pointer; }
 .human-globe-stage::after { position: absolute; inset: 0; z-index: 4; background: radial-gradient(circle at 50% 50%, transparent 44%, rgb(5 5 6 / .28) 72%, rgb(5 5 6 / .82) 100%); content: ""; pointer-events: none; }
 .human-globe-canvas { position: absolute; inset: 0; z-index: 1; display: block; opacity: 0; transition: opacity 900ms ease; }
 .human-globe-stage.is-ready .human-globe-canvas { opacity: 1; }
-.human-globe-scan { position: absolute; inset: -35% 0 auto; z-index: 3; height: 48%; background: linear-gradient(180deg, transparent, rgb(48 70 165 / .04) 65%, rgb(185 205 210 / .13) 99%, transparent); mix-blend-mode: screen; pointer-events: none; animation: globe-scan 13s linear infinite; }
+.human-globe-scan { position: absolute; inset: -50% 0 auto; z-index: 3; height: 68%; background: linear-gradient(180deg, transparent 8%, rgb(48 70 165 / .018) 54%, rgb(185 205 210 / .035) 82%, transparent); opacity: .5; mix-blend-mode: screen; pointer-events: none; animation: globe-scan 18s linear infinite; }
 @keyframes globe-scan { to { transform: translateY(310%); } }
-.human-beacon { --beacon-visible: 0; position: absolute; top: anchor(center); left: anchor(center); z-index: 8; width: 23px; height: 23px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--human-paper); opacity: var(--beacon-visible); pointer-events: auto; transform: translate(-50%, -50%) scale(calc(.68 + var(--beacon-visible) * .32)); transition: opacity 260ms ease, filter 260ms ease, transform 260ms ease; }
-.human-beacon::before, .human-beacon::after { position: absolute; inset: 1px; border: 1px solid rgb(185 205 210 / .72); border-radius: 50%; content: ""; animation: beacon-wave 3.2s ease-out infinite; }
-.human-beacon::after { animation-delay: -1.6s; }
-@keyframes beacon-wave { from { opacity: .85; transform: scale(.35); } to { opacity: 0; transform: scale(2.3); } }
-.human-beacon__signal { position: absolute; inset: 6px; display: grid; z-index: 2; gap: 2px; place-items: center; border-radius: 50%; background: var(--lapis); box-shadow: 0 0 7px rgb(48 70 165 / .85), 0 0 16px rgb(48 70 165 / .4); }
-.human-beacon__signal i { display: block; width: 2px; height: 2px; border-radius: 50%; background: white; }
+.human-beacon { --beacon-visible: 0; position: absolute; top: anchor(center); left: anchor(center); z-index: 8; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--human-paper); opacity: var(--beacon-visible); pointer-events: auto; transform: translate(-50%, -50%) scale(calc(.7 + var(--beacon-visible) * .3)); transition: opacity 320ms ease, filter 320ms ease, transform 420ms var(--ease); }
+.human-beacon::before, .human-beacon::after { position: absolute; inset: 5px; border: 1px solid rgb(185 205 210 / .46); border-radius: 50%; box-shadow: 0 0 12px rgb(48 70 165 / .18); content: ""; animation: beacon-wave 4.8s var(--ease) infinite; }
+.human-beacon::after { inset: 2px; border-color: rgb(48 70 165 / .3); animation-delay: -2.4s; }
+@keyframes beacon-wave { from { opacity: .72; transform: scale(.34); } 62% { opacity: .18; } to { opacity: 0; transform: scale(1.55); } }
+.human-beacon__signal { position: absolute; inset: 9px; display: grid; z-index: 2; gap: 2px; place-items: center; border: 1px solid rgb(242 235 221 / .82); border-radius: 50%; background: radial-gradient(circle at 50% 42%, #fff 0 8%, #8199ff 18%, var(--lapis) 54%, #17215b 100%); box-shadow: 0 0 5px rgb(242 235 221 / .55), 0 0 14px rgb(48 70 165 / .72), 0 0 30px rgb(48 70 165 / .28); }
+.human-beacon__signal i { display: none; }
 .human-beacon__label { position: absolute; top: 50%; left: calc(100% + 10px); display: flex; min-width: max-content; padding: 6px 8px; flex-direction: column; border: 1px solid rgb(242 235 221 / .16); border-radius: 2px; background: rgb(5 5 6 / .82); opacity: 0; transform: translate(0, -50%) translateX(-5px); transition: opacity 180ms ease, transform 240ms ease; backdrop-filter: blur(8px); pointer-events: none; text-align: left; }
 .human-beacon__label b { font-size: 9px; font-weight: 500; letter-spacing: .09em; text-transform: uppercase; }
 .human-beacon__label small { margin-top: 2px; color: rgb(242 235 221 / .5); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 7px; text-transform: uppercase; }
-.human-beacon:hover, .human-beacon:focus-visible, .human-beacon.is-active { z-index: 12; filter: brightness(1.35); }
+.human-beacon:hover, .human-beacon:focus-visible, .human-beacon.is-active { z-index: 12; filter: brightness(1.25); transform: translate(-50%, -50%) scale(1.14); }
 .human-beacon:hover .human-beacon__label, .human-beacon:focus-visible .human-beacon__label, .human-beacon.is-active .human-beacon__label { opacity: 1; transform: translate(0, -50%); }
-.human-beacon.is-active .human-beacon__signal { background: var(--human-paper); box-shadow: 0 0 9px rgb(242 235 221 / .75), 0 0 28px rgb(48 70 165 / .75); }
-.human-beacon.is-active .human-beacon__signal i { background: var(--lapis); }
+.human-beacon.is-active .human-beacon__signal { border-color: white; background: white; box-shadow: 0 0 8px rgb(242 235 221 / .9), 0 0 24px rgb(129 153 255 / .9), 0 0 48px rgb(48 70 165 / .55); }
 .human-globe-controls { position: fixed; bottom: 38px; left: 38px; z-index: 20; display: grid; grid-template-columns: 30px 48px 30px; gap: 5px; }
 .human-globe-controls button, .human-globe-controls span { display: grid; min-height: 29px; padding: 0; place-items: center; border: 1px solid rgb(242 235 221 / .13); border-radius: 2px; background: rgb(5 5 6 / .72); color: rgb(242 235 221 / .78); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 8px; backdrop-filter: blur(8px); }
 .human-globe-controls button:hover, .human-globe-controls button:focus-visible { border-color: rgb(242 235 221 / .42); color: white; }
@@ -61,25 +60,27 @@ button { cursor: pointer; }
 .human-globe-manifesto { position: fixed; top: 108px; left: 30px; z-index: 18; max-width: 420px; pointer-events: none; }
 .human-globe-manifesto p, .human-globe-manifesto span { color: rgb(242 235 221 / .52); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; }
 .human-globe-manifesto h1 { margin: 12px 0 18px; color: rgb(242 235 221 / .92); font-size: clamp(48px, 5vw, 84px); font-weight: 380; letter-spacing: -.065em; line-height: .82; text-transform: uppercase; text-shadow: 0 0 38px rgb(48 70 165 / .28); }
-.human-globe-modal { position: fixed; inset: 0; z-index: 40; display: grid; padding: 82px 24px 32px; place-items: center; background: rgb(5 5 6 / .22); animation: globe-modal-enter 380ms ease both; }
-@keyframes globe-modal-enter { from { background-color: transparent; } to { background-color: rgb(5 5 6 / .22); } }
-.human-globe-card { position: relative; width: min(410px, calc(100vw - 48px)); max-height: calc(100svh - 114px); overflow-y: auto; border: 1px solid rgb(23 23 22 / .2); border-radius: 7px; background: #fff; color: var(--human-ink); box-shadow: 0 28px 90px rgb(0 0 0 / .46), 0 0 0 1px rgb(48 70 165 / .16); animation: globe-card-enter 480ms var(--ease) both; }
+.human-globe-modal { position: fixed; inset: 0; z-index: 40; display: grid; padding: 88px 5vw 38px 31vw; place-items: center end; background: rgb(5 5 6 / .12); animation: globe-modal-enter 380ms ease both; }
+@keyframes globe-modal-enter { from { background-color: transparent; } to { background-color: rgb(5 5 6 / .12); } }
+.human-globe-card { position: relative; width: min(760px, 64vw); max-height: calc(100svh - 126px); overflow-y: auto; border: 1px solid rgb(23 23 22 / .18); border-radius: 8px; background: #fff; color: var(--human-ink); box-shadow: 0 34px 110px rgb(0 0 0 / .5), 0 0 0 1px rgb(48 70 165 / .13); animation: globe-card-enter 540ms var(--ease) both; }
+.human-globe-card.has-media { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(290px, .88fr); grid-template-rows: auto minmax(470px, 1fr); }
 .human-globe-card::before { position: absolute; top: 0; right: 0; left: 0; z-index: 2; height: 3px; border-radius: 7px 7px 0 0; background: var(--lapis); content: ""; }
 @keyframes globe-card-enter { from { opacity: 0; filter: blur(6px); transform: translateY(18px) scale(.965); } to { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); } }
-.human-globe-card > header { display: flex; min-height: 42px; padding: 3px 13px 0; align-items: center; justify-content: space-between; border-bottom: 1px solid rgb(23 23 22 / .14); color: rgb(23 23 22 / .58); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 8px; letter-spacing: .075em; text-transform: uppercase; }
+.human-globe-card > header { display: flex; min-height: 46px; padding: 3px 16px 0; align-items: center; justify-content: space-between; border-bottom: 1px solid rgb(23 23 22 / .14); color: rgb(23 23 22 / .58); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 8px; letter-spacing: .075em; text-transform: uppercase; }
+.human-globe-card.has-media > header { grid-column: 1 / -1; }
 .human-globe-card > header button { padding: 4px 0; border: 0; border-bottom: 1px solid transparent; background: transparent; color: var(--human-ink); font: inherit; text-transform: uppercase; transition: border-color 180ms ease, color 180ms ease; }
 .human-globe-card > header button:hover, .human-globe-card > header button:focus-visible { border-color: currentColor; color: var(--lapis); }
-.human-globe-card figure { position: relative; height: min(32vh, 245px); margin: 0; overflow: hidden; border-bottom: 1px solid rgb(23 23 22 / .14); background: var(--human-ink); }
+.human-globe-card figure { position: relative; min-height: 300px; margin: 0; overflow: hidden; border-right: 1px solid rgb(23 23 22 / .14); background: var(--human-ink); }
 .human-globe-card figure::after { position: absolute; inset: 0; background: linear-gradient(180deg, transparent 62%, rgb(23 23 22 / .12)); content: ""; pointer-events: none; }
 .human-globe-card figure img { object-fit: cover; filter: grayscale(.1) saturate(.82) contrast(.98); }
-.human-globe-card > div { padding: 22px 24px 25px; }
+.human-globe-card > div { display: flex; padding: 34px 32px 30px; flex-direction: column; }
 .human-globe-card__kind { display: flex; margin: 0; align-items: center; gap: 8px; color: var(--lapis); font-size: 8px; letter-spacing: .075em; text-transform: uppercase; }
 .human-globe-card__kind > span { display: grid; gap: 3px; }
 .human-globe-card__kind i { display: block; width: 3px; height: 3px; border-radius: 50%; background: var(--lapis); }
-.human-globe-card h2 { margin: 9px 0 4px; font-size: clamp(36px, 3.6vw, 48px); font-weight: 410; letter-spacing: -.055em; line-height: .9; text-transform: uppercase; }
+.human-globe-card h2 { margin: 13px 0 6px; font-size: clamp(46px, 4.8vw, 70px); font-weight: 400; letter-spacing: -.06em; line-height: .86; text-transform: uppercase; }
 .human-globe-card__location { margin: 0; color: rgb(23 23 22 / .46); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 8px; text-transform: none; }
-.human-globe-card blockquote { margin: 18px 0 0; padding-top: 16px; border-top: 1px solid rgb(23 23 22 / .16); font-size: 18px; letter-spacing: -.02em; line-height: 1.18; }
-.human-globe-card > div > a { display: flex; margin-top: 22px; padding-top: 11px; align-items: center; justify-content: space-between; border-top: 1px solid var(--human-ink); color: var(--lapis); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 8px; letter-spacing: .06em; text-transform: uppercase; }
+.human-globe-card blockquote { margin: 30px 0 0; padding-top: 22px; border-top: 1px solid rgb(23 23 22 / .16); font-size: clamp(19px, 1.6vw, 24px); letter-spacing: -.025em; line-height: 1.15; }
+.human-globe-card > div > a { display: flex; margin-top: auto; padding-top: 16px; align-items: center; justify-content: space-between; border-top: 1px solid var(--human-ink); color: var(--lapis); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 8px; letter-spacing: .06em; text-transform: uppercase; }
 .human-globe-footer { position: fixed; bottom: 34px; left: 170px; z-index: 20; display: flex; gap: 25px; color: rgb(242 235 221 / .5); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 8px; text-transform: uppercase; }
 .human-globe-footer a { color: rgb(129 153 255 / .9); }
 
@@ -436,10 +437,10 @@ button { cursor: pointer; }
   .human-globe-chrome > span { display: none; }
   .human-globe-chrome nav { gap: 10px; font-size: 7px; }
   .human-globe-manifesto h1 { font-size: 13vw; }
-  .human-globe-modal { padding: 74px 12px 18px; }
-  .human-globe-card { width: min(410px, calc(100vw - 24px)); max-height: calc(100svh - 92px); }
+  .human-globe-modal { padding: 74px 12px 18px; place-items: center; background: rgb(5 5 6 / .2); }
+  .human-globe-card, .human-globe-card.has-media { display: block; width: min(540px, calc(100vw - 24px)); max-height: calc(100svh - 92px); }
   @keyframes globe-card-enter { from { opacity: 0; filter: blur(7px); transform: translateY(24px) scale(.97); } to { opacity: 1; filter: blur(0); transform: translateY(0) scale(1); } }
-  .human-globe-card figure { height: min(29svh, 230px); }
+  .human-globe-card figure { min-height: 0; height: min(31svh, 250px); border-right: 0; border-bottom: 1px solid rgb(23 23 22 / .14); }
   .human-globe-card > div { padding: 20px; }
   .human-globe-card h2 { font-size: clamp(36px, 11vw, 48px); }
   .human-globe-footer { display: none; }

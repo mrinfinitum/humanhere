@@ -103,6 +103,7 @@ export function HumanGlobe({ initialBatch }: { initialBatch: ArchiveBatch }) {
 
   const active = activeIndex === null ? null : stories[activeIndex];
   const activeMediaUrl = active?.entry.thumbnail ? resolveMediaUrl(active.entry.thumbnail, "display") : undefined;
+  const activeHasImage = Boolean(activeMediaUrl && active?.entry.thumbnail?.kind === "image");
 
   const markerData = useCallback((): Marker[] => stories.map((story, index) => ({
     location: story.location,
@@ -339,23 +340,21 @@ export function HumanGlobe({ initialBatch }: { initialBatch: ArchiveBatch }) {
         <nav aria-label="Primary navigation"><Link href="/humans">Humans</Link><Link href="/mission">Mission</Link><Link href="/share">Be seen</Link><Link href="/support">Support</Link></nav>
       </header>
 
-      {!active && (
-        <section className="human-globe-manifesto">
-          <p>HUMAN:HERE / Earth</p>
-          <h1>Every light<br />is a human.</h1>
-          <span>{prototypeMode ? "A fictional map of the future living archive." : "Real people. Real stories."}</span>
-        </section>
-      )}
+      <section className="human-globe-manifesto">
+        <p>HUMAN:HERE / Earth</p>
+        <h1>Every light<br />is a human.</h1>
+        <span>{prototypeMode ? "A fictional map of the future living archive." : "Real people. Real stories."}</span>
+      </section>
 
       {active && (
         <div className="human-globe-modal" onMouseDown={(event) => { if (event.target === event.currentTarget) setActiveIndex(null); }}>
-          <article className="human-globe-card" id="globe-story-panel" role="dialog" aria-modal="true" aria-labelledby="globe-story-title">
+          <article className={`human-globe-card${activeHasImage ? " has-media" : ""}`} id="globe-story-panel" role="dialog" aria-modal="true" aria-labelledby="globe-story-title">
             <header>
               <span>Human story / {String((activeIndex ?? 0) + 1).padStart(3, "0")}</span>
               <button ref={closeButtonRef} type="button" onClick={() => setActiveIndex(null)} aria-label="Close story">Close ×</button>
             </header>
             {activeMediaUrl && active.entry.thumbnail?.kind === "image" && (
-              <figure><Image src={activeMediaUrl} alt={active.entry.thumbnail.alt} fill sizes="(max-width: 760px) 92vw, 410px" style={{ objectPosition: active.entry.thumbnail.objectPosition }} /></figure>
+              <figure><Image src={activeMediaUrl} alt={active.entry.thumbnail.alt} fill sizes="(max-width: 760px) 92vw, 430px" style={{ objectPosition: active.entry.thumbnail.objectPosition }} /></figure>
             )}
             <div>
               <p className="human-globe-card__kind"><span aria-hidden="true"><i /><i /></span>A HUMAN:HERE story</p>
