@@ -84,7 +84,7 @@ export function HumanGlobe({ initialBatch }: { initialBatch: ArchiveBatch }) {
   }), [initialBatch.entries]);
   const prototypeMode = initialBatch.entries.length > 0 && initialBatch.entries.every(entry => entry.fixture);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
-  const [globeScale, setGlobeScale] = useState(0.94);
+  const [globeScale, setGlobeScale] = useState(1.05);
   const [ready, setReady] = useState(false);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -92,7 +92,7 @@ export function HumanGlobe({ initialBatch }: { initialBatch: ArchiveBatch }) {
   const frameRef = useRef<number | null>(null);
   const phiRef = useRef(0.35);
   const thetaRef = useRef(0.12);
-  const scaleRef = useRef(0.94);
+  const scaleRef = useRef(1.05);
   const activeRef = useRef<number | null>(null);
   const pointerRef = useRef<{ id: number; x: number; y: number; phi: number; theta: number; moved: boolean } | null>(null);
   const touchPoints = useRef(new Map<number, { x: number; y: number }>());
@@ -160,14 +160,14 @@ export function HumanGlobe({ initialBatch }: { initialBatch: ArchiveBatch }) {
         phi: phiRef.current,
         theta: thetaRef.current,
         dark: 1,
-        diffuse: 0.72,
+        diffuse: 1.08,
         scale: scaleRef.current,
-        mapSamples: 22000,
-        mapBrightness: 3.2,
-        mapBaseBrightness: 0.04,
-        baseColor: [0.025, 0.025, 0.03],
+        mapSamples: 38000,
+        mapBrightness: 5.6,
+        mapBaseBrightness: 0.075,
+        baseColor: [0.075, 0.095, 0.24],
         markerColor: LAPIS,
-        glowColor: [0.045, 0.065, 0.16],
+        glowColor: [0.07, 0.1, 0.32],
         arcColor: LAPIS,
         arcWidth: 0.75,
         arcHeight: 0.16,
@@ -318,31 +318,39 @@ export function HumanGlobe({ initialBatch }: { initialBatch: ArchiveBatch }) {
         <p className="human-globe-instruction">Drag to rotate · pinch to zoom · select a signal</p>
       </section>
 
-      <aside className="human-globe-panel" id="globe-story-panel">
-        <header><BrandMark /><span>{prototypeMode ? "Prototype world" : "Living archive"} · {String(stories.length).padStart(3, "0")}</span></header>
-        {active ? (
-          <article className="human-globe-story">
-            <button type="button" onClick={() => setActiveIndex(null)}>← Return to the world</button>
-            {activeMediaUrl && active.entry.thumbnail?.kind === "image" && (
-              <figure><Image src={activeMediaUrl} alt={active.entry.thumbnail.alt} fill sizes="(max-width: 900px) 100vw, 520px" style={{ objectPosition: active.entry.thumbnail.objectPosition }} /></figure>
-            )}
-            <p className="eyebrow">Signal {String(activeIndex! + 1).padStart(3, "0")} · {active.locationLabel}</p>
-            <h1>{active.entry.person?.anonymous ? "Anonymous" : active.entry.person?.firstName ?? active.entry.person?.displayName ?? active.entry.headline ?? "A human story"}</h1>
-            {(active.entry.quote || active.entry.headline) && <blockquote>{active.entry.quote ?? active.entry.headline}</blockquote>}
-            {active.entry.story && <p>{active.entry.story}</p>}
-            <Link href={entryHref(active.entry)} prefetch={false}>Enter this story →</Link>
-          </article>
-        ) : (
-          <div className="human-globe-intro">
-            <p className="eyebrow">HUMAN:HERE / Earth</p>
-            <h1>Every light<br />is a human.</h1>
-            <p>{prototypeMode ? "This fictional prototype maps the future shape of a living archive. Each signal will represent a consented story at city-level precision." : "A living world of real people and real stories. Choose a signal and meet someone."}</p>
-            <p>There is more carrying us together than separating us.</p>
-          </div>
-        )}
+      <header className="human-globe-chrome">
+        <Link href="/" aria-label="HUMAN:HERE home"><BrandMark /></Link>
+        <span>{prototypeMode ? "Prototype world" : "Living archive"} · {String(stories.length).padStart(3, "0")}</span>
         <nav aria-label="Primary navigation"><Link href="/humans">Humans</Link><Link href="/mission">Mission</Link><Link href="/share">Be seen</Link><Link href="/support">Support</Link></nav>
-        <footer><span>Real people. Real stories.</span><Link href="/share">Add your light ↗</Link></footer>
-      </aside>
+      </header>
+
+      {!active && (
+        <section className="human-globe-manifesto">
+          <p>HUMAN:HERE / Earth</p>
+          <h1>Every light<br />is a human.</h1>
+          <span>{prototypeMode ? "A fictional map of the future living archive." : "Real people. Real stories."}</span>
+        </section>
+      )}
+
+      {active && (
+        <article className="human-globe-card" id="globe-story-panel" aria-live="polite">
+          <header>
+            <span>Signal {String((activeIndex ?? 0) + 1).padStart(3, "0")} · {active.locationLabel}</span>
+            <button type="button" onClick={() => setActiveIndex(null)} aria-label="Close story">Close ×</button>
+          </header>
+          {activeMediaUrl && active.entry.thumbnail?.kind === "image" && (
+            <figure><Image src={activeMediaUrl} alt={active.entry.thumbnail.alt} fill sizes="(max-width: 760px) 100vw, 440px" style={{ objectPosition: active.entry.thumbnail.objectPosition }} /></figure>
+          )}
+          <div>
+            <p className="eyebrow">A HUMAN:HERE story</p>
+            <h2>{active.entry.person?.anonymous ? "Anonymous" : active.entry.person?.firstName ?? active.entry.person?.displayName ?? active.entry.headline ?? "A human story"}</h2>
+            {(active.entry.quote || active.entry.headline) && <blockquote>{active.entry.quote ?? active.entry.headline}</blockquote>}
+            <Link href={entryHref(active.entry)} prefetch={false}>Enter this story →</Link>
+          </div>
+        </article>
+      )}
+
+      <footer className="human-globe-footer"><span>People need people.</span><Link href="/share">Add your light ↗</Link></footer>
     </main>
   );
 }
