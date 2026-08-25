@@ -2,13 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ArchiveBatch } from "@/lib/archive/types";
-import { HumanGlobe } from "./HumanGlobe";
 import { ArchiveChrome } from "./ArchiveChrome";
 import { ArchiveIdentity } from "./ArchiveIdentity";
 import { ArtifactCard } from "./ArtifactCard";
 
-export function ArchiveField({ initialBatch, mode = "home" }: { initialBatch: ArchiveBatch; mode?: "home" | "index" }) {
-  if (mode === "home") return <HumanGlobe initialBatch={initialBatch} />;
+export function ArchiveField({ initialBatch }: { initialBatch: ArchiveBatch }) {
   return <ArchiveIndex initialBatch={initialBatch} />;
 }
 
