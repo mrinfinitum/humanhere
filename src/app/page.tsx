@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { HumanGlobe } from "@/components/archive/HumanGlobe";
 import { toGlobeHumans } from "@/lib/archive/globe-dto";
-import { getHomepageHumans } from "@/lib/archive/repository";
+import { getGlobeDiscoveryCandidates } from "@/lib/archive/repository";
 
 export const metadata: Metadata = {
   title: "HUMAN:HERE — People Need People",
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const initialBatch = await getHomepageHumans(96);
-  const humans = toGlobeHumans(initialBatch.entries, 24);
+  const candidates = await getGlobeDiscoveryCandidates(96);
+  const humans = toGlobeHumans(candidates, 96);
   return <HumanGlobe humans={humans} />;
 }

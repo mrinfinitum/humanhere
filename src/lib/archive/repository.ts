@@ -102,6 +102,31 @@ export async function getHomepageHumans(limit = 24): Promise<ArchiveBatch> {
   return { entries, nextCursor: recent.nextCursor };
 }
 
+/**
+ * A bounded, cacheable candidate pool for the globe discovery session. The
+ * browser cycles a much smaller fixed orb pool through these public-safe rows.
+ */
+export async function getGlobeDiscoveryCandidates(limit = 96): Promise<HumanEntry[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(HUMAN_CACHE_TAGS.homepage, HUMAN_CACHE_TAGS.list);
+
+  const bounded = Math.min(Math.max(limit, 24), 120);
+  if (!hasSupabasePublicEnvironment()) return fixtureBatch({ limit: bounded }).entries;
+
+  const { data, error } = await createSupabasePublicClient()
+    .from("human_entries_public")
+    .select(PUBLIC_COLUMNS)
+    .order("featured", { ascending: false })
+    .order("published_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(bounded);
+
+  if (isPublicArchiveUnavailable(error)) return fixtureBatch({ limit: bounded }).entries;
+  if (error) throw new Error(`Globe discovery query failed: ${error.code}`);
+  return ((data ?? []) as unknown as PublicHumanRow[]).map(toHumanEntry);
+}
+
 async function getPublishedAdjacent(slug: string) {
   "use cache";
   cacheLife("hours");

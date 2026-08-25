@@ -4,11 +4,14 @@
 import { useFrame, useLoader, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, type MutableRefObject, type RefObject } from "react";
 import * as THREE from "three";
+import { HumanDiscoveryManager } from "./HumanDiscoveryManager";
 import type { GlobeControls, GlobeHover, GlobeHuman } from "./types";
 
 const WORLD_RADIUS = 1;
 const WORLD_SCALE = 1.5;
 const WORLD_POSITION = new THREE.Vector3(0.118, -0.25, 0);
+const EARTH_ROTATION_SECONDS = 240;
+const EASTWARD_ROTATION_SPEED = Math.PI * 2 / EARTH_ROTATION_SECONDS;
 const PAPER = new THREE.Color("#F2EBDD");
 const LAPIS = new THREE.Color("#3046A5");
 
@@ -172,36 +175,68 @@ function Atmosphere() {
 function HumanOrbs({
   humans,
   selectedIndex,
+  controls,
+  worldRef,
   reducedMotion,
   onHover,
   onSelect,
+  onActiveChange,
 }: {
   humans: GlobeHuman[];
   selectedIndex: number | null;
+  controls: MutableRefObject<GlobeControls>;
+  worldRef: RefObject<THREE.Group | null>;
   reducedMotion: boolean;
   onHover: (hover: GlobeHover) => void;
   onSelect: (index: number) => void;
+  onActiveChange: (indices: number[]) => void;
 }) {
+  const pointsRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const hoveredRef = useRef(-1);
   const hoveredPositionRef = useRef({ x: 0, y: 0 });
   const hoverTargetRef = useRef(false);
-  const { gl } = useThree();
+  const activeKeyRef = useRef("");
+  const center = useMemo(() => new THREE.Vector3(), []);
+  const cameraDirection = useMemo(() => new THREE.Vector3(), []);
+  const worldQuaternion = useMemo(() => new THREE.Quaternion(), []);
+  const surfaceDirection = useMemo(() => new THREE.Vector3(), []);
+  const { camera, gl, size } = useThree();
+  const mobile = size.width <= 760;
+  const poolSize = mobile ? 10 : 18;
+  const candidatePositions = useMemo(
+    () => humans.map(human => latLngVector(human.lat, human.lng, 1.017)),
+    [humans],
+  );
+  const discovery = useMemo(() => new HumanDiscoveryManager(candidatePositions, {
+    poolSize,
+    visibleBudget: mobile ? 6 : 10,
+    initialBudget: mobile ? 3 : 4,
+    recentlySeenLimit: Math.min(80, Math.max(30, Math.ceil(humans.length * 0.65))),
+    timingScale: mobile ? 1.2 : 1,
+    seed: humans.reduce((seed, human) => {
+      for (let index = 0; index < human.id.length; index += 1) seed = Math.imul(seed ^ human.id.charCodeAt(index), 16777619);
+      return seed >>> 0;
+    }, 2166136261),
+  }), [candidatePositions, humans, mobile, poolSize]);
   const geometry = useMemo(() => {
-    const positions = new Float32Array(humans.length * 3);
-    const phases = new Float32Array(humans.length);
-    const indices = new Float32Array(humans.length);
-    humans.forEach((human, index) => {
-      positions.set(latLngVector(human.lat, human.lng, 1.017).toArray(), index * 3);
-      phases[index] = (index * 2.399963) % (Math.PI * 2);
-      indices[index] = index;
-    });
+    const positions = new Float32Array(poolSize * 3).fill(100);
+    const phases = new Float32Array(poolSize);
+    const indices = new Float32Array(poolSize).fill(-1);
+    const coreOpacity = new Float32Array(poolSize);
+    const haloOpacity = new Float32Array(poolSize);
+    const scales = new Float32Array(poolSize).fill(0.65);
+    const intensities = new Float32Array(poolSize).fill(1);
     const result = new THREE.BufferGeometry();
     result.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     result.setAttribute("aPhase", new THREE.BufferAttribute(phases, 1));
     result.setAttribute("aIndex", new THREE.BufferAttribute(indices, 1));
+    result.setAttribute("aCoreOpacity", new THREE.BufferAttribute(coreOpacity, 1));
+    result.setAttribute("aHaloOpacity", new THREE.BufferAttribute(haloOpacity, 1));
+    result.setAttribute("aScale", new THREE.BufferAttribute(scales, 1));
+    result.setAttribute("aIntensity", new THREE.BufferAttribute(intensities, 1));
     return result;
-  }, [humans]);
+  }, [poolSize]);
 
   const uniforms = useMemo(() => ({
     uTime: { value: 0 },
@@ -218,6 +253,10 @@ function HumanOrbs({
   useEffect(() => { uniforms.uSelected.value = selectedIndex ?? -1; }, [selectedIndex, uniforms]);
   useEffect(() => { uniforms.uMotion.value = reducedMotion ? 0 : 1; }, [reducedMotion, uniforms]);
   useEffect(() => () => geometry.dispose(), [geometry]);
+  useEffect(() => {
+    activeKeyRef.current = "";
+    onActiveChange([]);
+  }, [discovery, onActiveChange]);
 
   useFrame(({ clock }, delta) => {
     if (!materialRef.current) return;
@@ -225,11 +264,63 @@ function HumanOrbs({
     const strength = materialRef.current.uniforms.uHoverStrength;
     strength.value = THREE.MathUtils.damp(strength.value, hoverTargetRef.current ? 1 : 0, 4.5, delta);
     if (!hoverTargetRef.current && strength.value < 0.01) uniforms.uHovered.value = -1;
+
+    const world = worldRef.current;
+    if (!world) return;
+    world.getWorldPosition(center);
+    world.getWorldQuaternion(worldQuaternion);
+    cameraDirection.copy(camera.position).sub(center).normalize();
+    const membershipChanged = discovery.update({
+      now: clock.elapsedTime,
+      selectedIndex,
+      hoveredIndex: hoveredRef.current >= 0 ? hoveredRef.current : null,
+      activelyExploring: controls.current.dragging || performance.now() - controls.current.lastInteraction < 1700,
+      reducedMotion,
+      visibilityFor: candidateIndex => surfaceDirection
+        .copy(candidatePositions[candidateIndex])
+        .normalize()
+        .applyQuaternion(worldQuaternion)
+        .dot(cameraDirection),
+    });
+
+    const position = geometry.getAttribute("position") as THREE.BufferAttribute;
+    const phase = geometry.getAttribute("aPhase") as THREE.BufferAttribute;
+    const index = geometry.getAttribute("aIndex") as THREE.BufferAttribute;
+    const coreOpacity = geometry.getAttribute("aCoreOpacity") as THREE.BufferAttribute;
+    const haloOpacity = geometry.getAttribute("aHaloOpacity") as THREE.BufferAttribute;
+    const scale = geometry.getAttribute("aScale") as THREE.BufferAttribute;
+    const intensity = geometry.getAttribute("aIntensity") as THREE.BufferAttribute;
+    discovery.slots.forEach((slot, slotIndex) => {
+      position.setXYZ(slotIndex, slot.position.x, slot.position.y, slot.position.z);
+      phase.setX(slotIndex, slot.phase);
+      index.setX(slotIndex, slot.candidateIndex);
+      coreOpacity.setX(slotIndex, slot.coreOpacity);
+      haloOpacity.setX(slotIndex, slot.haloOpacity);
+      scale.setX(slotIndex, slot.scale);
+      intensity.setX(slotIndex, slot.intensity);
+    });
+    position.needsUpdate = true;
+    phase.needsUpdate = true;
+    index.needsUpdate = true;
+    coreOpacity.needsUpdate = true;
+    haloOpacity.needsUpdate = true;
+    scale.needsUpdate = true;
+    intensity.needsUpdate = true;
+
+    if (membershipChanged) {
+      const active = discovery.activeCandidateIndices();
+      const activeKey = active.slice().sort((first, second) => first - second).join(",");
+      if (activeKey !== activeKeyRef.current) {
+        activeKeyRef.current = activeKey;
+        onActiveChange(active);
+      }
+    }
   });
 
   const hover = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
-    const index = event.index ?? -1;
+    const slotIndex = event.index ?? -1;
+    const index = discovery.candidateForSlot(slotIndex) ?? -1;
     if (index < 0 || index === hoveredRef.current) return;
     if (
       hoveredRef.current >= 0
@@ -253,12 +344,15 @@ function HumanOrbs({
   return (
     <points
       geometry={geometry}
+      ref={pointsRef}
       frustumCulled={false}
       onPointerMove={hover}
       onPointerOut={clearHover}
       onClick={event => {
         event.stopPropagation();
-        if (event.index !== undefined) onSelect(event.index);
+        if (event.index === undefined) return;
+        const candidateIndex = discovery.candidateForSlot(event.index);
+        if (candidateIndex !== null) onSelect(candidateIndex);
       }}
     >
       <shaderMaterial
@@ -271,6 +365,10 @@ function HumanOrbs({
         vertexShader={`
           attribute float aPhase;
           attribute float aIndex;
+          attribute float aCoreOpacity;
+          attribute float aHaloOpacity;
+          attribute float aScale;
+          attribute float aIntensity;
           uniform float uTime;
           uniform float uSelected;
           uniform float uHovered;
@@ -278,6 +376,10 @@ function HumanOrbs({
           uniform float uPixelRatio;
           uniform float uMotion;
           varying float vActive;
+          varying float vCoreOpacity;
+          varying float vHaloOpacity;
+          varying float vIntensity;
+          varying float vLimb;
           void main() {
             float selected = step(abs(aIndex - uSelected), 0.1);
             float hovered = step(abs(aIndex - uHovered), 0.1) * uHoverStrength;
@@ -285,12 +387,23 @@ function HumanOrbs({
             float pulse = 1.0 + sin(uTime * 1.18 + aPhase) * 0.045 * uMotion;
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
             gl_Position = projectionMatrix * mvPosition;
-            float baseSize = mix(10.4, 15.5, vActive);
-            gl_PointSize = baseSize * pulse * uPixelRatio * (2.75 / max(1.0, -mvPosition.z));
+            float baseSize = mix(10.4, 14.4, vActive);
+            gl_PointSize = baseSize * aScale * pulse * uPixelRatio * (2.75 / max(1.0, -mvPosition.z));
+            vec3 viewNormal = normalize(normalMatrix * normalize(position));
+            vec3 viewDirection = normalize(-mvPosition.xyz);
+            vLimb = smoothstep(-0.01, 0.20, dot(viewNormal, viewDirection));
+            float selectionQuiet = mix(0.84, 1.0, max(selected, 1.0 - step(0.0, uSelected)));
+            vCoreOpacity = aCoreOpacity * selectionQuiet;
+            vHaloOpacity = aHaloOpacity * selectionQuiet;
+            vIntensity = aIntensity;
           }
         `}
         fragmentShader={`
           varying float vActive;
+          varying float vCoreOpacity;
+          varying float vHaloOpacity;
+          varying float vIntensity;
+          varying float vLimb;
           void main() {
             float radius = length(gl_PointCoord - 0.5) * 2.0;
             float core = 1.0 - smoothstep(0.0, 0.16, radius);
@@ -302,7 +415,8 @@ function HumanOrbs({
             vec3 selectedColor = mix(lapis, vec3(0.50, 0.60, 1.0), core * 0.34);
             vec3 coreColor = mix(idleColor, selectedColor, vActive);
             vec3 color = mix(coreColor, lapis, smoothstep(0.25, 0.92, radius) * mix(0.44, 0.12, vActive));
-            float alpha = core + inner + halo * mix(0.58, 1.0, vActive);
+            float alpha = (core + inner) * vCoreOpacity + halo * vHaloOpacity * mix(0.58, 1.0, vActive);
+            alpha *= vLimb * vIntensity;
             if (alpha < 0.012) discard;
             gl_FragColor = vec4(color, min(alpha, 1.0));
           }
@@ -406,6 +520,7 @@ export function GlobeScene({
   previewRef,
   onHover,
   onSelect,
+  onActiveChange,
   onReady,
 }: {
   humans: GlobeHuman[];
@@ -416,11 +531,15 @@ export function GlobeScene({
   previewRef: RefObject<HTMLElement | null>;
   onHover: (hover: GlobeHover) => void;
   onSelect: (index: number) => void;
+  onActiveChange: (indices: number[]) => void;
   onReady: () => void;
 }) {
   const worldRef = useRef<THREE.Group>(null);
   const selectedPoint = useMemo(() => new THREE.Vector3(), []);
   const projectedPoint = useMemo(() => new THREE.Vector3(), []);
+  const worldCenter = useMemo(() => new THREE.Vector3(), []);
+  const surfaceDirection = useMemo(() => new THREE.Vector3(), []);
+  const cameraDirection = useMemo(() => new THREE.Vector3(), []);
   const { camera, gl, size } = useThree();
 
   useEffect(() => {
@@ -446,7 +565,8 @@ export function GlobeScene({
     if (!world) return;
 
     if (!reducedMotion && selectedIndex === null && !controls.current.dragging && performance.now() - controls.current.lastInteraction > 2800) {
-      controls.current.targetY += delta * Math.PI * 2 / 155;
+      // Positive Y advances longitude eastward: Earth's west-to-east rotation.
+      controls.current.targetY += delta * EASTWARD_ROTATION_SPEED;
     }
     world.rotation.x = THREE.MathUtils.damp(world.rotation.x, controls.current.targetX, 4.1, delta);
     world.rotation.y = THREE.MathUtils.damp(world.rotation.y, controls.current.targetY, 4.1, delta);
@@ -460,6 +580,13 @@ export function GlobeScene({
       const markerX = (projectedPoint.x * 0.5 + 0.5) * size.width;
       const markerY = (-projectedPoint.y * 0.5 + 0.5) * size.height;
       const previewBounds = previewRef.current.getBoundingClientRect();
+      world.getWorldPosition(worldCenter);
+      surfaceDirection.copy(selectedPoint).sub(worldCenter).normalize();
+      cameraDirection.copy(camera.position).sub(worldCenter).normalize();
+      const markerIsVisible = surfaceDirection.dot(cameraDirection) > 0.08
+        && markerX > -20 && markerX < size.width + 20
+        && markerY > -20 && markerY < size.height + 20;
+      lineRef.current.setAttribute("opacity", markerIsVisible ? "1" : "0");
       lineRef.current.setAttribute("x1", markerX.toFixed(1));
       lineRef.current.setAttribute("y1", markerY.toFixed(1));
       lineRef.current.setAttribute("x2", previewBounds.left.toFixed(1));
@@ -475,7 +602,16 @@ export function GlobeScene({
       <OrbitLines />
       <group ref={worldRef} position={WORLD_POSITION.toArray()} scale={WORLD_SCALE} rotation={[0.47, -0.085, -0.025]}>
         <EarthSurface />
-        <HumanOrbs humans={humans} selectedIndex={selectedIndex} reducedMotion={reducedMotion} onHover={onHover} onSelect={onSelect} />
+        <HumanOrbs
+          humans={humans}
+          selectedIndex={selectedIndex}
+          controls={controls}
+          worldRef={worldRef}
+          reducedMotion={reducedMotion}
+          onHover={onHover}
+          onSelect={onSelect}
+          onActiveChange={onActiveChange}
+        />
         {selected && <SelectedTarget human={selected} />}
         <Atmosphere />
       </group>

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "test:globe": "node --no-warnings scripts/verify-globe-discovery.mjs",
     "test:scale": "node scripts/scale-archive.mjs",
     "test:rls": "supabase test db"
   },

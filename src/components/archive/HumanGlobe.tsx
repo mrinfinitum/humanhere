@@ -21,7 +21,8 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   const pointer = useRef<{ id: number; x: number; y: number; targetX: number; targetY: number; moved: boolean } | null>(null);
   const touches = useRef(new Map<number, { x: number; y: number }>());
   const pinch = useRef<{ distance: number; cameraDistance: number } | null>(null);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(() => humans.length ? 0 : null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [activeIndices, setActiveIndices] = useState<number[]>([]);
   const [hovered, setHovered] = useState<GlobeHover>(null);
   const [ready, setReady] = useState(false);
   const [webglAvailable, setWebglAvailable] = useState(true);
@@ -150,6 +151,11 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   }, []);
 
   const sceneReady = useCallback(() => setReady(true), []);
+  const updateActiveIndices = useCallback((next: number[]) => {
+    setActiveIndices(current => (
+      current.length === next.length && current.every((value, index) => value === next[index]) ? current : next
+    ));
+  }, []);
   const navigateGlobe = (event: React.KeyboardEvent<HTMLElement>) => {
     const step = event.shiftKey ? 0.2 : 0.1;
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
@@ -164,9 +170,10 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
       controls.current.lastInteraction = performance.now();
       controls.current.targetX = clamp(controls.current.targetX + (event.key === "ArrowUp" ? -step : step), -0.52, 0.52);
     }
-    if (event.key === "Enter" && humans.length) {
+    if (event.key === "Enter" && activeIndices.length) {
       event.preventDefault();
-      selectHuman(selectedIndex === null ? 0 : (selectedIndex + 1) % humans.length);
+      const activePosition = selectedIndex === null ? -1 : activeIndices.indexOf(selectedIndex);
+      selectHuman(activeIndices[(activePosition + 1) % activeIndices.length]);
     }
   };
 
@@ -202,6 +209,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
                 previewRef={previewRef}
                 onHover={setHovered}
                 onSelect={selectHuman}
+                onActiveChange={updateActiveIndices}
                 onReady={sceneReady}
               />
             </Suspense>
