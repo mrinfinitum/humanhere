@@ -99,6 +99,7 @@ export function HumanGlobe({ initialBatch }: { initialBatch: ArchiveBatch }) {
   const pinchRef = useRef<{ distance: number; scale: number } | null>(null);
   const lastInteractionRef = useRef(0);
   const reducedMotionRef = useRef(false);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const active = activeIndex === null ? null : stories[activeIndex];
   const activeMediaUrl = active?.entry.thumbnail ? resolveMediaUrl(active.entry.thumbnail, "display") : undefined;
@@ -126,6 +127,20 @@ export function HumanGlobe({ initialBatch }: { initialBatch: ArchiveBatch }) {
     activeRef.current = activeIndex;
     globeRef.current?.update({ markers: markerData(), arcs: arcData() });
   }, [activeIndex, arcData, markerData]);
+
+  useEffect(() => {
+    if (activeIndex === null) return;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActiveIndex(null);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    closeButtonRef.current?.focus();
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      previouslyFocused?.focus();
+    };
+  }, [activeIndex]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -333,21 +348,24 @@ export function HumanGlobe({ initialBatch }: { initialBatch: ArchiveBatch }) {
       )}
 
       {active && (
-        <article className="human-globe-card" id="globe-story-panel" aria-live="polite">
-          <header>
-            <span>Signal {String((activeIndex ?? 0) + 1).padStart(3, "0")} · {active.locationLabel}</span>
-            <button type="button" onClick={() => setActiveIndex(null)} aria-label="Close story">Close ×</button>
-          </header>
-          {activeMediaUrl && active.entry.thumbnail?.kind === "image" && (
-            <figure><Image src={activeMediaUrl} alt={active.entry.thumbnail.alt} fill sizes="(max-width: 760px) 100vw, 440px" style={{ objectPosition: active.entry.thumbnail.objectPosition }} /></figure>
-          )}
-          <div>
-            <p className="eyebrow">A HUMAN:HERE story</p>
-            <h2>{active.entry.person?.anonymous ? "Anonymous" : active.entry.person?.firstName ?? active.entry.person?.displayName ?? active.entry.headline ?? "A human story"}</h2>
-            {(active.entry.quote || active.entry.headline) && <blockquote>{active.entry.quote ?? active.entry.headline}</blockquote>}
-            <Link href={entryHref(active.entry)} prefetch={false}>Enter this story →</Link>
-          </div>
-        </article>
+        <div className="human-globe-modal" onMouseDown={(event) => { if (event.target === event.currentTarget) setActiveIndex(null); }}>
+          <article className="human-globe-card" id="globe-story-panel" role="dialog" aria-modal="true" aria-labelledby="globe-story-title">
+            <header>
+              <span>Human story / {String((activeIndex ?? 0) + 1).padStart(3, "0")}</span>
+              <button ref={closeButtonRef} type="button" onClick={() => setActiveIndex(null)} aria-label="Close story">Close ×</button>
+            </header>
+            {activeMediaUrl && active.entry.thumbnail?.kind === "image" && (
+              <figure><Image src={activeMediaUrl} alt={active.entry.thumbnail.alt} fill sizes="(max-width: 760px) 92vw, 410px" style={{ objectPosition: active.entry.thumbnail.objectPosition }} /></figure>
+            )}
+            <div>
+              <p className="human-globe-card__kind"><span aria-hidden="true"><i /><i /></span>A HUMAN:HERE story</p>
+              <h2 id="globe-story-title">{active.entry.person?.anonymous ? "Anonymous" : active.entry.person?.firstName ?? active.entry.person?.displayName ?? active.entry.headline ?? "A human story"}</h2>
+              <p className="human-globe-card__location">{active.locationLabel}</p>
+              {(active.entry.quote || active.entry.headline) && <blockquote>{active.entry.quote ?? active.entry.headline}</blockquote>}
+              <Link href={entryHref(active.entry)} prefetch={false}>Enter this story <span aria-hidden="true">→</span></Link>
+            </div>
+          </article>
+        </div>
       )}
 
       <footer className="human-globe-footer"><span>People need people.</span><Link href="/share">Add your light ↗</Link></footer>
