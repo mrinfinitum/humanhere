@@ -321,6 +321,7 @@ export function HumanGlobe({ initialBatch }: { initialBatch: ArchiveBatch }) {
               onClick={() => { setActiveIndex(index); lastInteractionRef.current = performance.now(); }}
               aria-label={`Open ${label}'s story from ${story.locationLabel}`}
             >
+              <span className="human-beacon__hit" aria-hidden="true" />
               <span className="human-beacon__signal" aria-hidden="true"><i /><i /></span>
               <span className="human-beacon__label"><b>{label}</b><small>{story.locationLabel}</small></span>
             </button>
