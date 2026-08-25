@@ -380,14 +380,16 @@ function HumanOrbs({
           varying float vHaloOpacity;
           varying float vIntensity;
           varying float vLimb;
+          varying float vPulse;
           void main() {
             float selected = step(abs(aIndex - uSelected), 0.1);
             float hovered = step(abs(aIndex - uHovered), 0.1) * uHoverStrength;
             vActive = max(selected, hovered);
-            float pulse = 1.0 + sin(uTime * 1.18 + aPhase) * 0.045 * uMotion;
+            float pulseWave = sin(uTime * 1.08 + aPhase);
+            float pulse = 1.0 + pulseWave * 0.04 * uMotion;
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
             gl_Position = projectionMatrix * mvPosition;
-            float baseSize = mix(10.4, 14.4, vActive);
+            float baseSize = mix(30.0, 34.0, vActive);
             gl_PointSize = baseSize * aScale * pulse * uPixelRatio * (2.75 / max(1.0, -mvPosition.z));
             vec3 viewNormal = normalize(normalMatrix * normalize(position));
             vec3 viewDirection = normalize(-mvPosition.xyz);
@@ -396,6 +398,7 @@ function HumanOrbs({
             vCoreOpacity = aCoreOpacity * selectionQuiet;
             vHaloOpacity = aHaloOpacity * selectionQuiet;
             vIntensity = aIntensity;
+            vPulse = 0.5 + pulseWave * 0.5 * uMotion;
           }
         `}
         fragmentShader={`
@@ -404,18 +407,18 @@ function HumanOrbs({
           varying float vHaloOpacity;
           varying float vIntensity;
           varying float vLimb;
+          varying float vPulse;
           void main() {
             float radius = length(gl_PointCoord - 0.5) * 2.0;
-            float core = 1.0 - smoothstep(0.0, 0.16, radius);
-            float inner = (1.0 - smoothstep(0.08, 0.40, radius)) * 0.86;
-            float halo = pow(max(0.0, 1.0 - radius), 3.4) * 0.62;
-            vec3 paper = vec3(0.949, 0.922, 0.867);
+            float core = 1.0 - smoothstep(0.28, 0.36, radius);
+            float coreLight = 1.0 - smoothstep(0.0, 0.22, radius);
+            float halo = pow(max(0.0, 1.0 - radius), 2.15) * mix(0.52, 0.72, vPulse);
             vec3 lapis = vec3(0.188, 0.275, 0.647);
-            vec3 idleColor = mix(paper, vec3(1.0), core * 0.82);
-            vec3 selectedColor = mix(lapis, vec3(0.50, 0.60, 1.0), core * 0.34);
-            vec3 coreColor = mix(idleColor, selectedColor, vActive);
-            vec3 color = mix(coreColor, lapis, smoothstep(0.25, 0.92, radius) * mix(0.44, 0.12, vActive));
-            float alpha = (core + inner) * vCoreOpacity + halo * vHaloOpacity * mix(0.58, 1.0, vActive);
+            vec3 electricLapis = vec3(0.24, 0.39, 1.0);
+            vec3 coreColor = mix(electricLapis, vec3(0.34, 0.48, 1.0), coreLight * 0.62);
+            vec3 color = mix(lapis, coreColor, core);
+            float alpha = core * vCoreOpacity
+              + halo * vHaloOpacity * mix(1.0, 1.16, vActive);
             alpha *= vLimb * vIntensity;
             if (alpha < 0.012) discard;
             gl_FragColor = vec4(color, min(alpha, 1.0));
