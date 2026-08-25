@@ -21,9 +21,12 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   const pointer = useRef<{ id: number; x: number; y: number; targetX: number; targetY: number; moved: boolean } | null>(null);
   const touches = useRef(new Map<number, { x: number; y: number }>());
   const pinch = useRef<{ distance: number; cameraDistance: number } | null>(null);
+  const hoverDismissTimer = useRef<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [activeIndices, setActiveIndices] = useState<number[]>([]);
   const [hovered, setHovered] = useState<GlobeHover>(null);
+  const [hoverLayout, setHoverLayout] = useState<ReturnType<typeof getHoverHudLayout> | null>(null);
+  const [hoverHudVisible, setHoverHudVisible] = useState(false);
   const [ready, setReady] = useState(false);
   const [webglAvailable, setWebglAvailable] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -49,6 +52,10 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
       window.cancelAnimationFrame(webglFrame);
       media.removeEventListener("change", syncMotion);
     };
+  }, []);
+
+  useEffect(() => () => {
+    if (hoverDismissTimer.current !== null) window.clearTimeout(hoverDismissTimer.current);
   }, []);
 
   useEffect(() => {
@@ -142,12 +149,33 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
     controls.current.lastInteraction = performance.now();
   };
 
+  const updateHover = useCallback((next: GlobeHover) => {
+    if (hoverDismissTimer.current !== null) {
+      window.clearTimeout(hoverDismissTimer.current);
+      hoverDismissTimer.current = null;
+    }
+    if (next) {
+      setHovered(next);
+      setHoverLayout(getHoverHudLayout(next, window.innerWidth, window.innerHeight));
+      setHoverHudVisible(true);
+      return;
+    }
+    setHoverHudVisible(false);
+    hoverDismissTimer.current = window.setTimeout(() => {
+      setHovered(null);
+      setHoverLayout(null);
+      hoverDismissTimer.current = null;
+    }, 320);
+  }, []);
+
   const selectHuman = useCallback((index: number) => {
     if (pointer.current?.moved) return;
     controls.current.engaged = true;
     controls.current.lastInteraction = performance.now();
     setSelectedIndex(index);
+    setHoverHudVisible(false);
     setHovered(null);
+    setHoverLayout(null);
   }, []);
 
   const sceneReady = useCallback(() => setReady(true), []);
@@ -176,6 +204,8 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
       selectHuman(activeIndices[(activePosition + 1) % activeIndices.length]);
     }
   };
+
+  const hoverHuman = hovered && !selected ? humans[hovered.index] : null;
 
   return (
     <main className={`human-globe-shell${selected ? " has-selection" : ""}`}>
@@ -207,7 +237,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
                 reducedMotion={reducedMotion}
                 lineRef={connectorRef}
                 previewRef={previewRef}
-                onHover={setHovered}
+                onHover={updateHover}
                 onSelect={selectHuman}
                 onActiveChange={updateActiveIndices}
                 onReady={sceneReady}
@@ -243,11 +273,21 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
         <b>0</b><i /><i /><span /><i /><i /><b>5</b>
       </div>
 
-      {hovered && !selected && humans[hovered.index] && (
-        <div className="human-orb-label" style={{ left: hovered.x, top: hovered.y }}>
-          <span>{humans[hovered.index].firstName}</span>
-          <small>{humans[hovered.index].city}</small>
-          <b>View human →</b>
+      {hovered && hoverHuman && hoverLayout && (
+        <div
+          key={hovered.index}
+          className={`human-orb-hud ${hoverHudVisible ? "is-visible" : "is-leaving"}`}
+          aria-hidden="true"
+        >
+          <svg>
+            <path pathLength="1" d={hoverLayout.path} />
+            <circle cx={hovered.x} cy={hovered.y} r="2.2" />
+          </svg>
+          <div className="human-orb-hud__data" style={{ left: hoverLayout.labelX, top: hoverLayout.labelY }}>
+            <span>{hoverHuman.firstName}</span>
+            {hoverHuman.city && <small>{hoverHuman.city}</small>}
+            <b>View human →</b>
+          </div>
         </div>
       )}
 
@@ -276,6 +316,21 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
       <div className="human-globe-orbit" aria-hidden="true"><i /><i /><span /></div>
     </main>
   );
+}
+
+function getHoverHudLayout(hover: NonNullable<GlobeHover>, width: number, height: number) {
+  const labelWidth = 166;
+  const placeLeft = hover.x > width * 0.7;
+  const labelY = clamp(hover.y - 34, 112, Math.max(112, height - 116));
+  const desiredLabelX = placeLeft ? hover.x - 132 - labelWidth : hover.x + 132;
+  const labelX = clamp(desiredLabelX, 24, Math.max(24, width - labelWidth - 24));
+  const lineEndX = placeLeft ? labelX + labelWidth + 1 : labelX - 12;
+  const elbowX = hover.x + (placeLeft ? -34 : 34);
+  return {
+    labelX,
+    labelY,
+    path: `M ${hover.x.toFixed(1)} ${hover.y.toFixed(1)} L ${elbowX.toFixed(1)} ${hover.y.toFixed(1)} L ${lineEndX.toFixed(1)} ${(labelY + 13).toFixed(1)}`,
+  };
 }
 
 function Wordmark() {

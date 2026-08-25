@@ -225,6 +225,7 @@ function HumanOrbs({
     const indices = new Float32Array(poolSize).fill(-1);
     const coreOpacity = new Float32Array(poolSize);
     const haloOpacity = new Float32Array(poolSize);
+    const arrivalRipple = new Float32Array(poolSize).fill(1);
     const scales = new Float32Array(poolSize).fill(0.65);
     const intensities = new Float32Array(poolSize).fill(1);
     const result = new THREE.BufferGeometry();
@@ -233,6 +234,7 @@ function HumanOrbs({
     result.setAttribute("aIndex", new THREE.BufferAttribute(indices, 1));
     result.setAttribute("aCoreOpacity", new THREE.BufferAttribute(coreOpacity, 1));
     result.setAttribute("aHaloOpacity", new THREE.BufferAttribute(haloOpacity, 1));
+    result.setAttribute("aArrivalRipple", new THREE.BufferAttribute(arrivalRipple, 1));
     result.setAttribute("aScale", new THREE.BufferAttribute(scales, 1));
     result.setAttribute("aIntensity", new THREE.BufferAttribute(intensities, 1));
     return result;
@@ -288,6 +290,7 @@ function HumanOrbs({
     const index = geometry.getAttribute("aIndex") as THREE.BufferAttribute;
     const coreOpacity = geometry.getAttribute("aCoreOpacity") as THREE.BufferAttribute;
     const haloOpacity = geometry.getAttribute("aHaloOpacity") as THREE.BufferAttribute;
+    const arrivalRipple = geometry.getAttribute("aArrivalRipple") as THREE.BufferAttribute;
     const scale = geometry.getAttribute("aScale") as THREE.BufferAttribute;
     const intensity = geometry.getAttribute("aIntensity") as THREE.BufferAttribute;
     discovery.slots.forEach((slot, slotIndex) => {
@@ -296,6 +299,7 @@ function HumanOrbs({
       index.setX(slotIndex, slot.candidateIndex);
       coreOpacity.setX(slotIndex, slot.coreOpacity);
       haloOpacity.setX(slotIndex, slot.haloOpacity);
+      arrivalRipple.setX(slotIndex, slot.arrivalRippleProgress);
       scale.setX(slotIndex, slot.scale);
       intensity.setX(slotIndex, slot.intensity);
     });
@@ -304,6 +308,7 @@ function HumanOrbs({
     index.needsUpdate = true;
     coreOpacity.needsUpdate = true;
     haloOpacity.needsUpdate = true;
+    arrivalRipple.needsUpdate = true;
     scale.needsUpdate = true;
     intensity.needsUpdate = true;
 
@@ -367,6 +372,7 @@ function HumanOrbs({
           attribute float aIndex;
           attribute float aCoreOpacity;
           attribute float aHaloOpacity;
+          attribute float aArrivalRipple;
           attribute float aScale;
           attribute float aIntensity;
           uniform float uTime;
@@ -381,15 +387,16 @@ function HumanOrbs({
           varying float vIntensity;
           varying float vLimb;
           varying float vPulse;
+          varying float vArrivalRipple;
           void main() {
             float selected = step(abs(aIndex - uSelected), 0.1);
             float hovered = step(abs(aIndex - uHovered), 0.1) * uHoverStrength;
             vActive = max(selected, hovered);
             float pulseWave = sin(uTime * 1.08 + aPhase);
-            float pulse = 1.0 + pulseWave * 0.04 * uMotion;
+            float pulse = 1.0 + pulseWave * 0.035 * uMotion;
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
             gl_Position = projectionMatrix * mvPosition;
-            float baseSize = mix(30.0, 34.0, vActive);
+            float baseSize = mix(48.0, 54.0, vActive);
             gl_PointSize = baseSize * aScale * pulse * uPixelRatio * (2.75 / max(1.0, -mvPosition.z));
             vec3 viewNormal = normalize(normalMatrix * normalize(position));
             vec3 viewDirection = normalize(-mvPosition.xyz);
@@ -399,6 +406,7 @@ function HumanOrbs({
             vHaloOpacity = aHaloOpacity * selectionQuiet;
             vIntensity = aIntensity;
             vPulse = 0.5 + pulseWave * 0.5 * uMotion;
+            vArrivalRipple = aArrivalRipple;
           }
         `}
         fragmentShader={`
@@ -408,17 +416,33 @@ function HumanOrbs({
           varying float vIntensity;
           varying float vLimb;
           varying float vPulse;
+          varying float vArrivalRipple;
           void main() {
             float radius = length(gl_PointCoord - 0.5) * 2.0;
-            float core = 1.0 - smoothstep(0.28, 0.36, radius);
-            float coreLight = 1.0 - smoothstep(0.0, 0.22, radius);
-            float halo = pow(max(0.0, 1.0 - radius), 2.15) * mix(0.52, 0.72, vPulse);
+            float core = 1.0 - smoothstep(0.235, 0.305, radius);
+            float coreLight = 1.0 - smoothstep(0.0, 0.17, radius);
+
+            // The resting beacon never goes dark. Its halo breathes while the
+            // center remains steady, so the Human feels alive rather than lit.
+            float halo = pow(max(0.0, 1.0 - radius), 2.35) * mix(0.74, 0.98, vPulse);
+            float aura = exp(-radius * 4.1) * mix(0.20, 0.30, vPulse);
+
+            // A single soft wave leaves the point only after it has fully
+            // emerged. It reads as presence arriving, not a repeating target.
+            float rippleProgress = clamp(vArrivalRipple, 0.0, 1.0);
+            float rippleRadius = mix(0.38, 0.91, smoothstep(0.0, 1.0, rippleProgress));
+            float rippleEnvelope = sin(rippleProgress * 3.14159265)
+              * step(0.001, rippleProgress)
+              * (1.0 - step(0.999, rippleProgress));
+            float rippleDistance = (radius - rippleRadius) / 0.065;
+            float ripple = exp(-(rippleDistance * rippleDistance)) * rippleEnvelope;
             vec3 lapis = vec3(0.188, 0.275, 0.647);
             vec3 electricLapis = vec3(0.24, 0.39, 1.0);
             vec3 coreColor = mix(electricLapis, vec3(0.34, 0.48, 1.0), coreLight * 0.62);
             vec3 color = mix(lapis, coreColor, core);
             float alpha = core * vCoreOpacity
-              + halo * vHaloOpacity * mix(1.0, 1.16, vActive);
+              + (halo + aura) * vHaloOpacity * mix(1.0, 1.18, vActive)
+              + ripple * vHaloOpacity * 0.46;
             alpha *= vLimb * vIntensity;
             if (alpha < 0.012) discard;
             gl_FragColor = vec4(color, min(alpha, 1.0));

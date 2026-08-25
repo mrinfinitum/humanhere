@@ -12,6 +12,8 @@ export type HumanOrbSlot = {
   restAt: number;
   retireAt: number;
   fadeDuration: number;
+  arrivalRippleDuration: number;
+  arrivalRippleProgress: number;
   coreOpacity: number;
   haloOpacity: number;
   scale: number;
@@ -86,6 +88,8 @@ export class HumanDiscoveryManager {
       restAt: 0,
       retireAt: 0,
       fadeDuration: 1,
+      arrivalRippleDuration: 1.6,
+      arrivalRippleProgress: 1,
       coreOpacity: 0,
       haloOpacity: 0,
       scale: 0.65,
@@ -134,6 +138,14 @@ export class HumanDiscoveryManager {
       if (slot.state === "present" && frame.now >= slot.restAt) {
         slot.state = "resting";
         slot.stateStartedAt = frame.now;
+      }
+
+      if (slot.state === "present") {
+        slot.arrivalRippleProgress = frame.reducedMotion
+          ? 1
+          : Math.min(1, stateAge / slot.arrivalRippleDuration);
+      } else if (slot.state === "resting") {
+        slot.arrivalRippleProgress = 1;
       }
 
       if (
@@ -254,6 +266,8 @@ export class HumanDiscoveryManager {
     slot.restAt = now + slot.emergenceDuration + this.between(3.8, 6.5);
     slot.retireAt = now + this.between(28, 52);
     slot.fadeDuration = this.between(0.8, 1.4);
+    slot.arrivalRippleDuration = this.between(1.45, 1.9);
+    slot.arrivalRippleProgress = reducedMotion ? 1 : 0;
     slot.coreOpacity = 0;
     slot.haloOpacity = 0;
     slot.scale = reducedMotion ? 1 : 0.65;
@@ -269,6 +283,7 @@ export class HumanDiscoveryManager {
     slot.haloOpacity = 0;
     slot.scale = 0.65;
     slot.intensity = 1;
+    slot.arrivalRippleProgress = 1;
   }
 
   private remember(candidateIndex: number) {

@@ -23,6 +23,7 @@ function simulate(mobile) {
     seed: mobile ? 4812 : 1729,
   });
   let maximumActive = 0;
+  let observedArrivalRipple = false;
   let selectedIndex = null;
   let selectedAt = 0;
 
@@ -41,6 +42,11 @@ function simulate(mobile) {
     });
 
     const active = manager.activeCandidateIndices();
+    observedArrivalRipple ||= manager.slots.some(slot => (
+      slot.state === "present"
+      && slot.arrivalRippleProgress > 0
+      && slot.arrivalRippleProgress < 1
+    ));
     assert.equal(new Set(active).size, active.length, "active pool must never duplicate a Human");
     maximumActive = Math.max(maximumActive, active.length);
     assert.ok(active.length <= visibleBudget, "active visual budget must remain bounded");
@@ -56,6 +62,7 @@ function simulate(mobile) {
   }
 
   assert.ok(maximumActive >= (mobile ? 3 : 4), "the first-load sequence should populate gradually");
+  assert.ok(observedArrivalRipple, "an emerged Human should receive one bounded arrival ripple");
 }
 
 simulate(false);
