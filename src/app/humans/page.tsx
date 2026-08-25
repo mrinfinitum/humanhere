@@ -6,5 +6,5 @@ export const metadata: Metadata = { title: "Humans", description: "Faces, voices
 
 export default async function HumansPage() {
   const initialBatch = await getPublishedHumanBatch({ limit: 30 });
-  return <ArchiveField initialBatch={initialBatch} mode="index" />;
+  return <ArchiveField initialBatch={initialBatch} />;
 }

@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   cacheComponents: true,
   reactCompiler: true,
+  experimental: {
+    turbopackRustReactCompiler: true,
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: process.env.NEXT_PUBLIC_SUPABASE_URL

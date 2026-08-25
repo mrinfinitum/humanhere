@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { ArchiveField } from "@/components/archive/ArchiveField";
+import { HumanGlobe } from "@/components/archive/HumanGlobe";
+import { toGlobeHumans } from "@/lib/archive/globe-dto";
 import { getHomepageHumans } from "@/lib/archive/repository";
 
 export const metadata: Metadata = {
@@ -9,5 +10,6 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   const initialBatch = await getHomepageHumans(96);
-  return <ArchiveField initialBatch={initialBatch} />;
+  const humans = toGlobeHumans(initialBatch.entries, 24);
+  return <HumanGlobe humans={humans} />;
 }
