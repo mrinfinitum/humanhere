@@ -34,7 +34,7 @@ const CITY_COORDINATES: Record<string, Coordinate> = {
 const LAPIS: [number, number, number] = [48 / 255, 70 / 255, 165 / 255];
 const PAPER: [number, number, number] = [242 / 255, 235 / 255, 221 / 255];
 const MIN_GLOBE_SCALE = 0.72;
-const MAX_GLOBE_SCALE = 1.35;
+const MAX_GLOBE_SCALE = 1.5;
 
 function hashUnit(value: string) {
   let hash = 2166136261;
@@ -335,7 +335,7 @@ export function HumanGlobe({ initialBatch }: { initialBatch: ArchiveBatch }) {
       </section>
 
       <header className="human-globe-chrome">
-        <Link href="/" aria-label="HUMAN:HERE home"><BrandMark /></Link>
+        <BrandMark />
         <span>{prototypeMode ? "Prototype world" : "Living archive"} · {String(stories.length).padStart(3, "0")}</span>
         <nav aria-label="Primary navigation"><Link href="/humans">Humans</Link><Link href="/mission">Mission</Link><Link href="/share">Be seen</Link><Link href="/support">Support</Link></nav>
       </header>
