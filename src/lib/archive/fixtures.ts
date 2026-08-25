@@ -152,7 +152,7 @@ const portraitMedia = [media.james, media.maya, media.lena, media.miguel, media.
 const densityCrops = ["portrait", "eyes", "square", "landscape"] as const;
 const densitySizes = ["xs", "sm", "xs", "md", "sm", "xs", "sm", "md"] as const;
 const prototypeNames = ["Avery", "Noah", "Elena", "Micah", "Nadia", "Theo", "June", "Amara", "Jonah", "Mae", "Elias", "Iris", "Caleb", "Sofia", "Rowan", "Mina"];
-const prototypePlaces = ["Tulsa", "Dallas", "Atlanta", "Chicago", "Los Angeles", "New York"];
+const prototypePlaces = ["Tulsa", "Dallas", "Atlanta", "Chicago", "Los Angeles", "New York", "Mexico City", "São Paulo", "London", "Nairobi", "Cape Town", "Lagos", "Mumbai", "Tokyo", "Sydney", "Manila"];
 const prototypeLines = [
   "Someone stayed long enough to listen.",
   "There is more to every person than the hardest day.",

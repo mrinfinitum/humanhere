@@ -33,6 +33,11 @@ export type HumanIdentity = {
   firstName?: string;
   age?: number;
   location?: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+    precision: "city" | "region" | "country";
+  };
   anonymous?: boolean;
 };
 
