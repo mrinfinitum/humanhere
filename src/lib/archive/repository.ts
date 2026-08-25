@@ -124,7 +124,11 @@ export async function getGlobeDiscoveryCandidates(limit = 96): Promise<HumanEntr
 
   if (isPublicArchiveUnavailable(error)) return fixtureBatch({ limit: bounded }).entries;
   if (error) throw new Error(`Globe discovery query failed: ${error.code}`);
-  return ((data ?? []) as unknown as PublicHumanRow[]).map(toHumanEntry);
+  const entries = ((data ?? []) as unknown as PublicHumanRow[]).map(toHumanEntry);
+  // Preserve the homepage's existing pre-launch behavior: fixture Humans keep
+  // the globe explorable until the first consented public entry is published.
+  // They remain code-only fixtures and are never written to Supabase.
+  return entries.length ? entries : fixtureBatch({ limit: bounded }).entries;
 }
 
 async function getPublishedAdjacent(slug: string) {
