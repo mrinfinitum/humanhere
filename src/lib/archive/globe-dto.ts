@@ -88,5 +88,5 @@ export function toGlobeHumans(entries: HumanEntry[], limit = 24): GlobeHuman[] {
     seen.add(key);
     cityCounts.set(cityKey, cityCount + 1);
     return true;
-  }).slice(0, Math.min(limit, 20));
+  }).slice(0, Math.min(limit, 40));
 }

@@ -57,7 +57,7 @@ export function HumanStoryDrawer({ entry, loading, error, onClose, onRetry }: Pr
         {entry && !loading && (
           <article>
             <section className="human-story-drawer-intro">
-              <p>{entry.type}</p>
+              <p>{entry.fixture ? `Demo human · ${entry.type}` : entry.type}</p>
               <h2 id="human-story-drawer-title">{identity}</h2>
               {entry.person?.location && <span>{entry.person.location}</span>}
               {entry.quote && <blockquote>“{entry.quote}”</blockquote>}

@@ -6,7 +6,6 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type Point
 import { HumanCalloutOverlay } from "@/components/globe/HumanCalloutOverlay";
 import { HumanStoryDrawer } from "@/components/globe/HumanStoryDrawer";
 import { GlobeScene } from "@/components/globe/GlobeScene";
-import { createTulsaTestHuman } from "@/components/globe/tulsaTestHuman";
 import type { GlobeControls, GlobeHover, GlobeHuman } from "@/components/globe/types";
 import type { HumanEntry } from "@/lib/archive/types";
 
@@ -26,7 +25,7 @@ function clamp(value: number, minimum: number, maximum: number) {
 }
 
 export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
-  const globeHumans = useMemo(() => [createTulsaTestHuman(humans)], [humans]);
+  const globeHumans = useMemo(() => humans, [humans]);
   const stageRef = useRef<HTMLElement | null>(null);
   const calloutAnchorRef = useRef<HTMLDivElement | null>(null);
   const previewRef = useRef<HTMLElement | null>(null);

@@ -87,7 +87,7 @@ type Props = {
   debug: boolean;
 };
 
-/** The single Tulsa proof marker: one camera-facing sprite and one hit mesh. */
+/** Camera-facing Human flares with separate, generous interaction meshes. */
 export function HumanBillboardLayer({
   humans,
   selectedHumanId,
@@ -97,79 +97,72 @@ export function HumanBillboardLayer({
   onActiveChange,
   debug,
 }: Props) {
-  const human = humans[0];
   const texture = useMemo(() => createFlareTexture(), []);
   const columnTexture = useMemo(() => createLightColumnTexture(), []);
-  const material = useMemo(() => new THREE.SpriteMaterial({
-    map: texture,
-    color: "#ffffff",
-    transparent: true,
-    opacity: 0.96,
-    depthTest: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    toneMapped: false,
+  const flareMaterials = useMemo(() => ({
+    idle: createFlareMaterial(texture, 0.91),
+    hover: createFlareMaterial(texture, 0.98),
+    selected: createFlareMaterial(texture, 1),
   }), [texture]);
-  const columnMaterial = useMemo(() => new THREE.MeshBasicMaterial({
-    map: columnTexture,
-    color: "#ffffff",
-    transparent: true,
-    opacity: selectedHumanId === human?.id ? 1 : hoveredHumanId === human?.id ? 0.96 : 0.88,
-    depthTest: true,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending,
-    toneMapped: false,
-  }), [columnTexture, hoveredHumanId, human?.id, selectedHumanId]);
+  const columnMaterials = useMemo(() => ({
+    idle: createColumnMaterial(columnTexture, 0.76),
+    hover: createColumnMaterial(columnTexture, 0.9),
+    selected: createColumnMaterial(columnTexture, 1),
+  }), [columnTexture]);
   const columnGeometry = useMemo(() => {
     const geometry = new THREE.PlaneGeometry(0.04, 0.28);
     geometry.rotateX(Math.PI / 2);
     geometry.translate(0, 0, 0.14);
     return geometry;
   }, []);
-  const position = useMemo(() => human
-    ? latLngToVector3(human.lat, human.lng, HUMAN_SURFACE_RADIUS)
-    : new THREE.Vector3(100, 100, 100), [human]);
-  const orientation = useMemo(() => new THREE.Quaternion().setFromUnitVectors(
-    new THREE.Vector3(0, 0, 1),
-    position.clone().normalize(),
-  ), [position]);
-  const selected = human?.id === selectedHumanId;
-  const hovered = human?.id === hoveredHumanId;
-  // Parent world scale is 1.5, yielding ~28px idle and ~35px selected at the
-  // art-directed desktop camera distance.
-  const size = selected ? 0.035 : hovered ? 0.031 : 0.028;
+  const placements = useMemo(() => humans.map((human, index) => {
+    const position = latLngToVector3(human.lat, human.lng, HUMAN_SURFACE_RADIUS);
+    const orientation = new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 0, 1),
+      position.clone().normalize(),
+    );
+    return { human, position, orientation, variation: 0.97 + (index % 7) * 0.01 };
+  }), [humans]);
+  const positionById = useMemo(() => new Map(placements.map(placement => [placement.human.id, placement.position])), [placements]);
 
   useEffect(() => {
-    onActiveChange(human ? [human.id] : []);
+    onActiveChange(humans.map(human => human.id));
     return () => onActiveChange([]);
-  }, [human, onActiveChange]);
+  }, [humans, onActiveChange]);
   useEffect(() => () => {
-    material.dispose();
     texture.dispose();
     columnTexture.dispose();
     columnGeometry.dispose();
-  }, [columnGeometry, columnTexture, material, texture]);
-  useEffect(() => () => columnMaterial.dispose(), [columnMaterial]);
+    Object.values(flareMaterials).forEach(material => material.dispose());
+    Object.values(columnMaterials).forEach(material => material.dispose());
+  }, [columnGeometry, columnMaterials, columnTexture, flareMaterials, texture]);
 
-  if (!human) return null;
+  if (!humans.length) return null;
 
   return (
     <group name="human-billboard-layer">
-      <group name="tulsa-gcat-marker" position={position} quaternion={orientation}>
-        <mesh geometry={columnGeometry} material={columnMaterial} renderOrder={3} raycast={() => undefined} />
-        <mesh geometry={columnGeometry} material={columnMaterial} rotation={[0, 0, Math.PI / 2]} renderOrder={3} raycast={() => undefined} />
-        <sprite
-          name="tulsa-human-sprite"
-          scale={[size, size, 1]}
-          material={material}
-          renderOrder={4}
-          raycast={() => undefined}
-        />
-      </group>
+      {placements.map(({ human, position, orientation, variation }) => {
+        const selected = human.id === selectedHumanId;
+        const hovered = human.id === hoveredHumanId;
+        const state = selected ? "selected" : hovered ? "hover" : "idle";
+        const size = (selected ? 0.036 : hovered ? 0.032 : 0.029) * variation;
+        return (
+          <group key={human.id} name={`human-beacon-${human.id}`} position={position} quaternion={orientation}>
+            <mesh geometry={columnGeometry} material={columnMaterials[state]} renderOrder={3} raycast={() => undefined} />
+            <mesh geometry={columnGeometry} material={columnMaterials[state]} rotation={[0, 0, Math.PI / 2]} renderOrder={3} raycast={() => undefined} />
+            <sprite
+              name={`human-flare-${human.id}`}
+              scale={[size, size, 1]}
+              material={flareMaterials[state]}
+              renderOrder={4}
+              raycast={() => undefined}
+            />
+          </group>
+        );
+      })}
       <HumanBeaconHitTargets
-        humans={[human]}
-        positionFor={() => position}
+        humans={humans}
+        positionFor={human => positionById.get(human.id) ?? new THREE.Vector3(100, 100, 100)}
         onHover={onHover}
         onHoverEnd={() => onHover(null)}
         onSelect={onSelect}
@@ -177,4 +170,31 @@ export function HumanBillboardLayer({
       />
     </group>
   );
+}
+
+function createFlareMaterial(texture: THREE.Texture, opacity: number) {
+  return new THREE.SpriteMaterial({
+    map: texture,
+    color: "#ffffff",
+    transparent: true,
+    opacity,
+    depthTest: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  });
+}
+
+function createColumnMaterial(texture: THREE.Texture, opacity: number) {
+  return new THREE.MeshBasicMaterial({
+    map: texture,
+    color: "#ffffff",
+    transparent: true,
+    opacity,
+    depthTest: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  });
 }
