@@ -835,6 +835,7 @@ export function GlobeScene({
         preview.style.bottom = "auto";
         preview.dataset.placedFor = humans[selectedIndex].id;
         preview.dataset.viewportWidth = String(size.width);
+        preview.dataset.side = placeLeft ? "left" : "right";
       } else if (size.width <= 760 && preview.dataset.placedFor) {
         preview.style.removeProperty("left");
         preview.style.removeProperty("top");
@@ -842,6 +843,7 @@ export function GlobeScene({
         preview.style.removeProperty("bottom");
         delete preview.dataset.placedFor;
         delete preview.dataset.viewportWidth;
+        delete preview.dataset.side;
       }
 
       const previewBounds = preview.getBoundingClientRect();
@@ -849,10 +851,10 @@ export function GlobeScene({
       const endX = markerX <= previewBounds.left + previewBounds.width * 0.5
         ? previewBounds.left
         : previewBounds.right;
-      const endY = previewBounds.top + 28;
+      const endY = previewBounds.top + Math.min(62, previewBounds.height * 0.34);
       const direction = endX >= markerX ? 1 : -1;
-      const firstX = markerX + direction * 42;
-      const secondX = endX - direction * 18;
+      const firstX = markerX + direction * 38;
+      const secondX = endX - direction * 22;
       lineRef.current.setAttribute(
         "d",
         `M ${markerX.toFixed(1)} ${markerY.toFixed(1)} L ${firstX.toFixed(1)} ${markerY.toFixed(1)} L ${secondX.toFixed(1)} ${endY.toFixed(1)} L ${endX.toFixed(1)} ${endY.toFixed(1)}`,
