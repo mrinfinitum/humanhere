@@ -239,7 +239,6 @@ function HumanOrbs({
 }) {
   const pointsRef = useRef<THREE.Points>(null);
   const contactRef = useRef<THREE.InstancedMesh>(null);
-  const locatorRef = useRef<THREE.InstancedMesh>(null);
   const hitTargetRef = useRef<THREE.InstancedMesh>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const hoveredRef = useRef(-1);
@@ -256,7 +255,6 @@ function HumanOrbs({
   const contactQuaternion = useMemo(() => new THREE.Quaternion(), []);
   const contactMatrix = useMemo(() => new THREE.Matrix4(), []);
   const contactColor = useMemo(() => new THREE.Color(), []);
-  const locatorColor = useMemo(() => new THREE.Color(), []);
   const { camera, gl, size } = useThree();
   const mobile = size.width <= 760;
   const poolSize = mobile ? 10 : 18;
@@ -283,7 +281,6 @@ function HumanOrbs({
     const coreOpacity = new Float32Array(poolSize);
     const innerOpacity = new Float32Array(poolSize);
     const haloOpacity = new Float32Array(poolSize);
-    const arrivalRipple = new Float32Array(poolSize).fill(1);
     const scales = new Float32Array(poolSize).fill(0.65);
     const intensities = new Float32Array(poolSize).fill(1);
     const result = new THREE.BufferGeometry();
@@ -293,13 +290,11 @@ function HumanOrbs({
     result.setAttribute("aCoreOpacity", new THREE.BufferAttribute(coreOpacity, 1));
     result.setAttribute("aInnerOpacity", new THREE.BufferAttribute(innerOpacity, 1));
     result.setAttribute("aHaloOpacity", new THREE.BufferAttribute(haloOpacity, 1));
-    result.setAttribute("aArrivalRipple", new THREE.BufferAttribute(arrivalRipple, 1));
     result.setAttribute("aScale", new THREE.BufferAttribute(scales, 1));
     result.setAttribute("aIntensity", new THREE.BufferAttribute(intensities, 1));
     return result;
   }, [poolSize]);
   const contactGeometry = useMemo(() => new THREE.CircleGeometry(1, 40), []);
-  const locatorGeometry = useMemo(() => new THREE.RingGeometry(0.0098, 0.01155, 72), []);
   const hitTargetGeometry = useMemo(() => new THREE.SphereGeometry(0.026, 10, 8), []);
   const contactMaterial = useMemo(() => new THREE.ShaderMaterial({
     transparent: true,
@@ -336,17 +331,6 @@ function HumanOrbs({
       }
     `,
   }), []);
-  const locatorMaterial = useMemo(() => new THREE.MeshBasicMaterial({
-    color: "#FFFFFF",
-    transparent: true,
-    opacity: 1,
-    depthTest: true,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-    blending: THREE.AdditiveBlending,
-    vertexColors: true,
-    toneMapped: false,
-  }), []);
   const hitTargetMaterial = useMemo(() => new THREE.MeshBasicMaterial({
     transparent: true,
     opacity: 0,
@@ -374,14 +358,11 @@ function HumanOrbs({
   useEffect(() => () => {
     contactGeometry.dispose();
     contactMaterial.dispose();
-    locatorGeometry.dispose();
-    locatorMaterial.dispose();
     hitTargetGeometry.dispose();
     hitTargetMaterial.dispose();
-  }, [contactGeometry, contactMaterial, hitTargetGeometry, hitTargetMaterial, locatorGeometry, locatorMaterial]);
+  }, [contactGeometry, contactMaterial, hitTargetGeometry, hitTargetMaterial]);
   useEffect(() => {
     if (contactRef.current) contactRef.current.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    if (locatorRef.current) locatorRef.current.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     if (hitTargetRef.current) hitTargetRef.current.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   }, []);
   useEffect(() => {
@@ -420,7 +401,6 @@ function HumanOrbs({
     const coreOpacity = geometry.getAttribute("aCoreOpacity") as THREE.BufferAttribute;
     const innerOpacity = geometry.getAttribute("aInnerOpacity") as THREE.BufferAttribute;
     const haloOpacity = geometry.getAttribute("aHaloOpacity") as THREE.BufferAttribute;
-    const arrivalRipple = geometry.getAttribute("aArrivalRipple") as THREE.BufferAttribute;
     const scale = geometry.getAttribute("aScale") as THREE.BufferAttribute;
     const intensity = geometry.getAttribute("aIntensity") as THREE.BufferAttribute;
     discovery.slots.forEach((slot, slotIndex) => {
@@ -431,7 +411,6 @@ function HumanOrbs({
       coreOpacity.setX(slotIndex, slot.coreOpacity);
       innerOpacity.setX(slotIndex, slot.innerOpacity);
       haloOpacity.setX(slotIndex, slot.haloOpacity);
-      arrivalRipple.setX(slotIndex, slot.arrivalRippleProgress);
       scale.setX(slotIndex, slot.scale);
       intensity.setX(slotIndex, slot.intensity);
 
@@ -460,35 +439,23 @@ function HumanOrbs({
         contact.setColorAt(slotIndex, contactColor);
       }
 
-      const locator = locatorRef.current;
       const hitTarget = hitTargetRef.current;
-      if (locator || hitTarget) {
+      if (hitTarget) {
         if (slot.candidateIndex < 0 || slot.coreOpacity <= 0.001) {
           contactPosition.set(100, 100, 100);
           contactQuaternion.identity();
           contactScale.setScalar(0.0001);
-          locatorColor.setRGB(0, 0, 0);
         } else {
           contactNormal.copy(slot.position).normalize();
           contactPosition.copy(contactNormal).multiplyScalar(1.0102);
           contactQuaternion.setFromUnitVectors(UNIT_Z, contactNormal);
           const facing = surfaceDirection.copy(contactNormal).applyQuaternion(worldQuaternion).dot(cameraDirection);
           visibleSlots[slotIndex] = facing > 0.035 ? 1 : 0;
-          const ringLimb = THREE.MathUtils.smoothstep(facing, -0.005, 0.16);
           const selectedLocator = slot.candidateIndex === selectedIndex;
-          const hoveredLocator = slot.candidateIndex === hoveredRef.current;
-          contactScale.setScalar(slot.scale * (selectedLocator ? 1.25 : hoveredLocator ? 1.07 : 1));
-          locatorColor
-            .copy(LAPIS)
-            .lerp(BEACON_BLUE, selectedLocator ? 0.72 : hoveredLocator ? 0.38 : 0.12)
-            .multiplyScalar(slot.innerOpacity * ringLimb * (selectedLocator ? 1.15 : hoveredLocator ? 0.92 : 0.72));
+          contactScale.setScalar(slot.scale * (selectedLocator ? 1.25 : 1));
         }
         contactMatrix.compose(contactPosition, contactQuaternion, contactScale);
-        if (locator) {
-          locator.setMatrixAt(slotIndex, contactMatrix);
-          locator.setColorAt(slotIndex, locatorColor);
-        }
-        if (hitTarget) hitTarget.setMatrixAt(slotIndex, contactMatrix);
+        hitTarget.setMatrixAt(slotIndex, contactMatrix);
       }
     });
     position.needsUpdate = true;
@@ -497,16 +464,11 @@ function HumanOrbs({
     coreOpacity.needsUpdate = true;
     innerOpacity.needsUpdate = true;
     haloOpacity.needsUpdate = true;
-    arrivalRipple.needsUpdate = true;
     scale.needsUpdate = true;
     intensity.needsUpdate = true;
     if (contactRef.current) {
       contactRef.current.instanceMatrix.needsUpdate = true;
       if (contactRef.current.instanceColor) contactRef.current.instanceColor.needsUpdate = true;
-    }
-    if (locatorRef.current) {
-      locatorRef.current.instanceMatrix.needsUpdate = true;
-      if (locatorRef.current.instanceColor) locatorRef.current.instanceColor.needsUpdate = true;
     }
     if (hitTargetRef.current) hitTargetRef.current.instanceMatrix.needsUpdate = true;
 
@@ -553,12 +515,6 @@ function HumanOrbs({
         frustumCulled={false}
         renderOrder={1}
       />
-      <instancedMesh
-        ref={locatorRef}
-        args={[locatorGeometry, locatorMaterial, poolSize]}
-        frustumCulled={false}
-        renderOrder={3}
-      />
       <points
         geometry={geometry}
         ref={pointsRef}
@@ -578,7 +534,6 @@ function HumanOrbs({
           attribute float aCoreOpacity;
           attribute float aInnerOpacity;
           attribute float aHaloOpacity;
-          attribute float aArrivalRipple;
           attribute float aScale;
           attribute float aIntensity;
           uniform float uTime;
@@ -598,7 +553,6 @@ function HumanOrbs({
           varying float vSelected;
           varying float vHovered;
           varying float vGlint;
-          varying float vArrivalRipple;
           void main() {
             float selected = step(abs(aIndex - uSelected), 0.1);
             float hovered = step(abs(aIndex - uHovered), 0.1) * uHoverStrength;
@@ -626,7 +580,6 @@ function HumanOrbs({
             vHovered = hovered;
             float glintEligible = step(0.82, fract(sin(aPhase * 41.73) * 27581.11));
             vGlint = pow(max(0.0, sin(uTime * 0.24 + aPhase * 7.13)), 48.0) * glintEligible * uMotion;
-            vArrivalRipple = aArrivalRipple;
           }
         `}
         fragmentShader={`
@@ -640,7 +593,6 @@ function HumanOrbs({
           varying float vSelected;
           varying float vHovered;
           varying float vGlint;
-          varying float vArrivalRipple;
           uniform float uMobile;
           void main() {
             float radius = length(gl_PointCoord - 0.5) * 2.0;
@@ -650,22 +602,18 @@ function HumanOrbs({
             float outerAura = exp(-pow(radius / 0.52, 2.0))
               * (1.0 - smoothstep(0.74, 1.0, radius))
               * mix(1.0, 0.78, uMobile);
-
-            // A single soft wave leaves the point only after it has fully
-            // emerged. It reads as presence arriving, not a repeating target.
-            float rippleProgress = clamp(vArrivalRipple, 0.0, 1.0);
-            float rippleRadius = mix(0.38, 0.91, smoothstep(0.0, 1.0, rippleProgress));
-            float rippleEnvelope = sin(rippleProgress * 3.14159265)
-              * step(0.001, rippleProgress)
-              * (1.0 - step(0.999, rippleProgress));
-            float rippleDistance = (radius - rippleRadius) / 0.065;
-            float ripple = exp(-(rippleDistance * rippleDistance)) * rippleEnvelope;
+            // A screen-stable precision ring gives every Human a distinct
+            // locator language that cannot collapse into the Earth texture.
+            float ringOuter = 1.0 - smoothstep(0.405, 0.435, radius);
+            float ringInner = 1.0 - smoothstep(0.335, 0.365, radius);
+            float locatorRing = max(0.0, ringOuter - ringInner);
             float horizontalGlint = exp(-pow(abs(gl_PointCoord.y - 0.5) / 0.012, 2.0))
               * exp(-pow(radius / 0.58, 2.0));
             float verticalGlint = exp(-pow(abs(gl_PointCoord.x - 0.5) / 0.015, 2.0))
               * exp(-pow(radius / 0.34, 2.0)) * 0.32;
 
             float coreLimb = smoothstep(-0.045, 0.065, vFacing);
+            float ringLimb = smoothstep(-0.015, 0.13, vFacing);
             float innerLimb = smoothstep(0.005, 0.145, vFacing);
             float auraLimb = smoothstep(0.075, 0.29, vFacing);
             float attention = 1.0 + vHovered * 0.13 + vSelected * 0.17;
@@ -677,11 +625,12 @@ function HumanOrbs({
             vec3 coreColor = mix(paper, hotBlue, clamp(vSelected * 0.12 + vHovered * 0.05, 0.0, 0.14));
             vec3 innerColor = mix(lapis, beaconBlue, clamp(0.62 + vSelected * 0.24 + vHovered * 0.08, 0.0, 1.0));
             vec3 auraColor = mix(lapis, beaconBlue, clamp(0.40 + vSelected * 0.43 + vHovered * 0.12, 0.0, 1.0));
+            vec3 ringColor = mix(lapis, beaconBlue, clamp(0.18 + vSelected * 0.64 + vHovered * 0.24, 0.0, 1.0));
 
             vec3 light = coreColor * pinpoint * vCoreOpacity * coreLimb * (1.56 + hotCenter * 0.82)
+              + ringColor * locatorRing * vInnerOpacity * ringLimb * mix(1.18, 1.58, max(vSelected, vHovered))
               + innerColor * innerBloom * vInnerOpacity * innerLimb * mix(0.68, 0.82, vSelected)
               + auraColor * outerAura * vHaloOpacity * auraLimb * vBreath * mix(0.16, 0.34, vSelected)
-              + beaconBlue * ripple * vHaloOpacity * auraLimb * mix(0.34, 0.52, vSelected)
               + mix(paper, hotBlue, 0.78) * (horizontalGlint + verticalGlint) * vGlint * coreLimb * 0.38;
             light *= vIntensity * attention;
             float alpha = max(max(light.r, light.g), light.b);
