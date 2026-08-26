@@ -13,7 +13,6 @@ const WORLD_SCALE = 1.5;
 const WORLD_POSITION = new THREE.Vector3(0.118, -0.25, 0);
 const EARTH_ROTATION_SECONDS = 240;
 const EASTWARD_ROTATION_SPEED = Math.PI * 2 / EARTH_ROTATION_SECONDS;
-const TULSA_MARKER_VERIFICATION = true;
 const PAPER = new THREE.Color("#F2EBDD");
 const LAPIS = new THREE.Color("#3046A5");
 const GLOBE_DEBUG = process.env.NEXT_PUBLIC_GLOBE_DEBUG === "true";
@@ -326,7 +325,7 @@ export function GlobeScene({
     const world = worldRef.current;
     if (!world) return;
 
-    if (!TULSA_MARKER_VERIFICATION && !reducedMotion && selectedHumanId === null && !controls.current.dragging && performance.now() - controls.current.lastInteraction > 2800) {
+    if (!reducedMotion && selectedHumanId === null && !controls.current.dragging && performance.now() - controls.current.lastInteraction > 2800) {
       // Positive Y advances longitude eastward: Earth's west-to-east rotation.
       controls.current.targetY += delta * EASTWARD_ROTATION_SPEED;
     }

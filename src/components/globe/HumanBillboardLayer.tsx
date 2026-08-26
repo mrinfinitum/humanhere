@@ -47,6 +47,36 @@ function createFlareTexture() {
   return texture;
 }
 
+function createLightColumnTexture() {
+  const width = 128;
+  const height = 512;
+  const pixels = new Uint8Array(width * height * 4);
+  for (let y = 0; y < height; y += 1) {
+    const outward = y / (height - 1);
+    const lengthFade = Math.pow(1 - outward, 1.85);
+    const tipFade = 1 - THREE.MathUtils.smoothstep(outward, 0.82, 1);
+    for (let x = 0; x < width; x += 1) {
+      const lateral = (x + 0.5) / width * 2 - 1;
+      const softBeam = Math.exp(-lateral * lateral * 10.5);
+      const brightSeam = Math.exp(-lateral * lateral * 78);
+      const energy = Math.min(1, (softBeam * 0.34 + brightSeam * 0.68) * lengthFade * tipFade);
+      const heat = Math.min(1, brightSeam * Math.pow(1 - outward, 4.2));
+      const index = (y * width + x) * 4;
+      pixels[index] = Math.round(THREE.MathUtils.lerp(48, 218, heat));
+      pixels[index + 1] = Math.round(THREE.MathUtils.lerp(70, 232, heat));
+      pixels[index + 2] = 255;
+      pixels[index + 3] = Math.round(energy * 255);
+    }
+  }
+  const texture = new THREE.DataTexture(pixels, width, height, THREE.RGBAFormat);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.generateMipmaps = true;
+  texture.needsUpdate = true;
+  return texture;
+}
+
 type Props = {
   humans: GlobeHuman[];
   selectedHumanId: string | null;
@@ -69,6 +99,7 @@ export function HumanBillboardLayer({
 }: Props) {
   const human = humans[0];
   const texture = useMemo(() => createFlareTexture(), []);
+  const columnTexture = useMemo(() => createLightColumnTexture(), []);
   const material = useMemo(() => new THREE.SpriteMaterial({
     map: texture,
     color: "#ffffff",
@@ -79,9 +110,30 @@ export function HumanBillboardLayer({
     blending: THREE.AdditiveBlending,
     toneMapped: false,
   }), [texture]);
+  const columnMaterial = useMemo(() => new THREE.MeshBasicMaterial({
+    map: columnTexture,
+    color: "#ffffff",
+    transparent: true,
+    opacity: selectedHumanId === human?.id ? 0.9 : hoveredHumanId === human?.id ? 0.78 : 0.66,
+    depthTest: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
+  }), [columnTexture, hoveredHumanId, human?.id, selectedHumanId]);
+  const columnGeometry = useMemo(() => {
+    const geometry = new THREE.PlaneGeometry(0.026, 0.19);
+    geometry.rotateX(Math.PI / 2);
+    geometry.translate(0, 0, 0.095);
+    return geometry;
+  }, []);
   const position = useMemo(() => human
     ? latLngToVector3(human.lat, human.lng, HUMAN_SURFACE_RADIUS)
     : new THREE.Vector3(100, 100, 100), [human]);
+  const orientation = useMemo(() => new THREE.Quaternion().setFromUnitVectors(
+    new THREE.Vector3(0, 0, 1),
+    position.clone().normalize(),
+  ), [position]);
   const selected = human?.id === selectedHumanId;
   const hovered = human?.id === hoveredHumanId;
   // Parent world scale is 1.5, yielding ~28px idle and ~35px selected at the
@@ -95,20 +147,26 @@ export function HumanBillboardLayer({
   useEffect(() => () => {
     material.dispose();
     texture.dispose();
-  }, [material, texture]);
+    columnTexture.dispose();
+    columnGeometry.dispose();
+  }, [columnGeometry, columnTexture, material, texture]);
+  useEffect(() => () => columnMaterial.dispose(), [columnMaterial]);
 
   if (!human) return null;
 
   return (
     <group name="human-billboard-layer">
-      <sprite
-        name="tulsa-human-sprite"
-        position={position}
-        scale={[size, size, 1]}
-        material={material}
-        renderOrder={3}
-        raycast={() => undefined}
-      />
+      <group name="tulsa-gcat-marker" position={position} quaternion={orientation}>
+        <mesh geometry={columnGeometry} material={columnMaterial} renderOrder={3} raycast={() => undefined} />
+        <mesh geometry={columnGeometry} material={columnMaterial} rotation={[0, 0, Math.PI / 2]} renderOrder={3} raycast={() => undefined} />
+        <sprite
+          name="tulsa-human-sprite"
+          scale={[size, size, 1]}
+          material={material}
+          renderOrder={4}
+          raycast={() => undefined}
+        />
+      </group>
       <HumanBeaconHitTargets
         humans={[human]}
         positionFor={() => position}
