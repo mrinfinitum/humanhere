@@ -602,18 +602,12 @@ function HumanOrbs({
             float outerAura = exp(-pow(radius / 0.52, 2.0))
               * (1.0 - smoothstep(0.74, 1.0, radius))
               * mix(1.0, 0.78, uMobile);
-            // A screen-stable precision ring gives every Human a distinct
-            // locator language that cannot collapse into the Earth texture.
-            float ringOuter = 1.0 - smoothstep(0.405, 0.435, radius);
-            float ringInner = 1.0 - smoothstep(0.335, 0.365, radius);
-            float locatorRing = max(0.0, ringOuter - ringInner);
             float horizontalGlint = exp(-pow(abs(gl_PointCoord.y - 0.5) / 0.012, 2.0))
               * exp(-pow(radius / 0.58, 2.0));
             float verticalGlint = exp(-pow(abs(gl_PointCoord.x - 0.5) / 0.015, 2.0))
               * exp(-pow(radius / 0.34, 2.0)) * 0.32;
 
             float coreLimb = smoothstep(-0.045, 0.065, vFacing);
-            float ringLimb = smoothstep(-0.015, 0.13, vFacing);
             float innerLimb = smoothstep(0.005, 0.145, vFacing);
             float auraLimb = smoothstep(0.075, 0.29, vFacing);
             float attention = 1.0 + vHovered * 0.13 + vSelected * 0.17;
@@ -625,12 +619,10 @@ function HumanOrbs({
             vec3 coreColor = mix(paper, hotBlue, clamp(vSelected * 0.12 + vHovered * 0.05, 0.0, 0.14));
             vec3 innerColor = mix(lapis, beaconBlue, clamp(0.62 + vSelected * 0.24 + vHovered * 0.08, 0.0, 1.0));
             vec3 auraColor = mix(lapis, beaconBlue, clamp(0.40 + vSelected * 0.43 + vHovered * 0.12, 0.0, 1.0));
-            vec3 ringColor = mix(lapis, beaconBlue, clamp(0.18 + vSelected * 0.64 + vHovered * 0.24, 0.0, 1.0));
 
-            vec3 light = coreColor * pinpoint * vCoreOpacity * coreLimb * (1.56 + hotCenter * 0.82)
-              + ringColor * locatorRing * vInnerOpacity * ringLimb * mix(1.18, 1.58, max(vSelected, vHovered))
-              + innerColor * innerBloom * vInnerOpacity * innerLimb * mix(0.68, 0.82, vSelected)
-              + auraColor * outerAura * vHaloOpacity * auraLimb * vBreath * mix(0.16, 0.34, vSelected)
+            vec3 light = coreColor * pinpoint * vCoreOpacity * coreLimb * (1.78 + hotCenter * 0.92)
+              + innerColor * innerBloom * vInnerOpacity * innerLimb * mix(0.82, 1.02, vSelected)
+              + auraColor * outerAura * vHaloOpacity * auraLimb * vBreath * mix(0.28, 0.46, vSelected)
               + mix(paper, hotBlue, 0.78) * (horizontalGlint + verticalGlint) * vGlint * coreLimb * 0.38;
             light *= vIntensity * attention;
             float alpha = max(max(light.r, light.g), light.b);
@@ -641,11 +633,82 @@ function HumanOrbs({
         toneMapped={false}
       />
       </points>
+      <points geometry={geometry} frustumCulled={false} raycast={() => undefined} renderOrder={3}>
+        <shaderMaterial
+          transparent
+          depthTest
+          depthWrite={false}
+          blending={THREE.NormalBlending}
+          uniforms={uniforms}
+          vertexShader={`
+            attribute float aPhase;
+            attribute float aIndex;
+            attribute float aInnerOpacity;
+            attribute float aScale;
+            uniform float uSelected;
+            uniform float uHovered;
+            uniform float uHoverStrength;
+            uniform float uPixelRatio;
+            uniform float uMobile;
+            varying float vOpacity;
+            varying float vFacing;
+            varying float vSelected;
+            varying float vHovered;
+            void main() {
+              float selected = step(abs(aIndex - uSelected), 0.1);
+              float hovered = step(abs(aIndex - uHovered), 0.1) * uHoverStrength;
+              float naturalSize = 0.96 + fract(sin(aPhase * 12.9898) * 43758.5453) * 0.08;
+              vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+              gl_Position = projectionMatrix * mvPosition;
+              float baseSize = mix(56.0, 48.0, uMobile) * naturalSize;
+              float interactionScale = 1.0 + selected * 0.22 + hovered * 0.055;
+              float projectedSize = baseSize * interactionScale * aScale
+                * uPixelRatio * (2.75 / max(1.0, -mvPosition.z));
+              gl_PointSize = clamp(projectedSize, 20.0 * uPixelRatio, 70.0 * uPixelRatio);
+              vec3 viewNormal = normalize(normalMatrix * normalize(position));
+              vec3 viewDirection = normalize(-mvPosition.xyz);
+              vFacing = dot(viewNormal, viewDirection);
+              float selectionQuiet = mix(0.84, 1.0, max(selected, 1.0 - step(0.0, uSelected)));
+              vOpacity = aInnerOpacity * selectionQuiet;
+              vSelected = selected;
+              vHovered = hovered;
+            }
+          `}
+          fragmentShader={`
+            varying float vOpacity;
+            varying float vFacing;
+            varying float vSelected;
+            varying float vHovered;
+            void main() {
+              vec2 point = (gl_PointCoord - 0.5) * 2.0;
+              float radius = length(point);
+              float ringOuter = 1.0 - smoothstep(0.405, 0.435, radius);
+              float ringInner = 1.0 - smoothstep(0.335, 0.365, radius);
+              float locatorRing = max(0.0, ringOuter - ringInner);
+              float stemX = 1.0 - smoothstep(0.016, 0.034, abs(point.x));
+              float stemStart = smoothstep(0.41, 0.46, point.y);
+              float stemEnd = 1.0 - smoothstep(0.65, 0.72, point.y);
+              float presenceTick = stemX * stemStart * stemEnd;
+              float limb = smoothstep(-0.012, 0.14, vFacing);
+              float attention = clamp(vSelected + vHovered, 0.0, 1.0);
+              vec3 lapis = vec3(0.188, 0.275, 0.647);
+              vec3 beaconBlue = vec3(0.302, 0.451, 1.0);
+              vec3 color = mix(lapis, beaconBlue, 0.34 + attention * 0.54);
+              float alpha = (locatorRing + presenceTick * 0.82)
+                * vOpacity * limb * mix(0.88, 1.0, attention);
+              if (alpha < 0.008) discard;
+              gl_FragColor = vec4(color, min(alpha, 1.0));
+            }
+          `}
+          toneMapped={false}
+        />
+      </points>
       <instancedMesh
         ref={hitTargetRef}
         args={[hitTargetGeometry, hitTargetMaterial, poolSize]}
         frustumCulled={false}
         renderOrder={4}
+        onPointerDown={event => event.stopPropagation()}
         onPointerMove={hover}
         onPointerOut={clearHover}
         onClick={event => {
@@ -840,12 +903,16 @@ export function GlobeScene({
       // the opposite side near viewport edges without running React state in
       // the render loop. Mobile retains its deliberate docked treatment.
       const previousViewportWidth = Number.parseFloat(preview.dataset.viewportWidth ?? "0");
+      const previousMarkerX = Number.parseFloat(preview.dataset.markerX ?? String(markerX));
+      const previousMarkerY = Number.parseFloat(preview.dataset.markerY ?? String(markerY));
+      const markerDrift = Math.hypot(markerX - previousMarkerX, markerY - previousMarkerY);
       const needsDesktopPlacement = preview.dataset.placedFor !== humans[selectedIndex].id
-        || Math.abs(previousViewportWidth - size.width) > 80;
+        || Math.abs(previousViewportWidth - size.width) > 80
+        || markerDrift > 72;
       if (size.width > 760 && markerIsVisible && needsDesktopPlacement) {
         const panelWidth = preview.offsetWidth || 230;
         const panelHeight = preview.offsetHeight || 176;
-        const placeLeft = markerX > size.width * 0.68;
+        const placeLeft = markerX + panelWidth + 190 > size.width;
         const panelX = THREE.MathUtils.clamp(
           placeLeft ? markerX - panelWidth - 150 : markerX + 150,
           34,
@@ -862,6 +929,8 @@ export function GlobeScene({
         preview.style.bottom = "auto";
         preview.dataset.placedFor = humans[selectedIndex].id;
         preview.dataset.viewportWidth = String(size.width);
+        preview.dataset.markerX = String(markerX);
+        preview.dataset.markerY = String(markerY);
         preview.dataset.side = placeLeft ? "left" : "right";
       } else if (size.width <= 760 && preview.dataset.placedFor) {
         preview.style.removeProperty("left");
@@ -870,6 +939,8 @@ export function GlobeScene({
         preview.style.removeProperty("bottom");
         delete preview.dataset.placedFor;
         delete preview.dataset.viewportWidth;
+        delete preview.dataset.markerX;
+        delete preview.dataset.markerY;
         delete preview.dataset.side;
       }
 

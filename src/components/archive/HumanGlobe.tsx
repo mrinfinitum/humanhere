@@ -95,7 +95,6 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
     controls.current.engaged = true;
     controls.current.dragging = true;
     controls.current.lastInteraction = performance.now();
-    event.currentTarget.setPointerCapture(event.pointerId);
 
     if (event.pointerType === "touch") {
       touches.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -136,7 +135,9 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
     if (!active || active.id !== event.pointerId) return;
     const deltaX = event.clientX - active.x;
     const deltaY = event.clientY - active.y;
+    const wasMoved = active.moved;
     active.moved ||= Math.abs(deltaX) + Math.abs(deltaY) > 4;
+    if (!wasMoved && active.moved) event.currentTarget.setPointerCapture(event.pointerId);
     controls.current.targetY = active.targetY + deltaX * 0.00315;
     controls.current.targetX = clamp(active.targetX + deltaY * 0.00225, -0.52, 0.52);
   };
