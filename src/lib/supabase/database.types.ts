@@ -30,6 +30,16 @@ export type Database = {
       human_entry_loves: Table<Record<string, Json | undefined>>;
       human_entry_share_events: Table<Record<string, Json | undefined>>;
       human_entry_notes: Table<Record<string, Json | undefined>>;
+      help_feature_flags: Table<Record<string, Json | undefined>>;
+      help_staff_memberships: Table<Record<string, Json | undefined>>;
+      help_partners: Table<Record<string, Json | undefined>>;
+      help_partner_memberships: Table<Record<string, Json | undefined>>;
+      fulfillment_profiles: Table<Record<string, Json | undefined>>;
+      help_consent_records: Table<Record<string, Json | undefined>>;
+      human_needs: Table<Record<string, Json | undefined>>;
+      human_need_partner_assignments: Table<Record<string, Json | undefined>>;
+      fulfillment_orders: Table<Record<string, Json | undefined>>;
+      sensitive_access_events: Table<Record<string, Json | undefined>>;
     };
     Views: {
       human_entries_public: {
@@ -56,6 +66,26 @@ export type Database = {
         };
         Relationships: [];
       };
+      human_needs_public: {
+        Row: {
+          id: string | null;
+          human_entry_id: string | null;
+          need_type: Database["public"]["Enums"]["help_need_type"] | null;
+          public_title: string | null;
+          public_description: string | null;
+          quantity_needed: number | null;
+          quantity_fulfilled: number | null;
+          public_status: "needed" | "in_progress" | "fulfilled" | null;
+          created_at: string | null;
+          updated_at: string | null;
+          fulfilled_at: string | null;
+        };
+        Relationships: [];
+      };
+      help_partners_public: {
+        Row: Record<string, Json | undefined>;
+        Relationships: [];
+      };
     };
     Functions: {
       current_account_role: { Args: Record<PropertyKey, never>; Returns: Database["public"]["Enums"]["account_role"] };
@@ -71,11 +101,25 @@ export type Database = {
       mark_private_note_read: { Args: { p_note_id: string }; Returns: boolean };
       hide_private_note: { Args: { p_note_id: string }; Returns: boolean };
       report_private_note: { Args: { p_note_id: string }; Returns: boolean };
+      is_show_up_enabled: { Args: Record<PropertyKey, never>; Returns: boolean };
+      is_help_staff: { Args: Record<PropertyKey, never>; Returns: boolean };
+      is_help_partner_member: { Args: { p_partner_id: string }; Returns: boolean };
+      owns_help_human_entry: { Args: { p_human_entry_id: string }; Returns: boolean };
+      is_public_help_human_entry: { Args: { p_human_entry_id: string }; Returns: boolean };
+      my_human_needs: { Args: Record<PropertyKey, never>; Returns: Array<Record<string, Json | undefined>> };
+      get_fulfillment_profile_for_help: { Args: { p_user_id: string }; Returns: Array<Record<string, Json | undefined>> };
+      get_private_human_need_for_help: { Args: { p_human_need_id: string }; Returns: Array<Record<string, Json | undefined>> };
+      revoke_my_help_consent: { Args: { p_consent_id: string }; Returns: boolean };
+      review_help_need: { Args: { p_human_need_id: string; p_status: string; p_verification_status: string; p_publicly_visible?: boolean }; Returns: boolean };
+      assign_help_partner: { Args: { p_human_need_id: string; p_partner_id: string; p_internal_notes?: string }; Returns: string };
+      create_help_fulfillment_order: { Args: { p_human_need_id: string; p_partner_id: string | null; p_provider: string; p_fulfillment_type: Database["public"]["Enums"]["help_fulfillment_type"]; p_amount_cents?: number | null; p_currency?: string | null }; Returns: string };
     };
     Enums: {
       account_role: "user" | "moderator" | "editor" | "admin";
       human_entry_type: "portrait" | "story" | "note" | "video" | "audio" | "object" | "place" | "quote";
       human_entry_source: "direct" | "editorial" | "social";
+      help_need_type: "groceries" | "clothing" | "household" | "transportation" | "utilities" | "school" | "baby" | "employment" | "medical_nonclinical" | "housing" | "other";
+      help_fulfillment_type: "goods" | "grocery" | "voucher" | "partner_service" | "other";
     };
     CompositeTypes: Record<PropertyKey, never>;
   };
