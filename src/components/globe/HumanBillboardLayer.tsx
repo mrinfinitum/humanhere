@@ -53,14 +53,14 @@ function createLightColumnTexture() {
   const pixels = new Uint8Array(width * height * 4);
   for (let y = 0; y < height; y += 1) {
     const outward = y / (height - 1);
-    const lengthFade = Math.pow(1 - outward, 1.85);
-    const tipFade = 1 - THREE.MathUtils.smoothstep(outward, 0.82, 1);
+    const lengthFade = Math.pow(1 - outward, 1.18);
+    const tipFade = 1 - THREE.MathUtils.smoothstep(outward, 0.88, 1);
     for (let x = 0; x < width; x += 1) {
       const lateral = (x + 0.5) / width * 2 - 1;
-      const softBeam = Math.exp(-lateral * lateral * 10.5);
-      const brightSeam = Math.exp(-lateral * lateral * 78);
-      const energy = Math.min(1, (softBeam * 0.34 + brightSeam * 0.68) * lengthFade * tipFade);
-      const heat = Math.min(1, brightSeam * Math.pow(1 - outward, 4.2));
+      const softBeam = Math.exp(-lateral * lateral * 8.5);
+      const brightSeam = Math.exp(-lateral * lateral * 68);
+      const energy = Math.min(1, (softBeam * 0.52 + brightSeam * 0.96) * lengthFade * tipFade);
+      const heat = Math.min(1, brightSeam * Math.pow(1 - outward, 2.8));
       const index = (y * width + x) * 4;
       pixels[index] = Math.round(THREE.MathUtils.lerp(48, 218, heat));
       pixels[index + 1] = Math.round(THREE.MathUtils.lerp(70, 232, heat));
@@ -114,7 +114,7 @@ export function HumanBillboardLayer({
     map: columnTexture,
     color: "#ffffff",
     transparent: true,
-    opacity: selectedHumanId === human?.id ? 0.9 : hoveredHumanId === human?.id ? 0.78 : 0.66,
+    opacity: selectedHumanId === human?.id ? 1 : hoveredHumanId === human?.id ? 0.96 : 0.88,
     depthTest: true,
     depthWrite: false,
     side: THREE.DoubleSide,
@@ -122,9 +122,9 @@ export function HumanBillboardLayer({
     toneMapped: false,
   }), [columnTexture, hoveredHumanId, human?.id, selectedHumanId]);
   const columnGeometry = useMemo(() => {
-    const geometry = new THREE.PlaneGeometry(0.026, 0.19);
+    const geometry = new THREE.PlaneGeometry(0.04, 0.28);
     geometry.rotateX(Math.PI / 2);
-    geometry.translate(0, 0, 0.095);
+    geometry.translate(0, 0, 0.14);
     return geometry;
   }, []);
   const position = useMemo(() => human
