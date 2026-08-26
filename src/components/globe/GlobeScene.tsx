@@ -15,7 +15,6 @@ const EASTWARD_ROTATION_SPEED = Math.PI * 2 / EARTH_ROTATION_SECONDS;
 const PAPER = new THREE.Color("#F2EBDD");
 const LAPIS = new THREE.Color("#3046A5");
 const BEACON_BLUE = new THREE.Color("#315DFF");
-const WARM_CONTACT = new THREE.Color("#F2EBDD");
 const UNIT_Z = new THREE.Vector3(0, 0, 1);
 
 function latLngVector(lat: number, lng: number, radius = WORLD_RADIUS) {
@@ -421,8 +420,8 @@ function HumanOrbs({
           const selectedContact = slot.candidateIndex === selectedIndex;
           contactScale.setScalar(0.0225 * slot.scale * (selectedContact ? 1.2 : 1));
           contactColor
-            .copy(selectedContact ? BEACON_BLUE : WARM_CONTACT)
-            .multiplyScalar(slot.contactOpacity * limb * (selectedContact ? 0.58 : 0.31));
+            .copy(selectedContact ? BEACON_BLUE : LAPIS)
+            .multiplyScalar(slot.contactOpacity * limb * (selectedContact ? 0.64 : 0.43));
         }
         contactMatrix.compose(contactPosition, contactQuaternion, contactScale);
         contact.setMatrixAt(slotIndex, contactMatrix);
@@ -604,20 +603,18 @@ function HumanOrbs({
             float attention = 1.0 + vHovered * 0.13 + vSelected * 0.17;
 
             vec3 paper = vec3(0.949, 0.922, 0.867);
-            vec3 hotIvory = vec3(1.15, 1.10, 1.0);
-            vec3 champagne = vec3(1.0, 0.86, 0.69);
             vec3 lapis = vec3(0.188, 0.275, 0.647);
             vec3 beaconBlue = vec3(0.302, 0.451, 1.0);
             vec3 hotBlue = vec3(0.70, 0.79, 1.0);
-            vec3 coreColor = mix(hotIvory, hotBlue, clamp(vSelected * 0.34 + vHovered * 0.08, 0.0, 1.0));
-            vec3 innerColor = mix(champagne, beaconBlue, clamp(vSelected * 0.82 + vHovered * 0.12, 0.0, 1.0));
-            vec3 auraColor = mix(vec3(0.64, 0.67, 0.72), beaconBlue, clamp(vSelected * 0.92 + vHovered * 0.22, 0.0, 1.0));
+            vec3 coreColor = mix(beaconBlue, hotBlue, clamp(0.20 + hotCenter * 0.18 + vSelected * 0.44 + vHovered * 0.16, 0.0, 1.0));
+            vec3 innerColor = mix(lapis, beaconBlue, clamp(0.62 + vSelected * 0.24 + vHovered * 0.08, 0.0, 1.0));
+            vec3 auraColor = mix(lapis, beaconBlue, clamp(0.40 + vSelected * 0.43 + vHovered * 0.12, 0.0, 1.0));
 
             vec3 light = coreColor * pinpoint * vCoreOpacity * coreLimb * (1.22 + hotCenter * 0.66)
               + innerColor * innerBloom * vInnerOpacity * innerLimb * mix(0.54, 0.70, vSelected)
               + auraColor * outerAura * vHaloOpacity * auraLimb * vBreath * mix(0.22, 0.43, vSelected)
-              + mix(paper, beaconBlue, vSelected) * ripple * vHaloOpacity * auraLimb * mix(0.26, 0.48, vSelected)
-              + mix(paper, hotBlue, vSelected * 0.72) * (horizontalGlint + verticalGlint) * vGlint * coreLimb * 0.36;
+              + beaconBlue * ripple * vHaloOpacity * auraLimb * mix(0.34, 0.52, vSelected)
+              + mix(paper, hotBlue, 0.78) * (horizontalGlint + verticalGlint) * vGlint * coreLimb * 0.38;
             light *= vIntensity * attention;
             float alpha = max(max(light.r, light.g), light.b);
             if (alpha < 0.008) discard;
