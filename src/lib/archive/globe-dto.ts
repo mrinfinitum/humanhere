@@ -10,6 +10,7 @@ const PUBLIC_CITY_CENTROIDS: Record<string, Coordinate> = {
   chicago: [41.878, -87.63],
   "los angeles": [34.052, -118.244],
   "new york": [40.713, -74.006],
+  miami: [25.762, -80.192],
   "mexico city": [19.433, -99.133],
   "sao paulo": [-23.555, -46.633],
   london: [51.507, -0.128],

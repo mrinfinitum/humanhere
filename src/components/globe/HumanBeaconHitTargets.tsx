@@ -54,18 +54,21 @@ export function HumanBeaconHitTargets({ humans, positionFor, onHover, onHoverEnd
   const hover = (event: ThreeEvent<PointerEvent>, humanId: string) => {
     event.stopPropagation();
     event.nativeEvent.stopPropagation();
+    event.nativeEvent.stopImmediatePropagation();
     onHover({ humanId, x: event.nativeEvent.clientX, y: event.nativeEvent.clientY });
   };
 
   const clearHover = (event: ThreeEvent<PointerEvent>, humanId: string) => {
     event.stopPropagation();
     event.nativeEvent.stopPropagation();
+    event.nativeEvent.stopImmediatePropagation();
     onHoverEnd(humanId);
   };
 
   const beginSelection = (event: ThreeEvent<PointerEvent>, humanId: string) => {
     event.stopPropagation();
     event.nativeEvent.stopPropagation();
+    event.nativeEvent.stopImmediatePropagation();
     pointerDownRef.current = {
       humanId,
       pointerId: event.pointerId,
@@ -77,6 +80,7 @@ export function HumanBeaconHitTargets({ humans, positionFor, onHover, onHoverEnd
   const finishSelection = (event: ThreeEvent<PointerEvent>, humanId: string) => {
     event.stopPropagation();
     event.nativeEvent.stopPropagation();
+    event.nativeEvent.stopImmediatePropagation();
     const start = pointerDownRef.current;
     pointerDownRef.current = null;
     if (!start || start.humanId !== humanId || start.pointerId !== event.pointerId) return;
@@ -110,6 +114,8 @@ export function HumanBeaconHitTargets({ humans, positionFor, onHover, onHoverEnd
             // a background dismissal after pointer-up selected this Human.
             event.stopPropagation();
             event.nativeEvent.stopPropagation();
+            event.nativeEvent.stopImmediatePropagation();
+            onSelect(human.id);
           }}
         />
       ))}
