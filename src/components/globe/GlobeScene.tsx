@@ -14,7 +14,7 @@ const EARTH_ROTATION_SECONDS = 240;
 const EASTWARD_ROTATION_SPEED = Math.PI * 2 / EARTH_ROTATION_SECONDS;
 const PAPER = new THREE.Color("#F2EBDD");
 const LAPIS = new THREE.Color("#3046A5");
-const WARM_CONTACT = new THREE.Color("#F3E6CE");
+const BEACON_BLUE = new THREE.Color("#315DFF");
 const UNIT_Z = new THREE.Vector3(0, 0, 1);
 
 function latLngVector(lat: number, lng: number, radius = WORLD_RADIUS) {
@@ -324,7 +324,7 @@ function HumanOrbs({
     if (!materialRef.current) return;
     materialRef.current.uniforms.uTime.value = clock.elapsedTime;
     const strength = materialRef.current.uniforms.uHoverStrength;
-    strength.value = THREE.MathUtils.damp(strength.value, hoverTargetRef.current ? 1 : 0, 4.5, delta);
+    strength.value = THREE.MathUtils.damp(strength.value, hoverTargetRef.current ? 1 : 0, 3.4, delta);
     if (!hoverTargetRef.current && strength.value < 0.01) uniforms.uHovered.value = -1;
 
     const world = worldRef.current;
@@ -379,10 +379,10 @@ function HumanOrbs({
           const facing = surfaceDirection.copy(contactNormal).applyQuaternion(worldQuaternion).dot(cameraDirection);
           const limb = THREE.MathUtils.smoothstep(facing, 0.055, 0.3);
           const selectedContact = slot.candidateIndex === selectedIndex;
-          contactScale.setScalar(0.0225 * slot.scale * (selectedContact ? 1.24 : 1));
+          contactScale.setScalar(0.028 * slot.scale * (selectedContact ? 1.18 : 1));
           contactColor
-            .copy(selectedContact ? LAPIS : WARM_CONTACT)
-            .multiplyScalar(slot.contactOpacity * limb * (selectedContact ? 0.48 : 0.27));
+            .copy(selectedContact ? BEACON_BLUE : LAPIS)
+            .multiplyScalar(slot.contactOpacity * limb * (selectedContact ? 0.64 : 0.46));
         }
         contactMatrix.compose(contactPosition, contactQuaternion, contactScale);
         contact.setMatrixAt(slotIndex, contactMatrix);
@@ -498,14 +498,14 @@ function HumanOrbs({
             vActive = max(selected, hovered);
             float breatheWave = sin(uTime * 0.82 + aPhase);
             float breatheScale = 1.0 + breatheWave * 0.018 * uMotion;
-            float naturalSize = 0.94 + fract(sin(aPhase * 12.9898) * 43758.5453) * 0.12;
+            float naturalSize = 0.92 + fract(sin(aPhase * 12.9898) * 43758.5453) * 0.16;
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
             gl_Position = projectionMatrix * mvPosition;
-            float baseSize = mix(48.0, 42.0, uMobile) * naturalSize;
-            float interactionScale = 1.0 + selected * 0.22 + hovered * 0.045;
+            float baseSize = mix(62.0, 52.0, uMobile) * naturalSize;
+            float interactionScale = 1.0 + selected * 0.24 + hovered * 0.12;
             float projectedSize = baseSize * interactionScale * aScale * breatheScale
               * uPixelRatio * (2.75 / max(1.0, -mvPosition.z));
-            gl_PointSize = clamp(projectedSize, 17.0 * uPixelRatio, 62.0 * uPixelRatio);
+            gl_PointSize = clamp(projectedSize, 22.0 * uPixelRatio, 78.0 * uPixelRatio);
             vec3 viewNormal = normalize(normalMatrix * normalize(position));
             vec3 viewDirection = normalize(-mvPosition.xyz);
             vFacing = dot(viewNormal, viewDirection);
@@ -536,10 +536,10 @@ function HumanOrbs({
           varying float vArrivalRipple;
           void main() {
             float radius = length(gl_PointCoord - 0.5) * 2.0;
-            float pinpoint = 1.0 - smoothstep(0.028, 0.095, radius);
-            float hotCenter = 1.0 - smoothstep(0.0, 0.038, radius);
-            float innerBloom = exp(-pow(radius / 0.205, 2.0));
-            float outerAura = exp(-pow(radius / 0.54, 2.0)) * (1.0 - smoothstep(0.72, 1.0, radius));
+            float pinpoint = 1.0 - smoothstep(0.035, 0.14, radius);
+            float hotCenter = 1.0 - smoothstep(0.0, 0.052, radius);
+            float innerBloom = exp(-pow(radius / 0.24, 2.0));
+            float outerAura = exp(-pow(radius / 0.58, 2.0)) * (1.0 - smoothstep(0.74, 1.0, radius));
 
             // A single soft wave leaves the point only after it has fully
             // emerged. It reads as presence arriving, not a repeating target.
@@ -561,17 +561,18 @@ function HumanOrbs({
             float attention = 1.0 + vHovered * 0.13 + vSelected * 0.17;
 
             vec3 paper = vec3(0.949, 0.922, 0.867);
-            vec3 hotIvory = vec3(1.0, 0.982, 0.93);
-            vec3 champagne = vec3(0.95, 0.80, 0.60);
             vec3 lapis = vec3(0.188, 0.275, 0.647);
-            vec3 paleLapis = vec3(0.40, 0.50, 0.88);
-            vec3 auraColor = mix(vec3(0.58, 0.61, 0.68), paleLapis, clamp(vSelected * 0.92 + vHovered * 0.32, 0.0, 1.0));
+            vec3 beaconBlue = vec3(0.302, 0.451, 1.0);
+            vec3 hotBlue = vec3(0.70, 0.79, 1.0);
+            vec3 coreColor = mix(beaconBlue, hotBlue, clamp(vSelected * 0.72 + vHovered * 0.24 + hotCenter * 0.18, 0.0, 1.0));
+            vec3 innerColor = mix(lapis, beaconBlue, 0.68 + vSelected * 0.20);
+            vec3 auraColor = mix(lapis, beaconBlue, 0.52 + vSelected * 0.34 + vHovered * 0.12);
 
-            vec3 light = hotIvory * pinpoint * vCoreOpacity * coreLimb * (1.05 + hotCenter * 0.42)
-              + champagne * innerBloom * vInnerOpacity * innerLimb * 0.48
-              + auraColor * outerAura * vHaloOpacity * auraLimb * vBreath * mix(0.22, 0.39, vSelected)
-              + lapis * ripple * vHaloOpacity * auraLimb * 0.34
-              + paper * (horizontalGlint + verticalGlint) * vGlint * coreLimb * 0.34;
+            vec3 light = coreColor * pinpoint * vCoreOpacity * coreLimb * (1.22 + hotCenter * 0.68)
+              + innerColor * innerBloom * vInnerOpacity * innerLimb * 0.72
+              + auraColor * outerAura * vHaloOpacity * auraLimb * vBreath * mix(0.34, 0.50, vSelected)
+              + beaconBlue * ripple * vHaloOpacity * auraLimb * 0.52
+              + mix(paper, hotBlue, 0.62) * (horizontalGlint + verticalGlint) * vGlint * coreLimb * 0.40;
             light *= vIntensity * attention;
             float alpha = max(max(light.r, light.g), light.b);
             if (alpha < 0.008) discard;
