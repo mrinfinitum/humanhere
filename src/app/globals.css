@@ -77,28 +77,6 @@ button { cursor: pointer; }
 .human-globe-view b { padding-left: 4px; font-size: 14px; font-weight: 350; }
 .human-globe-view:hover, .human-globe-view:focus-visible { color: #7d98ff; }
 .human-globe-coordinate-hud { position: fixed; top: 52%; right: 2.4%; z-index: 14; display: grid; margin: 0; color: rgb(242 235 221 / .38); font-size: 7px; font-weight: 450; gap: 6px; letter-spacing: .2em; line-height: 1; pointer-events: none; text-transform: uppercase; }
-.human-orb-hud { position: fixed; inset: 0; z-index: 20; overflow: visible; pointer-events: none; }
-.human-orb-hud > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-.human-orb-hud path { fill: none; stroke: rgb(242 235 221 / .4); stroke-dasharray: 1; stroke-dashoffset: 1; stroke-width: .75; vector-effect: non-scaling-stroke; }
-.human-orb-hud circle { fill: #4d73ff; opacity: 0; filter: drop-shadow(0 0 5px #315dff); }
-.human-orb-hud__data { position: fixed; display: grid; width: 166px; min-height: 39px; padding: 3px 0 3px 13px; border-left: 1px solid rgb(242 235 221 / .42); color: var(--human-paper); gap: 4px; opacity: 0; text-transform: uppercase; }
-.human-orb-hud__data::after { position: absolute; bottom: -5px; left: 0; width: 34px; height: 1px; background: #315dff; box-shadow: 0 0 7px rgb(49 93 255 / .42); content: ""; }
-.human-orb-hud__data span { font-size: 11px; font-weight: 480; letter-spacing: .2em; }
-.human-orb-hud__data small { color: rgb(242 235 221 / .58); font-size: 7px; letter-spacing: .17em; }
-.human-orb-hud__data em { margin-top: 4px; color: rgb(242 235 221 / .76); font-size: 8px; font-style: normal; letter-spacing: .15em; }
-.human-orb-hud__data b { margin-top: 5px; color: #4d73ff; font-size: 7px; font-weight: 540; letter-spacing: .16em; }
-.human-orb-hud.is-visible path { animation: human-hud-line-in 380ms cubic-bezier(.2,.74,.18,1) both; }
-.human-orb-hud.is-visible circle { animation: human-hud-anchor-in 220ms ease-out both; }
-.human-orb-hud.is-visible .human-orb-hud__data { animation: human-hud-data-in 360ms var(--ease) 235ms both; }
-.human-orb-hud.is-leaving path { animation: human-hud-line-out 280ms ease-in both; }
-.human-orb-hud.is-leaving circle { animation: human-hud-anchor-out 180ms ease-in both; }
-.human-orb-hud.is-leaving .human-orb-hud__data { animation: human-hud-data-out 190ms ease-in both; }
-@keyframes human-hud-line-in { from { opacity: 0; stroke-dashoffset: 1; } to { opacity: 1; stroke-dashoffset: 0; } }
-@keyframes human-hud-line-out { from { opacity: 1; stroke-dashoffset: 0; } to { opacity: 0; stroke-dashoffset: -1; } }
-@keyframes human-hud-anchor-in { from { opacity: 0; transform: scale(.6); transform-origin: center; } to { opacity: 1; transform: scale(1); transform-origin: center; } }
-@keyframes human-hud-anchor-out { from { opacity: 1; } to { opacity: 0; } }
-@keyframes human-hud-data-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes human-hud-data-out { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-3px); } }
 .human-globe-footer { position: fixed; bottom: 9.5%; left: 7.1%; z-index: 12; display: flex; gap: 38px; align-items: center; color: rgb(242 235 221 / .64); font-size: 8px; font-weight: 450; letter-spacing: .35em; text-transform: uppercase; }
 .human-globe-footer span { display: flex; align-items: center; gap: 30px; }
 .human-globe-footer span i { display: block; width: 8px; height: 8px; border-radius: 50%; background: #315dff; box-shadow: 0 0 10px #315dff; }
@@ -531,7 +509,6 @@ button { cursor: pointer; }
   .human-globe-preview > div { display: flex; margin-top: 15px; align-items: center; justify-content: space-between; }
   .human-globe-preview::after { width: 74px; }
   .human-globe-connector { display: none; }
-  .human-orb-hud { display: none; }
   .human-story-drawer-scrim { background: rgb(5 7 11 / .48); }
   .human-story-drawer { top: 76px; width: 100%; height: calc(100svh - 76px); box-shadow: 0 -22px 70px rgb(0 0 0 / .42); animation-name: human-story-drawer-mobile-in; }
   @keyframes human-story-drawer-mobile-in { from { opacity: .5; transform: translate3d(0, 32px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }

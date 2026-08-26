@@ -37,15 +37,12 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   const lastInteractionWasDrag = useRef(false);
   const touches = useRef(new Map<number, { x: number; y: number }>());
   const pinch = useRef<{ distance: number; cameraDistance: number } | null>(null);
-  const hoverDismissTimer = useRef<number | null>(null);
   const storyRequest = useRef<AbortController | null>(null);
   const storyCache = useRef(new Map<string, HumanEntry>());
   const [selectedHumanId, setSelectedHumanId] = useState<string | null>(null);
   const [storyDrawer, setStoryDrawer] = useState<StoryDrawerState | null>(null);
   const [activeHumanIds, setActiveHumanIds] = useState<string[]>([]);
   const [hovered, setHovered] = useState<GlobeHover>(null);
-  const [hoverLayout, setHoverLayout] = useState<ReturnType<typeof getHoverHudLayout> | null>(null);
-  const [hoverHudVisible, setHoverHudVisible] = useState(false);
   const [ready, setReady] = useState(false);
   const [webglAvailable, setWebglAvailable] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -112,7 +109,6 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   }, []);
 
   useEffect(() => () => {
-    if (hoverDismissTimer.current !== null) window.clearTimeout(hoverDismissTimer.current);
     storyRequest.current?.abort();
   }, []);
 
@@ -214,31 +210,14 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   };
 
   const updateHover = useCallback((next: GlobeHover) => {
-    if (hoverDismissTimer.current !== null) {
-      window.clearTimeout(hoverDismissTimer.current);
-      hoverDismissTimer.current = null;
-    }
-    if (next) {
-      setHovered(next);
-      setHoverLayout(getHoverHudLayout(next, window.innerWidth, window.innerHeight));
-      setHoverHudVisible(true);
-      return;
-    }
-    setHoverHudVisible(false);
-    hoverDismissTimer.current = window.setTimeout(() => {
-      setHovered(null);
-      setHoverLayout(null);
-      hoverDismissTimer.current = null;
-    }, 320);
+    setHovered(next);
   }, []);
 
   const selectHuman = useCallback((humanId: string) => {
     controls.current.engaged = true;
     controls.current.lastInteraction = performance.now();
     setSelectedHumanId(humanId);
-    setHoverHudVisible(false);
     setHovered(null);
-    setHoverLayout(null);
   }, []);
 
   const sceneReady = useCallback(() => setReady(true), []);
@@ -267,10 +246,6 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
       selectHuman(activeHumanIds[(activePosition + 1) % activeHumanIds.length]);
     }
   };
-
-  const hoverHuman = hovered && !selected
-    ? globeHumans.find(human => human.id === hovered.humanId) ?? null
-    : null;
 
   return (
     <main className={`human-globe-shell${selected ? " has-selection" : ""}${hovered ? " has-hover" : ""}`}>
@@ -352,23 +327,6 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
         <b>0</b><i /><i /><span /><i /><i /><b>5</b>
       </div>
 
-      {hovered && hoverHuman && hoverLayout && (
-        <div
-          key={hovered.humanId}
-          className={`human-orb-hud ${hoverHudVisible ? "is-visible" : "is-leaving"}`}
-          aria-hidden="true"
-        >
-          <svg>
-            <path pathLength="1" d={hoverLayout.path} />
-            <circle cx={hovered.x} cy={hovered.y} r="2.2" />
-          </svg>
-          <div className="human-orb-hud__data" style={{ left: hoverLayout.labelX, top: hoverLayout.labelY }}>
-            <span>{hoverHuman.firstName}</span>
-            {hoverHuman.city && <small>{hoverHuman.city}</small>}
-          </div>
-        </div>
-      )}
-
       {selected && !storyDrawer && (
         <HumanCalloutOverlay
           human={selected}
@@ -414,21 +372,6 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
       )}
     </main>
   );
-}
-
-function getHoverHudLayout(hover: NonNullable<GlobeHover>, width: number, height: number) {
-  const labelWidth = 166;
-  const placeLeft = hover.x > width * 0.7;
-  const labelY = clamp(hover.y - 34, 112, Math.max(112, height - 116));
-  const desiredLabelX = placeLeft ? hover.x - 132 - labelWidth : hover.x + 132;
-  const labelX = clamp(desiredLabelX, 24, Math.max(24, width - labelWidth - 24));
-  const lineEndX = placeLeft ? labelX + labelWidth + 1 : labelX - 12;
-  const elbowX = hover.x + (placeLeft ? -34 : 34);
-  return {
-    labelX,
-    labelY,
-    path: `M ${hover.x.toFixed(1)} ${hover.y.toFixed(1)} L ${elbowX.toFixed(1)} ${hover.y.toFixed(1)} L ${lineEndX.toFixed(1)} ${(labelY + 13).toFixed(1)}`,
-  };
 }
 
 function Wordmark() {
