@@ -16,7 +16,7 @@ function clamp(value: number, minimum: number, maximum: number) {
 export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   const stageRef = useRef<HTMLElement | null>(null);
   const previewRef = useRef<HTMLElement | null>(null);
-  const connectorRef = useRef<SVGLineElement | null>(null);
+  const connectorRef = useRef<SVGPathElement | null>(null);
   const controls = useRef<GlobeControls>({ targetX: 0.47, targetY: -0.085, distance: 3.42, engaged: false, dragging: false, lastInteraction: 0 });
   const pointer = useRef<{ id: number; x: number; y: number; targetX: number; targetY: number; moved: boolean } | null>(null);
   const touches = useRef(new Map<number, { x: number; y: number }>());
@@ -286,6 +286,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
           <div className="human-orb-hud__data" style={{ left: hoverLayout.labelX, top: hoverLayout.labelY }}>
             <span>{hoverHuman.firstName}</span>
             {hoverHuman.city && <small>{hoverHuman.city}</small>}
+            {hoverHuman.loveCount > 0 && <em>♡ {hoverHuman.loveCount.toLocaleString()}</em>}
             <b>View human →</b>
           </div>
         </div>
@@ -294,7 +295,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
       {selected && (
         <>
           <svg className="human-globe-connector" aria-hidden="true">
-            <line ref={connectorRef} />
+            <path ref={connectorRef} pathLength="1" />
           </svg>
           <aside ref={previewRef} className="human-globe-preview" aria-live="polite">
             <button type="button" onClick={() => setSelectedIndex(null)} aria-label="Close human preview">×</button>
@@ -305,6 +306,10 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
               <Link href={`/humans/${selected.slug}`} prefetch={false}>View human <b aria-hidden="true">→</b></Link>
             </div>
           </aside>
+          <p className="human-globe-coordinate-hud" aria-hidden="true">
+            <span>{formatCoordinate(selected.lat, "N", "S")}</span>
+            <span>{formatCoordinate(selected.lng, "E", "W")}</span>
+          </p>
         </>
       )}
 
@@ -331,6 +336,10 @@ function getHoverHudLayout(hover: NonNullable<GlobeHover>, width: number, height
     labelY,
     path: `M ${hover.x.toFixed(1)} ${hover.y.toFixed(1)} L ${elbowX.toFixed(1)} ${hover.y.toFixed(1)} L ${lineEndX.toFixed(1)} ${(labelY + 13).toFixed(1)}`,
   };
+}
+
+function formatCoordinate(value: number, positive: string, negative: string) {
+  return `${Math.abs(value).toFixed(2)}° ${value >= 0 ? positive : negative}`;
 }
 
 function Wordmark() {

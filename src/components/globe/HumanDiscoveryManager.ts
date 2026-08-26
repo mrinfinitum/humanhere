@@ -15,7 +15,9 @@ export type HumanOrbSlot = {
   arrivalRippleDuration: number;
   arrivalRippleProgress: number;
   coreOpacity: number;
+  innerOpacity: number;
   haloOpacity: number;
+  contactOpacity: number;
   scale: number;
   intensity: number;
 };
@@ -91,7 +93,9 @@ export class HumanDiscoveryManager {
       arrivalRippleDuration: 1.6,
       arrivalRippleProgress: 1,
       coreOpacity: 0,
+      innerOpacity: 0,
       haloOpacity: 0,
+      contactOpacity: 0,
       scale: 0.65,
       intensity: 1,
     }));
@@ -119,16 +123,23 @@ export class HumanDiscoveryManager {
 
       if (slot.state === "emerging") {
         const progress = frame.reducedMotion ? Math.min(1, stateAge / 0.34) : Math.min(1, stateAge / slot.emergenceDuration);
-        const eased = easeInOut(progress);
-        slot.coreOpacity = eased;
-        slot.haloOpacity = easeInOut(Math.max(0, progress - 0.12) / 0.88);
-        slot.scale = frame.reducedMotion ? 1 : THREE.MathUtils.lerp(0.65, 1, eased);
-        slot.intensity = 1 + Math.sin(progress * Math.PI) * (frame.reducedMotion ? 0 : 0.075);
+        const coreProgress = easeInOut(Math.min(1, progress / 0.46));
+        const innerProgress = easeInOut(Math.max(0, progress - 0.18) / 0.52);
+        const haloProgress = easeInOut(Math.max(0, progress - 0.34) / 0.52);
+        const contactProgress = easeInOut(Math.max(0, progress - 0.56) / 0.44);
+        slot.coreOpacity = coreProgress;
+        slot.innerOpacity = innerProgress;
+        slot.haloOpacity = haloProgress;
+        slot.contactOpacity = contactProgress;
+        slot.scale = frame.reducedMotion ? 1 : THREE.MathUtils.lerp(0.78, 1, innerProgress);
+        slot.intensity = 1 + Math.sin(progress * Math.PI) * (frame.reducedMotion ? 0 : 0.045);
         if (progress >= 1) {
           slot.state = "present";
           slot.stateStartedAt = frame.now;
           slot.coreOpacity = 1;
+          slot.innerOpacity = 1;
           slot.haloOpacity = 1;
+          slot.contactOpacity = 1;
           slot.scale = 1;
           slot.intensity = 1;
         }
@@ -164,13 +175,17 @@ export class HumanDiscoveryManager {
           slot.stateStartedAt = frame.now;
           slot.retireAt = frame.now + this.between(16, 28);
           slot.coreOpacity = 1;
+          slot.innerOpacity = 1;
           slot.haloOpacity = 1;
+          slot.contactOpacity = 1;
           slot.scale = 1;
           continue;
         }
         const progress = Math.min(1, (frame.now - slot.stateStartedAt) / slot.fadeDuration);
-        slot.haloOpacity = 1 - easeInOut(Math.min(1, progress / 0.68));
-        slot.coreOpacity = 1 - easeInOut(Math.max(0, progress - 0.16) / 0.84);
+        slot.contactOpacity = 1 - easeInOut(Math.min(1, progress / 0.42));
+        slot.haloOpacity = 1 - easeInOut(Math.min(1, progress / 0.62));
+        slot.innerOpacity = 1 - easeInOut(Math.max(0, progress - 0.12) / 0.72);
+        slot.coreOpacity = 1 - easeInOut(Math.max(0, progress - 0.36) / 0.64);
         slot.scale = frame.reducedMotion ? 1 : THREE.MathUtils.lerp(1, 0.78, easeInOut(progress));
         slot.intensity = 1;
         if (progress >= 1) {
@@ -269,7 +284,9 @@ export class HumanDiscoveryManager {
     slot.arrivalRippleDuration = this.between(1.45, 1.9);
     slot.arrivalRippleProgress = reducedMotion ? 1 : 0;
     slot.coreOpacity = 0;
+    slot.innerOpacity = 0;
     slot.haloOpacity = 0;
+    slot.contactOpacity = 0;
     slot.scale = reducedMotion ? 1 : 0.65;
     slot.intensity = 1;
     this.remember(candidateIndex);
@@ -280,7 +297,9 @@ export class HumanDiscoveryManager {
     slot.state = "inactive";
     slot.position.copy(FAR_AWAY);
     slot.coreOpacity = 0;
+    slot.innerOpacity = 0;
     slot.haloOpacity = 0;
+    slot.contactOpacity = 0;
     slot.scale = 0.65;
     slot.intensity = 1;
     slot.arrivalRippleProgress = 1;

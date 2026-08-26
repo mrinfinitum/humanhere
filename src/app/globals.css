@@ -51,7 +51,8 @@ button { cursor: pointer; }
 .human-globe-scale i:nth-of-type(2), .human-globe-scale i:nth-of-type(3) { background: rgb(242 235 221 / .55); box-shadow: none; }
 .human-globe-scale b { font-weight: 450; }
 .human-globe-connector { position: fixed; inset: 0; z-index: 13; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.human-globe-connector line { stroke: rgb(242 235 221 / .32); stroke-width: .8; vector-effect: non-scaling-stroke; }
+.human-globe-connector path { fill: none; stroke: rgb(242 235 221 / .34); stroke-dasharray: 1; stroke-dashoffset: 0; stroke-width: .8; vector-effect: non-scaling-stroke; animation: selected-connector-in 520ms cubic-bezier(.2,.74,.18,1) both; }
+@keyframes selected-connector-in { from { opacity: 0; stroke-dashoffset: 1; } to { opacity: 1; stroke-dashoffset: 0; } }
 .human-globe-preview { position: fixed; top: 55.4%; left: 71.9%; z-index: 16; width: min(230px, 21vw); min-height: 176px; padding: 34px 22px 16px; border-left: 1px solid rgb(242 235 221 / .5); background: linear-gradient(90deg, rgb(5 9 18 / .9), rgb(5 9 18 / .58) 74%, rgb(5 9 18 / .12)); color: var(--human-paper); animation: globe-preview-in 600ms var(--ease) both; backdrop-filter: blur(2px); text-transform: uppercase; }
 @keyframes globe-preview-in { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
 .human-globe-preview::after { position: absolute; bottom: 0; left: 0; width: 80px; height: 1px; background: #315dff; box-shadow: 0 0 6px rgb(49 93 255 / .34); content: ""; }
@@ -64,6 +65,7 @@ button { cursor: pointer; }
 .human-globe-preview small { color: rgb(242 235 221 / .82); font-size: 10px; letter-spacing: .16em; }
 .human-globe-preview a { color: #4d73ff; font-size: 9px; font-weight: 550; letter-spacing: .24em; }
 .human-globe-preview a b { padding-left: 4px; font-size: 14px; font-weight: 350; }
+.human-globe-coordinate-hud { position: fixed; top: 52%; right: 2.4%; z-index: 14; display: grid; margin: 0; color: rgb(242 235 221 / .38); font-size: 7px; font-weight: 450; gap: 6px; letter-spacing: .2em; line-height: 1; pointer-events: none; text-transform: uppercase; }
 .human-orb-hud { position: fixed; inset: 0; z-index: 20; overflow: visible; pointer-events: none; }
 .human-orb-hud > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .human-orb-hud path { fill: none; stroke: rgb(242 235 221 / .4); stroke-dasharray: 1; stroke-dashoffset: 1; stroke-width: .75; vector-effect: non-scaling-stroke; }
@@ -72,6 +74,7 @@ button { cursor: pointer; }
 .human-orb-hud__data::after { position: absolute; bottom: -5px; left: 0; width: 34px; height: 1px; background: #315dff; box-shadow: 0 0 7px rgb(49 93 255 / .42); content: ""; }
 .human-orb-hud__data span { font-size: 11px; font-weight: 480; letter-spacing: .2em; }
 .human-orb-hud__data small { color: rgb(242 235 221 / .58); font-size: 7px; letter-spacing: .17em; }
+.human-orb-hud__data em { margin-top: 4px; color: rgb(242 235 221 / .76); font-size: 8px; font-style: normal; letter-spacing: .15em; }
 .human-orb-hud__data b { margin-top: 5px; color: #4d73ff; font-size: 7px; font-weight: 540; letter-spacing: .16em; }
 .human-orb-hud.is-visible path { animation: human-hud-line-in 380ms cubic-bezier(.2,.74,.18,1) both; }
 .human-orb-hud.is-visible circle { animation: human-hud-anchor-in 220ms ease-out both; }
@@ -466,7 +469,7 @@ button { cursor: pointer; }
   .human-globe-copy > p span::after { width: 3px; height: 3px; margin: 8px; }
   .human-globe-copy h1 { font-size: clamp(29px, 9vw, 42px); letter-spacing: .21em; line-height: 1.08; }
   .human-globe-copy small { margin: 20px 0 0; font-size: 7px; }
-  .human-globe-scale, .human-globe-orbit, .human-globe-footer a { display: none; }
+  .human-globe-scale, .human-globe-orbit, .human-globe-footer a, .human-globe-coordinate-hud { display: none; }
   .human-globe-footer { bottom: 20px; left: 18px; font-size: 7px; }
   .human-globe-preview { top: auto; right: 12px; bottom: 52px; left: 12px; width: auto; min-height: 126px; padding: 25px 18px 14px; border-top: 1px solid rgb(242 235 221 / .28); border-left-color: rgb(242 235 221 / .42); background: rgb(7 11 19 / .74); backdrop-filter: blur(12px); }
   .human-globe-preview > div { display: flex; margin-top: 15px; align-items: center; justify-content: space-between; }

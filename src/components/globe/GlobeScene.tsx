@@ -14,6 +14,8 @@ const EARTH_ROTATION_SECONDS = 240;
 const EASTWARD_ROTATION_SPEED = Math.PI * 2 / EARTH_ROTATION_SECONDS;
 const PAPER = new THREE.Color("#F2EBDD");
 const LAPIS = new THREE.Color("#3046A5");
+const WARM_CONTACT = new THREE.Color("#F3E6CE");
+const UNIT_Z = new THREE.Vector3(0, 0, 1);
 
 function latLngVector(lat: number, lng: number, radius = WORLD_RADIUS) {
   const latitude = THREE.MathUtils.degToRad(lat);
@@ -104,13 +106,16 @@ function EarthSurface() {
         float grazing = pow(1.0 - max(dot(vNormalView, vViewDirection), 0.0), 2.7);
         surface *= 0.54 + key * 0.72;
         surface += mutedDay * key * 0.16;
-        surface += night * 0.025;
+        surface += night * 0.012;
         surface += vec3(0.018, 0.030, 0.062) * grazing * 0.68;
 
-        // A high threshold deliberately keeps only the brightest NASA night-light
-        // data so geography remains quiet and Human markers remain primary.
-        float city = pow(clamp(nightLuma * 1.12, 0.0, 1.0), 4.45);
-        vec3 cityWarmth = vec3(1.0, 0.80, 0.55) * city * 0.96;
+        // Preserve real night-light geography while compressing the largest
+        // source blobs. A lower signal threshold reveals metropolitan texture;
+        // the nonlinear response keeps that texture below Human beacons.
+        float citySignal = smoothstep(0.055, 0.58, nightLuma);
+        float city = pow(citySignal, 2.25) * 0.52;
+        float metroCompression = mix(1.0, 0.64, smoothstep(0.62, 1.0, citySignal));
+        vec3 cityWarmth = vec3(1.0, 0.79, 0.54) * city * metroCompression;
         vec3 color = surface + cityWarmth;
 
         float limbShadow = smoothstep(-0.22, 0.42, dot(vNormalWorld, keyDirection));
@@ -153,12 +158,14 @@ function Atmosphere() {
       varying vec3 vViewDirection;
       varying vec3 vNormalWorld;
       void main() {
-        float fresnel = pow(1.0 - abs(dot(vNormalView, vViewDirection)), 5.4);
+        float edge = 1.0 - abs(dot(vNormalView, vViewDirection));
         float directional = smoothstep(-0.25, 0.82, dot(vNormalWorld, normalize(vec3(0.42, 0.66, 0.62))));
         vec3 lapis = vec3(0.188, 0.275, 0.647);
-        vec3 opticalBlue = vec3(0.32, 0.49, 0.92);
+        vec3 opticalBlue = vec3(0.48, 0.63, 1.0);
         vec3 color = mix(lapis, opticalBlue, directional * 0.55);
-        gl_FragColor = vec4(color, fresnel * (0.03 + directional * 0.32));
+        float fineRim = pow(edge, 8.4) * (0.045 + directional * 0.38);
+        float broadRim = pow(edge, 3.2) * (0.016 + directional * 0.055);
+        gl_FragColor = vec4(color, fineRim + broadRim);
       }
     `,
   }), []);
@@ -192,6 +199,7 @@ function HumanOrbs({
   onActiveChange: (indices: number[]) => void;
 }) {
   const pointsRef = useRef<THREE.Points>(null);
+  const contactRef = useRef<THREE.InstancedMesh>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const hoveredRef = useRef(-1);
   const hoveredPositionRef = useRef({ x: 0, y: 0 });
@@ -201,11 +209,17 @@ function HumanOrbs({
   const cameraDirection = useMemo(() => new THREE.Vector3(), []);
   const worldQuaternion = useMemo(() => new THREE.Quaternion(), []);
   const surfaceDirection = useMemo(() => new THREE.Vector3(), []);
+  const contactNormal = useMemo(() => new THREE.Vector3(), []);
+  const contactPosition = useMemo(() => new THREE.Vector3(), []);
+  const contactScale = useMemo(() => new THREE.Vector3(), []);
+  const contactQuaternion = useMemo(() => new THREE.Quaternion(), []);
+  const contactMatrix = useMemo(() => new THREE.Matrix4(), []);
+  const contactColor = useMemo(() => new THREE.Color(), []);
   const { camera, gl, size } = useThree();
   const mobile = size.width <= 760;
   const poolSize = mobile ? 10 : 18;
   const candidatePositions = useMemo(
-    () => humans.map(human => latLngVector(human.lat, human.lng, 1.017)),
+    () => humans.map(human => latLngVector(human.lat, human.lng, 1.0085)),
     [humans],
   );
   const discovery = useMemo(() => new HumanDiscoveryManager(candidatePositions, {
@@ -224,6 +238,7 @@ function HumanOrbs({
     const phases = new Float32Array(poolSize);
     const indices = new Float32Array(poolSize).fill(-1);
     const coreOpacity = new Float32Array(poolSize);
+    const innerOpacity = new Float32Array(poolSize);
     const haloOpacity = new Float32Array(poolSize);
     const arrivalRipple = new Float32Array(poolSize).fill(1);
     const scales = new Float32Array(poolSize).fill(0.65);
@@ -233,12 +248,49 @@ function HumanOrbs({
     result.setAttribute("aPhase", new THREE.BufferAttribute(phases, 1));
     result.setAttribute("aIndex", new THREE.BufferAttribute(indices, 1));
     result.setAttribute("aCoreOpacity", new THREE.BufferAttribute(coreOpacity, 1));
+    result.setAttribute("aInnerOpacity", new THREE.BufferAttribute(innerOpacity, 1));
     result.setAttribute("aHaloOpacity", new THREE.BufferAttribute(haloOpacity, 1));
     result.setAttribute("aArrivalRipple", new THREE.BufferAttribute(arrivalRipple, 1));
     result.setAttribute("aScale", new THREE.BufferAttribute(scales, 1));
     result.setAttribute("aIntensity", new THREE.BufferAttribute(intensities, 1));
     return result;
   }, [poolSize]);
+  const contactGeometry = useMemo(() => new THREE.CircleGeometry(1, 40), []);
+  const contactMaterial = useMemo(() => new THREE.ShaderMaterial({
+    transparent: true,
+    depthTest: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    blending: THREE.AdditiveBlending,
+    vertexColors: true,
+    toneMapped: false,
+    vertexShader: `
+      varying vec2 vContactUv;
+      varying vec3 vContactColor;
+      void main() {
+        vContactUv = uv;
+        #ifdef USE_INSTANCING_COLOR
+          vContactColor = instanceColor;
+        #else
+          vContactColor = vec3(0.0);
+        #endif
+        vec4 instancePosition = instanceMatrix * vec4(position, 1.0);
+        gl_Position = projectionMatrix * modelViewMatrix * instancePosition;
+      }
+    `,
+    fragmentShader: `
+      varying vec2 vContactUv;
+      varying vec3 vContactColor;
+      void main() {
+        float radius = length(vContactUv - 0.5) * 2.0;
+        float contact = exp(-pow(radius / 0.58, 2.0))
+          * (1.0 - smoothstep(0.56, 1.0, radius));
+        float alpha = contact * 0.52;
+        if (alpha < 0.006) discard;
+        gl_FragColor = vec4(vContactColor, alpha);
+      }
+    `,
+  }), []);
 
   const uniforms = useMemo(() => ({
     uTime: { value: 0 },
@@ -247,7 +299,8 @@ function HumanOrbs({
     uHoverStrength: { value: 0 },
     uPixelRatio: { value: 1 },
     uMotion: { value: 1 },
-  }), []);
+    uMobile: { value: mobile ? 1 : 0 },
+  }), [mobile]);
 
   useEffect(() => {
     uniforms.uPixelRatio.value = Math.min(gl.getPixelRatio(), 1.8);
@@ -255,6 +308,13 @@ function HumanOrbs({
   useEffect(() => { uniforms.uSelected.value = selectedIndex ?? -1; }, [selectedIndex, uniforms]);
   useEffect(() => { uniforms.uMotion.value = reducedMotion ? 0 : 1; }, [reducedMotion, uniforms]);
   useEffect(() => () => geometry.dispose(), [geometry]);
+  useEffect(() => () => {
+    contactGeometry.dispose();
+    contactMaterial.dispose();
+  }, [contactGeometry, contactMaterial]);
+  useEffect(() => {
+    if (contactRef.current) contactRef.current.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  }, []);
   useEffect(() => {
     activeKeyRef.current = "";
     onActiveChange([]);
@@ -289,6 +349,7 @@ function HumanOrbs({
     const phase = geometry.getAttribute("aPhase") as THREE.BufferAttribute;
     const index = geometry.getAttribute("aIndex") as THREE.BufferAttribute;
     const coreOpacity = geometry.getAttribute("aCoreOpacity") as THREE.BufferAttribute;
+    const innerOpacity = geometry.getAttribute("aInnerOpacity") as THREE.BufferAttribute;
     const haloOpacity = geometry.getAttribute("aHaloOpacity") as THREE.BufferAttribute;
     const arrivalRipple = geometry.getAttribute("aArrivalRipple") as THREE.BufferAttribute;
     const scale = geometry.getAttribute("aScale") as THREE.BufferAttribute;
@@ -298,19 +359,49 @@ function HumanOrbs({
       phase.setX(slotIndex, slot.phase);
       index.setX(slotIndex, slot.candidateIndex);
       coreOpacity.setX(slotIndex, slot.coreOpacity);
+      innerOpacity.setX(slotIndex, slot.innerOpacity);
       haloOpacity.setX(slotIndex, slot.haloOpacity);
       arrivalRipple.setX(slotIndex, slot.arrivalRippleProgress);
       scale.setX(slotIndex, slot.scale);
       intensity.setX(slotIndex, slot.intensity);
+
+      const contact = contactRef.current;
+      if (contact) {
+        if (slot.candidateIndex < 0 || slot.contactOpacity <= 0.001) {
+          contactPosition.set(100, 100, 100);
+          contactQuaternion.identity();
+          contactScale.setScalar(0.0001);
+          contactColor.setRGB(0, 0, 0);
+        } else {
+          contactNormal.copy(slot.position).normalize();
+          contactPosition.copy(contactNormal).multiplyScalar(1.0012);
+          contactQuaternion.setFromUnitVectors(UNIT_Z, contactNormal);
+          const facing = surfaceDirection.copy(contactNormal).applyQuaternion(worldQuaternion).dot(cameraDirection);
+          const limb = THREE.MathUtils.smoothstep(facing, 0.055, 0.3);
+          const selectedContact = slot.candidateIndex === selectedIndex;
+          contactScale.setScalar(0.0225 * slot.scale * (selectedContact ? 1.24 : 1));
+          contactColor
+            .copy(selectedContact ? LAPIS : WARM_CONTACT)
+            .multiplyScalar(slot.contactOpacity * limb * (selectedContact ? 0.48 : 0.27));
+        }
+        contactMatrix.compose(contactPosition, contactQuaternion, contactScale);
+        contact.setMatrixAt(slotIndex, contactMatrix);
+        contact.setColorAt(slotIndex, contactColor);
+      }
     });
     position.needsUpdate = true;
     phase.needsUpdate = true;
     index.needsUpdate = true;
     coreOpacity.needsUpdate = true;
+    innerOpacity.needsUpdate = true;
     haloOpacity.needsUpdate = true;
     arrivalRipple.needsUpdate = true;
     scale.needsUpdate = true;
     intensity.needsUpdate = true;
+    if (contactRef.current) {
+      contactRef.current.instanceMatrix.needsUpdate = true;
+      if (contactRef.current.instanceColor) contactRef.current.instanceColor.needsUpdate = true;
+    }
 
     if (membershipChanged) {
       const active = discovery.activeCandidateIndices();
@@ -347,7 +438,14 @@ function HumanOrbs({
   };
 
   return (
-    <points
+    <group>
+      <instancedMesh
+        ref={contactRef}
+        args={[contactGeometry, contactMaterial, poolSize]}
+        frustumCulled={false}
+        renderOrder={1}
+      />
+      <points
       geometry={geometry}
       ref={pointsRef}
       frustumCulled={false}
@@ -359,7 +457,7 @@ function HumanOrbs({
         const candidateIndex = discovery.candidateForSlot(event.index);
         if (candidateIndex !== null) onSelect(candidateIndex);
       }}
-    >
+      >
       <shaderMaterial
         ref={materialRef}
         transparent
@@ -371,6 +469,7 @@ function HumanOrbs({
           attribute float aPhase;
           attribute float aIndex;
           attribute float aCoreOpacity;
+          attribute float aInnerOpacity;
           attribute float aHaloOpacity;
           attribute float aArrivalRipple;
           attribute float aScale;
@@ -381,51 +480,66 @@ function HumanOrbs({
           uniform float uHoverStrength;
           uniform float uPixelRatio;
           uniform float uMotion;
+          uniform float uMobile;
           varying float vActive;
           varying float vCoreOpacity;
+          varying float vInnerOpacity;
           varying float vHaloOpacity;
           varying float vIntensity;
-          varying float vLimb;
-          varying float vPulse;
+          varying float vFacing;
+          varying float vBreath;
+          varying float vSelected;
+          varying float vHovered;
+          varying float vGlint;
           varying float vArrivalRipple;
           void main() {
             float selected = step(abs(aIndex - uSelected), 0.1);
             float hovered = step(abs(aIndex - uHovered), 0.1) * uHoverStrength;
             vActive = max(selected, hovered);
-            float pulseWave = sin(uTime * 1.08 + aPhase);
-            float pulse = 1.0 + pulseWave * 0.035 * uMotion;
+            float breatheWave = sin(uTime * 0.82 + aPhase);
+            float breatheScale = 1.0 + breatheWave * 0.018 * uMotion;
+            float naturalSize = 0.94 + fract(sin(aPhase * 12.9898) * 43758.5453) * 0.12;
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
             gl_Position = projectionMatrix * mvPosition;
-            float baseSize = mix(48.0, 54.0, vActive);
-            gl_PointSize = baseSize * aScale * pulse * uPixelRatio * (2.75 / max(1.0, -mvPosition.z));
+            float baseSize = mix(48.0, 42.0, uMobile) * naturalSize;
+            float interactionScale = 1.0 + selected * 0.22 + hovered * 0.045;
+            float projectedSize = baseSize * interactionScale * aScale * breatheScale
+              * uPixelRatio * (2.75 / max(1.0, -mvPosition.z));
+            gl_PointSize = clamp(projectedSize, 17.0 * uPixelRatio, 62.0 * uPixelRatio);
             vec3 viewNormal = normalize(normalMatrix * normalize(position));
             vec3 viewDirection = normalize(-mvPosition.xyz);
-            vLimb = smoothstep(-0.01, 0.20, dot(viewNormal, viewDirection));
+            vFacing = dot(viewNormal, viewDirection);
             float selectionQuiet = mix(0.84, 1.0, max(selected, 1.0 - step(0.0, uSelected)));
             vCoreOpacity = aCoreOpacity * selectionQuiet;
+            vInnerOpacity = aInnerOpacity * selectionQuiet;
             vHaloOpacity = aHaloOpacity * selectionQuiet;
             vIntensity = aIntensity;
-            vPulse = 0.5 + pulseWave * 0.5 * uMotion;
+            vBreath = mix(0.92, 1.0, 0.5 + breatheWave * 0.5 * uMotion);
+            vSelected = selected;
+            vHovered = hovered;
+            float glintEligible = step(0.82, fract(sin(aPhase * 41.73) * 27581.11));
+            vGlint = pow(max(0.0, sin(uTime * 0.24 + aPhase * 7.13)), 48.0) * glintEligible * uMotion;
             vArrivalRipple = aArrivalRipple;
           }
         `}
         fragmentShader={`
           varying float vActive;
           varying float vCoreOpacity;
+          varying float vInnerOpacity;
           varying float vHaloOpacity;
           varying float vIntensity;
-          varying float vLimb;
-          varying float vPulse;
+          varying float vFacing;
+          varying float vBreath;
+          varying float vSelected;
+          varying float vHovered;
+          varying float vGlint;
           varying float vArrivalRipple;
           void main() {
             float radius = length(gl_PointCoord - 0.5) * 2.0;
-            float core = 1.0 - smoothstep(0.235, 0.305, radius);
-            float coreLight = 1.0 - smoothstep(0.0, 0.17, radius);
-
-            // The resting beacon never goes dark. Its halo breathes while the
-            // center remains steady, so the Human feels alive rather than lit.
-            float halo = pow(max(0.0, 1.0 - radius), 2.35) * mix(0.74, 0.98, vPulse);
-            float aura = exp(-radius * 4.1) * mix(0.20, 0.30, vPulse);
+            float pinpoint = 1.0 - smoothstep(0.028, 0.095, radius);
+            float hotCenter = 1.0 - smoothstep(0.0, 0.038, radius);
+            float innerBloom = exp(-pow(radius / 0.205, 2.0));
+            float outerAura = exp(-pow(radius / 0.54, 2.0)) * (1.0 - smoothstep(0.72, 1.0, radius));
 
             // A single soft wave leaves the point only after it has fully
             // emerged. It reads as presence arriving, not a repeating target.
@@ -436,47 +550,78 @@ function HumanOrbs({
               * (1.0 - step(0.999, rippleProgress));
             float rippleDistance = (radius - rippleRadius) / 0.065;
             float ripple = exp(-(rippleDistance * rippleDistance)) * rippleEnvelope;
+            float horizontalGlint = exp(-pow(abs(gl_PointCoord.y - 0.5) / 0.012, 2.0))
+              * exp(-pow(radius / 0.58, 2.0));
+            float verticalGlint = exp(-pow(abs(gl_PointCoord.x - 0.5) / 0.015, 2.0))
+              * exp(-pow(radius / 0.34, 2.0)) * 0.32;
+
+            float coreLimb = smoothstep(-0.045, 0.065, vFacing);
+            float innerLimb = smoothstep(0.005, 0.145, vFacing);
+            float auraLimb = smoothstep(0.075, 0.29, vFacing);
+            float attention = 1.0 + vHovered * 0.13 + vSelected * 0.17;
+
+            vec3 paper = vec3(0.949, 0.922, 0.867);
+            vec3 hotIvory = vec3(1.0, 0.982, 0.93);
+            vec3 champagne = vec3(0.95, 0.80, 0.60);
             vec3 lapis = vec3(0.188, 0.275, 0.647);
-            vec3 electricLapis = vec3(0.24, 0.39, 1.0);
-            vec3 coreColor = mix(electricLapis, vec3(0.34, 0.48, 1.0), coreLight * 0.62);
-            vec3 color = mix(lapis, coreColor, core);
-            float alpha = core * vCoreOpacity
-              + (halo + aura) * vHaloOpacity * mix(1.0, 1.18, vActive)
-              + ripple * vHaloOpacity * 0.46;
-            alpha *= vLimb * vIntensity;
-            if (alpha < 0.012) discard;
-            gl_FragColor = vec4(color, min(alpha, 1.0));
+            vec3 paleLapis = vec3(0.40, 0.50, 0.88);
+            vec3 auraColor = mix(vec3(0.58, 0.61, 0.68), paleLapis, clamp(vSelected * 0.92 + vHovered * 0.32, 0.0, 1.0));
+
+            vec3 light = hotIvory * pinpoint * vCoreOpacity * coreLimb * (1.05 + hotCenter * 0.42)
+              + champagne * innerBloom * vInnerOpacity * innerLimb * 0.48
+              + auraColor * outerAura * vHaloOpacity * auraLimb * vBreath * mix(0.22, 0.39, vSelected)
+              + lapis * ripple * vHaloOpacity * auraLimb * 0.34
+              + paper * (horizontalGlint + verticalGlint) * vGlint * coreLimb * 0.34;
+            light *= vIntensity * attention;
+            float alpha = max(max(light.r, light.g), light.b);
+            if (alpha < 0.008) discard;
+            gl_FragColor = vec4(light / max(alpha, 0.001), min(alpha, 1.0));
           }
         `}
+        toneMapped={false}
       />
-    </points>
+      </points>
+    </group>
   );
 }
 
 function SelectedTarget({ human }: { human: GlobeHuman }) {
   const transform = useMemo(() => {
-    const position = latLngVector(human.lat, human.lng, 1.021);
+    const position = latLngVector(human.lat, human.lng, 1.0105);
     const quaternion = new THREE.Quaternion().setFromUnitVectors(
       new THREE.Vector3(0, 0, 1),
       position.clone().normalize(),
     );
     return { position, quaternion };
   }, [human]);
+  const ticks = useMemo(() => {
+    const radius = 0.0165;
+    const length = 0.0033;
+    const positions = new Float32Array([
+      -radius - length, 0, 0, -radius, 0, 0,
+      radius, 0, 0, radius + length, 0, 0,
+      0, -radius - length, 0, 0, -radius, 0,
+      0, radius, 0, 0, radius + length, 0,
+    ]);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    return geometry;
+  }, []);
+  useEffect(() => () => ticks.dispose(), [ticks]);
 
   return (
     <group position={transform.position} quaternion={transform.quaternion}>
       <mesh>
-        <ringGeometry args={[0.008, 0.009, 64]} />
-        <meshBasicMaterial color={LAPIS} transparent opacity={0.66} depthWrite={false} />
+        <ringGeometry args={[0.0092, 0.0098, 80]} />
+        <meshBasicMaterial color={LAPIS} transparent opacity={0.7} depthTest depthWrite={false} toneMapped={false} />
       </mesh>
       <mesh>
-        <ringGeometry args={[0.0135, 0.0145, 64]} />
-        <meshBasicMaterial color={PAPER} transparent opacity={0.22} depthWrite={false} />
+        <ringGeometry args={[0.0162, 0.01665, 96]} />
+        <meshBasicMaterial color={PAPER} transparent opacity={0.19} depthTest depthWrite={false} toneMapped={false} />
       </mesh>
-      <mesh>
-        <circleGeometry args={[0.0032, 32]} />
-        <meshBasicMaterial color={LAPIS} depthWrite={false} />
-      </mesh>
+      <lineSegments geometry={ticks}>
+        <lineBasicMaterial color={PAPER} transparent opacity={0.28} depthTest depthWrite={false} toneMapped={false} />
+      </lineSegments>
     </group>
   );
 }
@@ -554,7 +699,7 @@ export function GlobeScene({
   selectedIndex: number | null;
   controls: MutableRefObject<GlobeControls>;
   reducedMotion: boolean;
-  lineRef: RefObject<SVGLineElement | null>;
+  lineRef: RefObject<SVGPathElement | null>;
   previewRef: RefObject<HTMLElement | null>;
   onHover: (hover: GlobeHover) => void;
   onSelect: (index: number) => void;
@@ -614,10 +759,15 @@ export function GlobeScene({
         && markerX > -20 && markerX < size.width + 20
         && markerY > -20 && markerY < size.height + 20;
       lineRef.current.setAttribute("opacity", markerIsVisible ? "1" : "0");
-      lineRef.current.setAttribute("x1", markerX.toFixed(1));
-      lineRef.current.setAttribute("y1", markerY.toFixed(1));
-      lineRef.current.setAttribute("x2", previewBounds.left.toFixed(1));
-      lineRef.current.setAttribute("y2", (previewBounds.top + 28).toFixed(1));
+      const endX = previewBounds.left;
+      const endY = previewBounds.top + 28;
+      const direction = endX >= markerX ? 1 : -1;
+      const firstX = markerX + direction * 42;
+      const secondX = endX - direction * 18;
+      lineRef.current.setAttribute(
+        "d",
+        `M ${markerX.toFixed(1)} ${markerY.toFixed(1)} L ${firstX.toFixed(1)} ${markerY.toFixed(1)} L ${secondX.toFixed(1)} ${endY.toFixed(1)} L ${endX.toFixed(1)} ${endY.toFixed(1)}`,
+      );
     }
   });
 
@@ -639,7 +789,7 @@ export function GlobeScene({
           onSelect={onSelect}
           onActiveChange={onActiveChange}
         />
-        {selected && <SelectedTarget human={selected} />}
+        {selected && <SelectedTarget key={selected.id} human={selected} />}
         <Atmosphere />
       </group>
     </>

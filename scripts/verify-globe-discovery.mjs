@@ -24,6 +24,8 @@ function simulate(mobile) {
   });
   let maximumActive = 0;
   let observedArrivalRipple = false;
+  let observedOpticalStaging = false;
+  let observedPhysicalFade = false;
   let selectedIndex = null;
   let selectedAt = 0;
 
@@ -47,6 +49,17 @@ function simulate(mobile) {
       && slot.arrivalRippleProgress > 0
       && slot.arrivalRippleProgress < 1
     ));
+    observedOpticalStaging ||= manager.slots.some(slot => (
+      slot.state === "emerging"
+      && slot.coreOpacity > 0.7
+      && slot.innerOpacity > slot.haloOpacity
+      && slot.contactOpacity < slot.coreOpacity
+    ));
+    observedPhysicalFade ||= manager.slots.some(slot => (
+      slot.state === "fading"
+      && slot.contactOpacity < slot.coreOpacity
+      && slot.haloOpacity <= slot.innerOpacity
+    ));
     assert.equal(new Set(active).size, active.length, "active pool must never duplicate a Human");
     maximumActive = Math.max(maximumActive, active.length);
     assert.ok(active.length <= visibleBudget, "active visual budget must remain bounded");
@@ -63,6 +76,8 @@ function simulate(mobile) {
 
   assert.ok(maximumActive >= (mobile ? 3 : 4), "the first-load sequence should populate gradually");
   assert.ok(observedArrivalRipple, "an emerged Human should receive one bounded arrival ripple");
+  assert.ok(observedOpticalStaging, "the warm core should resolve before bloom, aura, and contact light");
+  assert.ok(observedPhysicalFade, "contact light and aura should leave before the Human core");
 }
 
 simulate(false);
