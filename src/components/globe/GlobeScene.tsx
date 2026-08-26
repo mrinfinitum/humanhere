@@ -15,6 +15,7 @@ const EASTWARD_ROTATION_SPEED = Math.PI * 2 / EARTH_ROTATION_SECONDS;
 const PAPER = new THREE.Color("#F2EBDD");
 const LAPIS = new THREE.Color("#3046A5");
 const BEACON_BLUE = new THREE.Color("#315DFF");
+const WARM_CONTACT = new THREE.Color("#F2EBDD");
 const UNIT_Z = new THREE.Vector3(0, 0, 1);
 
 function latLngVector(lat: number, lng: number, radius = WORLD_RADIUS) {
@@ -48,7 +49,10 @@ function EarthSurface() {
 
   useEffect(() => {
     dayTexture.colorSpace = THREE.SRGBColorSpace;
-    nightTexture.colorSpace = THREE.SRGBColorSpace;
+    // This texture is sampled as emissive/geographic data. Keeping its source
+    // values linear preserves the low-energy population texture that sRGB
+    // decoding would otherwise crush into black.
+    nightTexture.colorSpace = THREE.NoColorSpace;
     dayTexture.anisotropy = 8;
     nightTexture.anisotropy = 8;
     dayTexture.needsUpdate = true;
@@ -59,6 +63,7 @@ function EarthSurface() {
     uniforms: {
       uDay: { value: dayTexture },
       uNight: { value: nightTexture },
+      uNightTexel: { value: new THREE.Vector2(1 / 3600, 1 / 1800) },
     },
     vertexShader: `
       varying vec2 vUv;
@@ -79,6 +84,7 @@ function EarthSurface() {
     fragmentShader: `
       uniform sampler2D uDay;
       uniform sampler2D uNight;
+      uniform vec2 uNightTexel;
       varying vec2 vUv;
       varying vec3 vNormalView;
       varying vec3 vNormalWorld;
@@ -88,38 +94,52 @@ function EarthSurface() {
         return dot(color, vec3(0.2126, 0.7152, 0.0722));
       }
 
+      float hhWarmLight(vec3 color) {
+        return max(color.r + color.g * 0.55 - color.b * 1.05, 0.0);
+      }
+
       void main() {
         vec3 day = texture2D(uDay, vUv).rgb;
         vec3 night = texture2D(uNight, vUv).rgb;
         float dayLuma = hhLuminance(day);
-        float nightLuma = hhLuminance(night);
 
         float oceanSignal = smoothstep(0.04, 0.22, day.b - max(day.r, day.g) * 0.68);
         float landSignal = clamp(dayLuma * 1.35 - oceanSignal * 0.24, 0.0, 1.0);
-        vec3 mutedDay = vec3(dayLuma) * vec3(0.11, 0.13, 0.18) + day * 0.025;
-        vec3 ocean = vec3(0.006, 0.012, 0.025);
-        vec3 land = vec3(0.026, 0.032, 0.046) + mutedDay;
+        float colorRange = max(day.r, max(day.g, day.b)) - min(day.r, min(day.g, day.b));
+        float cloudSignal = smoothstep(0.44, 0.88, dayLuma) * (1.0 - smoothstep(0.15, 0.42, colorRange));
+        vec3 mutedDay = vec3(dayLuma) * vec3(0.13, 0.15, 0.21) + day * 0.032;
+        vec3 ocean = vec3(0.006, 0.011, 0.024) + night * vec3(0.025, 0.032, 0.055);
+        vec3 land = vec3(0.034, 0.042, 0.061) + mutedDay + night * vec3(0.115, 0.12, 0.16);
         vec3 surface = mix(ocean, land, smoothstep(0.055, 0.28, landSignal));
 
         vec3 keyDirection = normalize(vec3(-0.42, 0.58, 0.70));
-        float key = max(dot(vNormalWorld, keyDirection), 0.0);
+        float keyFacing = dot(vNormalWorld, keyDirection);
+        float key = smoothstep(-0.34, 0.88, keyFacing);
         float grazing = pow(1.0 - max(dot(vNormalView, vViewDirection), 0.0), 2.7);
-        surface *= 0.54 + key * 0.72;
-        surface += mutedDay * key * 0.16;
-        surface += night * 0.012;
-        surface += vec3(0.018, 0.030, 0.062) * grazing * 0.68;
+        surface *= 0.62 + key * 0.70;
+        surface += mutedDay * key * 0.22;
+        surface += vec3(0.06, 0.072, 0.095) * cloudSignal * (0.16 + key * 0.21);
+        surface += vec3(0.019, 0.034, 0.078) * grazing * (0.54 + key * 0.35);
 
-        // Preserve real night-light geography while compressing the largest
-        // source blobs. A lower signal threshold reveals metropolitan texture;
-        // the nonlinear response keeps that texture below Human beacons.
-        float citySignal = smoothstep(0.055, 0.58, nightLuma);
-        float city = pow(citySignal, 2.25) * 0.52;
-        float metroCompression = mix(1.0, 0.64, smoothstep(0.62, 1.0, citySignal));
-        vec3 cityWarmth = vec3(1.0, 0.79, 0.54) * city * metroCompression;
+        // Extract the warm population signal from the geographically accurate
+        // Black Marble source. Four neighboring taps create optical energy only
+        // around the strongest metros while the vast majority stay pin-sharp.
+        float citySource = hhWarmLight(night);
+        float neighborSource = (
+          hhWarmLight(texture2D(uNight, vUv + vec2(uNightTexel.x * 2.6, 0.0)).rgb)
+          + hhWarmLight(texture2D(uNight, vUv - vec2(uNightTexel.x * 2.6, 0.0)).rgb)
+          + hhWarmLight(texture2D(uNight, vUv + vec2(0.0, uNightTexel.y * 2.6)).rgb)
+          + hhWarmLight(texture2D(uNight, vUv - vec2(0.0, uNightTexel.y * 2.6)).rgb)
+        ) * 0.25;
+        float cityCore = pow(smoothstep(0.018, 0.68, citySource), 1.12);
+        float metroGlow = pow(smoothstep(0.24, 0.78, max(citySource, neighborSource)), 2.35);
+        vec3 champagne = vec3(1.0, 0.82, 0.59);
+        vec3 ivory = vec3(1.0, 0.93, 0.79);
+        vec3 cityWarmth = champagne * cityCore * 1.08 + ivory * metroGlow * 0.42;
         vec3 color = surface + cityWarmth;
 
-        float limbShadow = smoothstep(-0.22, 0.42, dot(vNormalWorld, keyDirection));
-        color *= mix(0.74, 1.0, limbShadow);
+        float limbShadow = smoothstep(-0.38, 0.46, keyFacing);
+        color *= mix(0.80, 1.0, limbShadow);
         gl_FragColor = vec4(color, 1.0);
       }
     `,
@@ -135,8 +155,9 @@ function EarthSurface() {
   );
 }
 
-function Atmosphere() {
-  const material = useMemo(() => new THREE.ShaderMaterial({
+function createAtmosphereMaterial(outer: boolean) {
+  return new THREE.ShaderMaterial({
+    uniforms: { uOuter: { value: outer ? 1 : 0 } },
     transparent: true,
     depthWrite: false,
     side: THREE.BackSide,
@@ -154,28 +175,47 @@ function Atmosphere() {
       }
     `,
     fragmentShader: `
+      uniform float uOuter;
       varying vec3 vNormalView;
       varying vec3 vViewDirection;
       varying vec3 vNormalWorld;
       void main() {
         float edge = 1.0 - abs(dot(vNormalView, vViewDirection));
-        float directional = smoothstep(-0.25, 0.82, dot(vNormalWorld, normalize(vec3(0.42, 0.66, 0.62))));
+        float directional = smoothstep(-0.42, 0.84, dot(vNormalWorld, normalize(vec3(0.42, 0.66, 0.62))));
         vec3 lapis = vec3(0.188, 0.275, 0.647);
-        vec3 opticalBlue = vec3(0.48, 0.63, 1.0);
-        vec3 color = mix(lapis, opticalBlue, directional * 0.55);
-        float fineRim = pow(edge, 8.4) * (0.045 + directional * 0.38);
-        float broadRim = pow(edge, 3.2) * (0.016 + directional * 0.055);
-        gl_FragColor = vec4(color, fineRim + broadRim);
+        vec3 opticalBlue = vec3(0.35, 0.52, 1.25);
+        vec3 hotEdge = vec3(0.78, 0.88, 1.45);
+        vec3 color = mix(lapis, mix(opticalBlue, hotEdge, directional * 0.54), directional * 0.88);
+        float tight = pow(edge, 9.6) * (0.08 + directional * 0.78);
+        float soft = pow(edge, 3.65) * (0.018 + directional * 0.17);
+        float alpha = mix(tight, soft, uOuter);
+        gl_FragColor = vec4(color * mix(1.12, 0.72, uOuter), alpha);
       }
     `,
+  });
+}
+
+function Atmosphere() {
+  const materials = useMemo(() => ({
+    tight: createAtmosphereMaterial(false),
+    outer: createAtmosphereMaterial(true),
   }), []);
 
-  useEffect(() => () => material.dispose(), [material]);
+  useEffect(() => () => {
+    materials.tight.dispose();
+    materials.outer.dispose();
+  }, [materials]);
   return (
-    <mesh scale={1.018}>
-      <sphereGeometry args={[WORLD_RADIUS, 160, 112]} />
-      <primitive object={material} attach="material" />
-    </mesh>
+    <group>
+      <mesh scale={1.013}>
+        <sphereGeometry args={[WORLD_RADIUS, 160, 112]} />
+        <primitive object={materials.tight} attach="material" />
+      </mesh>
+      <mesh scale={1.034}>
+        <sphereGeometry args={[WORLD_RADIUS, 160, 112]} />
+        <primitive object={materials.outer} attach="material" />
+      </mesh>
+    </group>
   );
 }
 
@@ -379,10 +419,10 @@ function HumanOrbs({
           const facing = surfaceDirection.copy(contactNormal).applyQuaternion(worldQuaternion).dot(cameraDirection);
           const limb = THREE.MathUtils.smoothstep(facing, 0.055, 0.3);
           const selectedContact = slot.candidateIndex === selectedIndex;
-          contactScale.setScalar(0.028 * slot.scale * (selectedContact ? 1.18 : 1));
+          contactScale.setScalar(0.0225 * slot.scale * (selectedContact ? 1.2 : 1));
           contactColor
-            .copy(selectedContact ? BEACON_BLUE : LAPIS)
-            .multiplyScalar(slot.contactOpacity * limb * (selectedContact ? 0.64 : 0.46));
+            .copy(selectedContact ? BEACON_BLUE : WARM_CONTACT)
+            .multiplyScalar(slot.contactOpacity * limb * (selectedContact ? 0.58 : 0.31));
         }
         contactMatrix.compose(contactPosition, contactQuaternion, contactScale);
         contact.setMatrixAt(slotIndex, contactMatrix);
@@ -498,14 +538,14 @@ function HumanOrbs({
             vActive = max(selected, hovered);
             float breatheWave = sin(uTime * 0.82 + aPhase);
             float breatheScale = 1.0 + breatheWave * 0.018 * uMotion;
-            float naturalSize = 0.92 + fract(sin(aPhase * 12.9898) * 43758.5453) * 0.16;
+            float naturalSize = 0.94 + fract(sin(aPhase * 12.9898) * 43758.5453) * 0.12;
             vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
             gl_Position = projectionMatrix * mvPosition;
-            float baseSize = mix(62.0, 52.0, uMobile) * naturalSize;
-            float interactionScale = 1.0 + selected * 0.24 + hovered * 0.12;
+            float baseSize = mix(50.0, 44.0, uMobile) * naturalSize;
+            float interactionScale = 1.0 + selected * 0.20 + hovered * 0.065;
             float projectedSize = baseSize * interactionScale * aScale * breatheScale
               * uPixelRatio * (2.75 / max(1.0, -mvPosition.z));
-            gl_PointSize = clamp(projectedSize, 22.0 * uPixelRatio, 78.0 * uPixelRatio);
+            gl_PointSize = clamp(projectedSize, 18.0 * uPixelRatio, 66.0 * uPixelRatio);
             vec3 viewNormal = normalize(normalMatrix * normalize(position));
             vec3 viewDirection = normalize(-mvPosition.xyz);
             vFacing = dot(viewNormal, viewDirection);
@@ -534,12 +574,15 @@ function HumanOrbs({
           varying float vHovered;
           varying float vGlint;
           varying float vArrivalRipple;
+          uniform float uMobile;
           void main() {
             float radius = length(gl_PointCoord - 0.5) * 2.0;
-            float pinpoint = 1.0 - smoothstep(0.035, 0.14, radius);
-            float hotCenter = 1.0 - smoothstep(0.0, 0.052, radius);
-            float innerBloom = exp(-pow(radius / 0.24, 2.0));
-            float outerAura = exp(-pow(radius / 0.58, 2.0)) * (1.0 - smoothstep(0.74, 1.0, radius));
+            float pinpoint = 1.0 - smoothstep(0.03, 0.12, radius);
+            float hotCenter = 1.0 - smoothstep(0.0, 0.046, radius);
+            float innerBloom = exp(-pow(radius / 0.225, 2.0));
+            float outerAura = exp(-pow(radius / 0.57, 2.0))
+              * (1.0 - smoothstep(0.74, 1.0, radius))
+              * mix(1.0, 0.78, uMobile);
 
             // A single soft wave leaves the point only after it has fully
             // emerged. It reads as presence arriving, not a repeating target.
@@ -561,18 +604,20 @@ function HumanOrbs({
             float attention = 1.0 + vHovered * 0.13 + vSelected * 0.17;
 
             vec3 paper = vec3(0.949, 0.922, 0.867);
+            vec3 hotIvory = vec3(1.15, 1.10, 1.0);
+            vec3 champagne = vec3(1.0, 0.86, 0.69);
             vec3 lapis = vec3(0.188, 0.275, 0.647);
             vec3 beaconBlue = vec3(0.302, 0.451, 1.0);
             vec3 hotBlue = vec3(0.70, 0.79, 1.0);
-            vec3 coreColor = mix(beaconBlue, hotBlue, clamp(vSelected * 0.72 + vHovered * 0.24 + hotCenter * 0.18, 0.0, 1.0));
-            vec3 innerColor = mix(lapis, beaconBlue, 0.68 + vSelected * 0.20);
-            vec3 auraColor = mix(lapis, beaconBlue, 0.52 + vSelected * 0.34 + vHovered * 0.12);
+            vec3 coreColor = mix(hotIvory, hotBlue, clamp(vSelected * 0.34 + vHovered * 0.08, 0.0, 1.0));
+            vec3 innerColor = mix(champagne, beaconBlue, clamp(vSelected * 0.82 + vHovered * 0.12, 0.0, 1.0));
+            vec3 auraColor = mix(vec3(0.64, 0.67, 0.72), beaconBlue, clamp(vSelected * 0.92 + vHovered * 0.22, 0.0, 1.0));
 
-            vec3 light = coreColor * pinpoint * vCoreOpacity * coreLimb * (1.22 + hotCenter * 0.68)
-              + innerColor * innerBloom * vInnerOpacity * innerLimb * 0.72
-              + auraColor * outerAura * vHaloOpacity * auraLimb * vBreath * mix(0.34, 0.50, vSelected)
-              + beaconBlue * ripple * vHaloOpacity * auraLimb * 0.52
-              + mix(paper, hotBlue, 0.62) * (horizontalGlint + verticalGlint) * vGlint * coreLimb * 0.40;
+            vec3 light = coreColor * pinpoint * vCoreOpacity * coreLimb * (1.22 + hotCenter * 0.66)
+              + innerColor * innerBloom * vInnerOpacity * innerLimb * mix(0.54, 0.70, vSelected)
+              + auraColor * outerAura * vHaloOpacity * auraLimb * vBreath * mix(0.22, 0.43, vSelected)
+              + mix(paper, beaconBlue, vSelected) * ripple * vHaloOpacity * auraLimb * mix(0.26, 0.48, vSelected)
+              + mix(paper, hotBlue, vSelected * 0.72) * (horizontalGlint + verticalGlint) * vGlint * coreLimb * 0.36;
             light *= vIntensity * attention;
             float alpha = max(max(light.r, light.g), light.b);
             if (alpha < 0.008) discard;
@@ -614,11 +659,11 @@ function SelectedTarget({ human }: { human: GlobeHuman }) {
     <group position={transform.position} quaternion={transform.quaternion}>
       <mesh>
         <ringGeometry args={[0.0092, 0.0098, 80]} />
-        <meshBasicMaterial color={LAPIS} transparent opacity={0.7} depthTest depthWrite={false} toneMapped={false} />
+        <meshBasicMaterial color={BEACON_BLUE} transparent opacity={0.78} depthTest depthWrite={false} toneMapped={false} />
       </mesh>
       <mesh>
         <ringGeometry args={[0.0162, 0.01665, 96]} />
-        <meshBasicMaterial color={PAPER} transparent opacity={0.19} depthTest depthWrite={false} toneMapped={false} />
+        <meshBasicMaterial color={LAPIS} transparent opacity={0.28} depthTest depthWrite={false} toneMapped={false} />
       </mesh>
       <lineSegments geometry={ticks}>
         <lineBasicMaterial color={PAPER} transparent opacity={0.28} depthTest depthWrite={false} toneMapped={false} />
@@ -663,23 +708,29 @@ function OrbitLines() {
   const lines = useMemo(() => {
     const firstMaterial = new THREE.LineBasicMaterial({ color: PAPER, transparent: true, opacity: 0.035, depthWrite: false });
     const secondMaterial = new THREE.LineBasicMaterial({ color: LAPIS, transparent: true, opacity: 0.045, depthWrite: false });
+    const thirdMaterial = new THREE.LineBasicMaterial({ color: "#E8C791", transparent: true, opacity: 0.024, depthWrite: false });
     const first = new THREE.Line(geometry, firstMaterial);
     const second = new THREE.Line(geometry, secondMaterial);
+    const third = new THREE.Line(geometry, thirdMaterial);
     first.rotation.set(0.48, 0.32, -0.18);
     second.rotation.set(-0.54, 0.18, 0.48);
+    third.rotation.set(0.13, -0.62, 0.31);
     second.scale.setScalar(1.055);
-    return { first, second, firstMaterial, secondMaterial };
+    third.scale.setScalar(1.11);
+    return { first, second, third, firstMaterial, secondMaterial, thirdMaterial };
   }, [geometry]);
   useEffect(() => () => {
     geometry.dispose();
     lines.firstMaterial.dispose();
     lines.secondMaterial.dispose();
+    lines.thirdMaterial.dispose();
   }, [geometry, lines]);
 
   return (
     <group position={WORLD_POSITION.toArray()} scale={WORLD_SCALE}>
       <primitive object={lines.first} />
       <primitive object={lines.second} />
+      <primitive object={lines.third} />
     </group>
   );
 }
@@ -752,15 +803,55 @@ export function GlobeScene({
       projectedPoint.copy(selectedPoint).project(camera);
       const markerX = (projectedPoint.x * 0.5 + 0.5) * size.width;
       const markerY = (-projectedPoint.y * 0.5 + 0.5) * size.height;
-      const previewBounds = previewRef.current.getBoundingClientRect();
       world.getWorldPosition(worldCenter);
       surfaceDirection.copy(selectedPoint).sub(worldCenter).normalize();
       cameraDirection.copy(camera.position).sub(worldCenter).normalize();
       const markerIsVisible = surfaceDirection.dot(cameraDirection) > 0.08
         && markerX > -20 && markerX < size.width + 20
         && markerY > -20 && markerY < size.height + 20;
+      const preview = previewRef.current;
+
+      // Place the single selected-Human panel once the selected point is
+      // projected. This keeps the panel clear of the beacon and flips it to
+      // the opposite side near viewport edges without running React state in
+      // the render loop. Mobile retains its deliberate docked treatment.
+      const previousViewportWidth = Number.parseFloat(preview.dataset.viewportWidth ?? "0");
+      const needsDesktopPlacement = preview.dataset.placedFor !== humans[selectedIndex].id
+        || Math.abs(previousViewportWidth - size.width) > 80;
+      if (size.width > 760 && markerIsVisible && needsDesktopPlacement) {
+        const panelWidth = preview.offsetWidth || 230;
+        const panelHeight = preview.offsetHeight || 176;
+        const placeLeft = markerX > size.width * 0.68;
+        const panelX = THREE.MathUtils.clamp(
+          placeLeft ? markerX - panelWidth - 150 : markerX + 150,
+          34,
+          size.width - panelWidth - 34,
+        );
+        const panelY = THREE.MathUtils.clamp(
+          markerY - panelHeight * 0.42,
+          112,
+          size.height - panelHeight - 34,
+        );
+        preview.style.left = `${panelX}px`;
+        preview.style.top = `${panelY}px`;
+        preview.style.right = "auto";
+        preview.style.bottom = "auto";
+        preview.dataset.placedFor = humans[selectedIndex].id;
+        preview.dataset.viewportWidth = String(size.width);
+      } else if (size.width <= 760 && preview.dataset.placedFor) {
+        preview.style.removeProperty("left");
+        preview.style.removeProperty("top");
+        preview.style.removeProperty("right");
+        preview.style.removeProperty("bottom");
+        delete preview.dataset.placedFor;
+        delete preview.dataset.viewportWidth;
+      }
+
+      const previewBounds = preview.getBoundingClientRect();
       lineRef.current.setAttribute("opacity", markerIsVisible ? "1" : "0");
-      const endX = previewBounds.left;
+      const endX = markerX <= previewBounds.left + previewBounds.width * 0.5
+        ? previewBounds.left
+        : previewBounds.right;
       const endY = previewBounds.top + 28;
       const direction = endX >= markerX ? 1 : -1;
       const firstX = markerX + direction * 42;
