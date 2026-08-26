@@ -4,13 +4,22 @@ import { Canvas } from "@react-three/fiber";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { HumanCalloutOverlay } from "@/components/globe/HumanCalloutOverlay";
+import { HumanStoryDrawer } from "@/components/globe/HumanStoryDrawer";
 import { GlobeScene } from "@/components/globe/GlobeScene";
 import { createTulsaTestHuman } from "@/components/globe/tulsaTestHuman";
 import type { GlobeControls, GlobeHover, GlobeHuman } from "@/components/globe/types";
+import type { HumanEntry } from "@/lib/archive/types";
 
 const MIN_DISTANCE = 2.82;
 const MAX_DISTANCE = 4.15;
 const GLOBE_DEBUG = process.env.NEXT_PUBLIC_GLOBE_DEBUG === "true";
+
+type StoryDrawerState = {
+  slug: string;
+  entry: HumanEntry | null;
+  loading: boolean;
+  error: string | null;
+};
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(maximum, Math.max(minimum, value));
@@ -30,7 +39,10 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   const touches = useRef(new Map<number, { x: number; y: number }>());
   const pinch = useRef<{ distance: number; cameraDistance: number } | null>(null);
   const hoverDismissTimer = useRef<number | null>(null);
+  const storyRequest = useRef<AbortController | null>(null);
+  const storyCache = useRef(new Map<string, HumanEntry>());
   const [selectedHumanId, setSelectedHumanId] = useState<string | null>(null);
+  const [storyDrawer, setStoryDrawer] = useState<StoryDrawerState | null>(null);
   const [activeHumanIds, setActiveHumanIds] = useState<string[]>([]);
   const [hovered, setHovered] = useState<GlobeHover>(null);
   const [hoverLayout, setHoverLayout] = useState<ReturnType<typeof getHoverHudLayout> | null>(null);
@@ -41,6 +53,42 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   const selected = selectedHumanId === null
     ? null
     : globeHumans.find(human => human.id === selectedHumanId) ?? null;
+
+  const closeStory = useCallback(() => {
+    storyRequest.current?.abort();
+    storyRequest.current = null;
+    setStoryDrawer(null);
+  }, []);
+
+  const openStory = useCallback(async (human: GlobeHuman) => {
+    storyRequest.current?.abort();
+    const cached = storyCache.current.get(human.slug);
+    if (cached) {
+      setStoryDrawer({ slug: human.slug, entry: cached, loading: false, error: null });
+      return;
+    }
+
+    const controller = new AbortController();
+    storyRequest.current = controller;
+    setStoryDrawer({ slug: human.slug, entry: null, loading: true, error: null });
+
+    try {
+      const response = await fetch(`/api/humans/${encodeURIComponent(human.slug)}`, { signal: controller.signal });
+      const payload = await response.json() as { entry?: HumanEntry; error?: string };
+      if (!response.ok || !payload.entry) throw new Error(payload.error ?? "This story could not be opened.");
+      if (storyRequest.current !== controller) return;
+      storyCache.current.set(human.slug, payload.entry);
+      setStoryDrawer({ slug: human.slug, entry: payload.entry, loading: false, error: null });
+    } catch (error) {
+      if (controller.signal.aborted || storyRequest.current !== controller) return;
+      setStoryDrawer({
+        slug: human.slug,
+        entry: null,
+        loading: false,
+        error: error instanceof Error ? error.message : "This story could not be opened.",
+      });
+    }
+  }, []);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -66,6 +114,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
 
   useEffect(() => () => {
     if (hoverDismissTimer.current !== null) window.clearTimeout(hoverDismissTimer.current);
+    storyRequest.current?.abort();
   }, []);
 
   useEffect(() => {
@@ -94,11 +143,13 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
 
   useEffect(() => {
     const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelectedHumanId(null);
+      if (event.key !== "Escape") return;
+      if (storyDrawer) closeStory();
+      else setSelectedHumanId(null);
     };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
-  }, []);
+  }, [closeStory, storyDrawer]);
 
   const beginInteraction = (event: ReactPointerEvent<HTMLElement>) => {
     if ((event.target as HTMLElement).closest("a, button, .human-globe-preview")) return;
@@ -319,13 +370,26 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
         </div>
       )}
 
-      {selected && (
+      {selected && !storyDrawer && (
         <HumanCalloutOverlay
           human={selected}
           anchorRef={calloutAnchorRef}
           panelRef={previewRef}
           connectorRef={connectorRef}
           onClose={() => setSelectedHumanId(null)}
+          onViewHuman={() => void openStory(selected)}
+        />
+      )}
+
+      {storyDrawer && (
+        <HumanStoryDrawer
+          entry={storyDrawer.entry}
+          loading={storyDrawer.loading}
+          error={storyDrawer.error}
+          onClose={closeStory}
+          onRetry={() => {
+            if (selected) void openStory(selected);
+          }}
         />
       )}
 

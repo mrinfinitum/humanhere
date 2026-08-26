@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import type { RefObject } from "react";
 import type { GlobeHuman } from "./types";
 
@@ -10,10 +9,11 @@ type Props = {
   panelRef: RefObject<HTMLElement | null>;
   connectorRef: RefObject<SVGPathElement | null>;
   onClose: () => void;
+  onViewHuman: () => void;
 };
 
 /** The sole DOM representation of a selected Human. */
-export function HumanCalloutOverlay({ human, anchorRef, panelRef, connectorRef, onClose }: Props) {
+export function HumanCalloutOverlay({ human, anchorRef, panelRef, connectorRef, onClose, onViewHuman }: Props) {
   return (
     <>
       <svg className="human-globe-connector" aria-hidden="true">
@@ -27,7 +27,7 @@ export function HumanCalloutOverlay({ human, anchorRef, panelRef, connectorRef, 
           {human.quote && <blockquote>{human.quote}</blockquote>}
           <div>
             <small>{human.loveCount > 0 ? `♡ ${human.loveCount.toLocaleString()}` : "♡ LOVE"}</small>
-            <Link href={`/humans/${human.slug}`} prefetch={false}>View human <b aria-hidden="true">→</b></Link>
+            <button className="human-globe-view" type="button" onClick={onViewHuman}>View human <b aria-hidden="true">→</b></button>
           </div>
         </aside>
       </div>
