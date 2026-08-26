@@ -286,8 +286,6 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
           <div className="human-orb-hud__data" style={{ left: hoverLayout.labelX, top: hoverLayout.labelY }}>
             <span>{hoverHuman.firstName}</span>
             {hoverHuman.city && <small>{hoverHuman.city}</small>}
-            {hoverHuman.loveCount > 0 && <em>♡ {hoverHuman.loveCount.toLocaleString()}</em>}
-            <b>View human →</b>
           </div>
         </div>
       )}
@@ -301,6 +299,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
             <button type="button" onClick={() => setSelectedIndex(null)} aria-label="Close human preview">×</button>
             <p>{selected.firstName}</p>
             {selected.city && <span>{selected.city}</span>}
+            {selected.quote && <blockquote>{selected.quote}</blockquote>}
             <div>
               <small>{selected.loveCount > 0 ? `♡ ${selected.loveCount.toLocaleString()}` : "♡ LOVE"}</small>
               <Link href={`/humans/${selected.slug}`} prefetch={false}>View human <b aria-hidden="true">→</b></Link>
