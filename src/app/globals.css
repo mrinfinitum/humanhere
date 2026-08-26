@@ -28,6 +28,8 @@ button { cursor: pointer; }
 .human-globe-shell { position: relative; height: 100svh; min-height: 620px; overflow: hidden; background: #05070b; color: var(--human-paper); isolation: isolate; }
 .human-globe-stage { position: absolute; inset: 0; overflow: hidden; background: radial-gradient(ellipse at 69% 48%, rgb(31 49 103 / .13), transparent 42%), #05070b; cursor: grab; outline: 0; touch-action: none; user-select: none; }
 .human-globe-stage:active { cursor: grabbing; }
+.human-globe-shell.has-hover .human-globe-stage { cursor: pointer; }
+.human-globe-debug { position: fixed; z-index: 40; left: 18px; bottom: 18px; display: grid; max-width: min(560px, calc(100vw - 36px)); gap: 4px; padding: 10px 12px; border: 1px solid rgb(255 51 95 / .5); background: rgb(5 7 11 / .88); color: #ff8aa2; font: 500 10px/1.35 var(--font-sans, sans-serif); letter-spacing: .08em; overflow-wrap: anywhere; pointer-events: none; }
 .human-globe-stage::after { position: absolute; inset: 0; z-index: 4; background: radial-gradient(ellipse at 67% 49%, transparent 34%, rgb(5 7 11 / .055) 62%, rgb(5 7 11 / .4) 100%), linear-gradient(90deg, rgb(5 7 11 / .28) 0, transparent 31%); content: ""; pointer-events: none; }
 .human-globe-canvas { position: absolute !important; inset: 0; z-index: 1; display: block; opacity: 0; transition: opacity 1.4s ease; }
 .human-globe-canvas.is-ready { opacity: 1; }
@@ -52,7 +54,8 @@ button { cursor: pointer; }
 .human-globe-scale b { font-weight: 450; }
 .human-globe-connector { position: fixed; inset: 0; z-index: 13; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .human-globe-connector path { fill: none; stroke: rgb(242 235 221 / .52); stroke-dasharray: 1; stroke-dashoffset: 0; stroke-linecap: square; stroke-linejoin: bevel; stroke-width: .78; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 2px rgb(77 115 255 / .14)); }
-.human-globe-preview { position: fixed; top: 55.4%; left: 71.9%; z-index: 16; width: min(310px, 25vw); min-height: 244px; padding: 37px 34px 28px; overflow: hidden; border: 1px solid rgb(242 235 221 / .12); border-left-color: rgb(242 235 221 / .34); border-radius: 0; background: linear-gradient(135deg, rgb(4 8 16 / .82), rgb(7 14 29 / .7)); box-shadow: 0 22px 64px rgb(0 0 0 / .17), inset 0 0 36px rgb(48 70 165 / .025); color: var(--human-paper); animation: globe-preview-in 520ms cubic-bezier(.18,.72,.16,1) 360ms both; backdrop-filter: blur(8px); text-transform: uppercase; }
+.human-globe-callout-anchor { position: fixed; top: 0; left: 0; z-index: 16; pointer-events: none; will-change: transform; }
+.human-globe-preview { position: relative; width: min(310px, 25vw); min-height: 244px; padding: 37px 34px 28px; overflow: hidden; border: 1px solid rgb(242 235 221 / .12); border-left-color: rgb(242 235 221 / .34); border-radius: 0; background: linear-gradient(135deg, rgb(4 8 16 / .82), rgb(7 14 29 / .7)); box-shadow: 0 22px 64px rgb(0 0 0 / .17), inset 0 0 36px rgb(48 70 165 / .025); color: var(--human-paper); animation: globe-preview-in 260ms cubic-bezier(.18,.72,.16,1) both; backdrop-filter: blur(8px); pointer-events: auto; text-transform: uppercase; }
 @keyframes globe-preview-in { from { opacity: 0; clip-path: inset(0 100% 0 0); transform: translateX(-5px); } to { opacity: 1; clip-path: inset(0); transform: translateX(0); } }
 .human-globe-preview[data-side="left"] { animation-name: globe-preview-in-reverse; }
 @keyframes globe-preview-in-reverse { from { opacity: 0; clip-path: inset(0 0 0 100%); transform: translateX(5px); } to { opacity: 1; clip-path: inset(0); transform: translateX(0); } }
@@ -442,7 +445,7 @@ button { cursor: pointer; }
   .human-globe-copy { top: 29%; left: 5.5%; }
   .human-globe-copy > p { margin-bottom: 34px; }
   .human-globe-copy h1 { font-size: 38px; }
-  .human-globe-preview { left: 67%; width: 28vw; }
+  .human-globe-preview { width: 28vw; }
   .human-globe-footer { left: 5.5%; }
   .human-globe-scale { left: 18px; }
   .archive-canvas-shell { height: auto; min-height: 100svh; padding-top: 125vw; overflow: visible; }
@@ -475,7 +478,8 @@ button { cursor: pointer; }
   .human-globe-copy small { margin: 20px 0 0; font-size: 7px; }
   .human-globe-scale, .human-globe-orbit, .human-globe-footer a, .human-globe-coordinate-hud { display: none; }
   .human-globe-footer { bottom: 20px; left: 18px; font-size: 7px; }
-  .human-globe-preview { top: auto; right: 12px; bottom: 52px; left: 12px; width: auto; min-height: 150px; padding: 28px 18px 16px; border-top: 1px solid rgb(242 235 221 / .2); border-left-color: rgb(242 235 221 / .32); background: rgb(7 11 19 / .8); animation-delay: 70ms; backdrop-filter: blur(12px); }
+  .human-globe-callout-anchor { top: auto; right: 12px; bottom: 52px; left: 12px; transform: none !important; }
+  .human-globe-preview { width: 100%; min-height: 150px; padding: 28px 18px 16px; border-top: 1px solid rgb(242 235 221 / .2); border-left-color: rgb(242 235 221 / .32); background: rgb(7 11 19 / .8); animation-delay: 70ms; backdrop-filter: blur(12px); }
   .human-globe-preview > p { animation-delay: 210ms; }
   .human-globe-preview > span { animation-delay: 250ms; }
   .human-globe-preview > div { animation-delay: 300ms; }

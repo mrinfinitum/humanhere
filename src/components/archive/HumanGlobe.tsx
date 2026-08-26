@@ -3,11 +3,13 @@
 import { Canvas } from "@react-three/fiber";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { HumanCalloutOverlay } from "@/components/globe/HumanCalloutOverlay";
 import { GlobeScene } from "@/components/globe/GlobeScene";
 import type { GlobeControls, GlobeHover, GlobeHuman } from "@/components/globe/types";
 
 const MIN_DISTANCE = 2.82;
 const MAX_DISTANCE = 4.15;
+const GLOBE_DEBUG = process.env.NEXT_PUBLIC_GLOBE_DEBUG === "true";
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(maximum, Math.max(minimum, value));
@@ -15,22 +17,26 @@ function clamp(value: number, minimum: number, maximum: number) {
 
 export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   const stageRef = useRef<HTMLElement | null>(null);
+  const calloutAnchorRef = useRef<HTMLDivElement | null>(null);
   const previewRef = useRef<HTMLElement | null>(null);
   const connectorRef = useRef<SVGPathElement | null>(null);
   const controls = useRef<GlobeControls>({ targetX: 0.47, targetY: -0.085, distance: 3.42, engaged: false, dragging: false, lastInteraction: 0 });
   const pointer = useRef<{ id: number; x: number; y: number; targetX: number; targetY: number; moved: boolean } | null>(null);
+  const lastInteractionWasDrag = useRef(false);
   const touches = useRef(new Map<number, { x: number; y: number }>());
   const pinch = useRef<{ distance: number; cameraDistance: number } | null>(null);
   const hoverDismissTimer = useRef<number | null>(null);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [activeIndices, setActiveIndices] = useState<number[]>([]);
+  const [selectedHumanId, setSelectedHumanId] = useState<string | null>(null);
+  const [activeHumanIds, setActiveHumanIds] = useState<string[]>([]);
   const [hovered, setHovered] = useState<GlobeHover>(null);
   const [hoverLayout, setHoverLayout] = useState<ReturnType<typeof getHoverHudLayout> | null>(null);
   const [hoverHudVisible, setHoverHudVisible] = useState(false);
   const [ready, setReady] = useState(false);
   const [webglAvailable, setWebglAvailable] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const selected = selectedIndex === null ? null : humans[selectedIndex];
+  const selected = selectedHumanId === null
+    ? null
+    : humans.find(human => human.id === selectedHumanId) ?? null;
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -84,7 +90,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
 
   useEffect(() => {
     const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelectedIndex(null);
+      if (event.key === "Escape") setSelectedHumanId(null);
     };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
@@ -95,6 +101,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
     controls.current.engaged = true;
     controls.current.dragging = true;
     controls.current.lastInteraction = performance.now();
+    lastInteractionWasDrag.current = false;
 
     if (event.pointerType === "touch") {
       touches.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
@@ -143,6 +150,8 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   };
 
   const endInteraction = (event: ReactPointerEvent<HTMLElement>) => {
+    const active = pointer.current;
+    lastInteractionWasDrag.current = active?.id === event.pointerId && active.moved;
     touches.current.delete(event.pointerId);
     if (touches.current.size < 2) pinch.current = null;
     if (pointer.current?.id === event.pointerId) pointer.current = null;
@@ -169,19 +178,18 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
     }, 320);
   }, []);
 
-  const selectHuman = useCallback((index: number) => {
-    if (pointer.current?.moved) return;
+  const selectHuman = useCallback((humanId: string) => {
     controls.current.engaged = true;
     controls.current.lastInteraction = performance.now();
-    setSelectedIndex(index);
+    setSelectedHumanId(humanId);
     setHoverHudVisible(false);
     setHovered(null);
     setHoverLayout(null);
   }, []);
 
   const sceneReady = useCallback(() => setReady(true), []);
-  const updateActiveIndices = useCallback((next: number[]) => {
-    setActiveIndices(current => (
+  const updateActiveHumanIds = useCallback((next: string[]) => {
+    setActiveHumanIds(current => (
       current.length === next.length && current.every((value, index) => value === next[index]) ? current : next
     ));
   }, []);
@@ -199,17 +207,19 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
       controls.current.lastInteraction = performance.now();
       controls.current.targetX = clamp(controls.current.targetX + (event.key === "ArrowUp" ? -step : step), -0.52, 0.52);
     }
-    if (event.key === "Enter" && activeIndices.length) {
+    if (event.key === "Enter" && activeHumanIds.length) {
       event.preventDefault();
-      const activePosition = selectedIndex === null ? -1 : activeIndices.indexOf(selectedIndex);
-      selectHuman(activeIndices[(activePosition + 1) % activeIndices.length]);
+      const activePosition = selectedHumanId === null ? -1 : activeHumanIds.indexOf(selectedHumanId);
+      selectHuman(activeHumanIds[(activePosition + 1) % activeHumanIds.length]);
     }
   };
 
-  const hoverHuman = hovered && !selected ? humans[hovered.index] : null;
+  const hoverHuman = hovered && !selected
+    ? humans.find(human => human.id === hovered.humanId) ?? null
+    : null;
 
   return (
-    <main className={`human-globe-shell${selected ? " has-selection" : ""}`}>
+    <main className={`human-globe-shell${selected ? " has-selection" : ""}${hovered ? " has-hover" : ""}`}>
       <section
         ref={stageRef}
         className="human-globe-stage"
@@ -228,19 +238,31 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
             dpr={[1, 1.8]}
             gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
             raycaster={{ params: { Mesh: {}, Line: { threshold: 1 }, LOD: {}, Points: { threshold: 0.032 }, Sprite: {} } }}
+            onPointerMissed={() => {
+              if (lastInteractionWasDrag.current) {
+                lastInteractionWasDrag.current = false;
+                return;
+              }
+              setSelectedHumanId(null);
+            }}
             fallback={<GlobeFallback />}
           >
             <Suspense fallback={null}>
               <GlobeScene
                 humans={humans}
-                selectedIndex={selectedIndex}
+                selectedHumanId={selectedHumanId}
+                hoveredHumanId={hovered?.humanId ?? null}
                 controls={controls}
                 reducedMotion={reducedMotion}
                 lineRef={connectorRef}
                 previewRef={previewRef}
+                calloutAnchorRef={calloutAnchorRef}
                 onHover={updateHover}
                 onSelect={selectHuman}
-                onActiveChange={updateActiveIndices}
+                onActiveChange={updateActiveHumanIds}
+                onSelectedHidden={humanId => {
+                  setSelectedHumanId(current => current === humanId ? null : current);
+                }}
                 onReady={sceneReady}
               />
             </Suspense>
@@ -276,7 +298,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
 
       {hovered && hoverHuman && hoverLayout && (
         <div
-          key={hovered.index}
+          key={hovered.humanId}
           className={`human-orb-hud ${hoverHudVisible ? "is-visible" : "is-leaving"}`}
           aria-hidden="true"
         >
@@ -292,25 +314,13 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
       )}
 
       {selected && (
-        <>
-          <svg className="human-globe-connector" aria-hidden="true">
-            <path ref={connectorRef} pathLength="1" />
-          </svg>
-          <aside ref={previewRef} className="human-globe-preview" aria-live="polite">
-            <button type="button" onClick={() => setSelectedIndex(null)} aria-label="Close human preview">×</button>
-            <p>{selected.firstName}</p>
-            {selected.city && <span>{selected.city}</span>}
-            {selected.quote && <blockquote>{selected.quote}</blockquote>}
-            <div>
-              <small>{selected.loveCount > 0 ? `♡ ${selected.loveCount.toLocaleString()}` : "♡ LOVE"}</small>
-              <Link href={`/humans/${selected.slug}`} prefetch={false}>View human <b aria-hidden="true">→</b></Link>
-            </div>
-          </aside>
-          <p className="human-globe-coordinate-hud" aria-hidden="true">
-            <span>{formatCoordinate(selected.lat, "N", "S")}</span>
-            <span>{formatCoordinate(selected.lng, "E", "W")}</span>
-          </p>
-        </>
+        <HumanCalloutOverlay
+          human={selected}
+          anchorRef={calloutAnchorRef}
+          panelRef={previewRef}
+          connectorRef={connectorRef}
+          onClose={() => setSelectedHumanId(null)}
+        />
       )}
 
       <footer className="human-globe-footer">
@@ -319,6 +329,15 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
       </footer>
 
       <div className="human-globe-orbit" aria-hidden="true"><i /><i /><span /></div>
+
+      {GLOBE_DEBUG && (
+        <output className="human-globe-debug" aria-live="polite">
+          <b>GLOBE DEBUG</b>
+          <span>SELECTED {selectedHumanId ?? "—"}</span>
+          <span>HOVERED {hovered?.humanId ?? "—"}</span>
+          <span>ACTIVE {activeHumanIds.join(", ") || "—"}</span>
+        </output>
+      )}
     </main>
   );
 }
@@ -336,10 +355,6 @@ function getHoverHudLayout(hover: NonNullable<GlobeHover>, width: number, height
     labelY,
     path: `M ${hover.x.toFixed(1)} ${hover.y.toFixed(1)} L ${elbowX.toFixed(1)} ${hover.y.toFixed(1)} L ${lineEndX.toFixed(1)} ${(labelY + 13).toFixed(1)}`,
   };
-}
-
-function formatCoordinate(value: number, positive: string, negative: string) {
-  return `${Math.abs(value).toFixed(2)}° ${value >= 0 ? positive : negative}`;
 }
 
 function Wordmark() {

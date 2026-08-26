@@ -11,7 +11,7 @@ export type GlobeHuman = {
   fixture: boolean;
 };
 
-export type GlobeHover = { index: number; x: number; y: number } | null;
+export type GlobeHover = { humanId: string; x: number; y: number } | null;
 
 export type GlobeControls = {
   targetX: number;

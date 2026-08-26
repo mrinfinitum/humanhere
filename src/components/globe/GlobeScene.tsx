@@ -1,9 +1,11 @@
 /* eslint-disable react-hooks/immutability -- Three.js scenes are intentionally animated through mutable refs and uniforms. */
 "use client";
 
-import { useFrame, useLoader, useThree, type ThreeEvent } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, type MutableRefObject, type RefObject } from "react";
+import { useFrame, useLoader, useThree } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject, type RefObject } from "react";
 import * as THREE from "three";
+import { HumanBeaconHitTargets } from "./HumanBeaconHitTargets";
+import { HumanBeaconShafts } from "./HumanBeaconShafts";
 import { HumanDiscoveryManager } from "./HumanDiscoveryManager";
 import type { GlobeControls, GlobeHover, GlobeHuman } from "./types";
 
@@ -16,6 +18,7 @@ const PAPER = new THREE.Color("#F2EBDD");
 const LAPIS = new THREE.Color("#3046A5");
 const BEACON_BLUE = new THREE.Color("#315DFF");
 const UNIT_Z = new THREE.Vector3(0, 0, 1);
+const GLOBE_DEBUG = process.env.NEXT_PUBLIC_GLOBE_DEBUG === "true";
 
 function latLngVector(lat: number, lng: number, radius = WORLD_RADIUS) {
   const latitude = THREE.MathUtils.degToRad(lat);
@@ -26,10 +29,6 @@ function latLngVector(lat: number, lng: number, radius = WORLD_RADIUS) {
     Math.sin(latitude) * radius,
     -latitudeRadius * Math.sin(longitude),
   );
-}
-
-function nearestAngle(current: number, target: number) {
-  return current + Math.atan2(Math.sin(target - current), Math.cos(target - current));
 }
 
 function createSeededRandom(seed = 31051986) {
@@ -218,9 +217,10 @@ function Atmosphere() {
   );
 }
 
-function HumanOrbs({
+function HumanBeaconSystem({
   humans,
-  selectedIndex,
+  selectedHumanId,
+  hoveredHumanId,
   controls,
   worldRef,
   reducedMotion,
@@ -229,21 +229,18 @@ function HumanOrbs({
   onActiveChange,
 }: {
   humans: GlobeHuman[];
-  selectedIndex: number | null;
+  selectedHumanId: string | null;
+  hoveredHumanId: string | null;
   controls: MutableRefObject<GlobeControls>;
   worldRef: RefObject<THREE.Group | null>;
   reducedMotion: boolean;
   onHover: (hover: GlobeHover) => void;
-  onSelect: (index: number) => void;
-  onActiveChange: (indices: number[]) => void;
+  onSelect: (humanId: string) => void;
+  onActiveChange: (humanIds: string[]) => void;
 }) {
   const pointsRef = useRef<THREE.Points>(null);
   const contactRef = useRef<THREE.InstancedMesh>(null);
-  const hitTargetRef = useRef<THREE.InstancedMesh>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
-  const hoveredRef = useRef(-1);
-  const hoveredPositionRef = useRef({ x: 0, y: 0 });
-  const hoverTargetRef = useRef(false);
   const activeKeyRef = useRef("");
   const center = useMemo(() => new THREE.Vector3(), []);
   const cameraDirection = useMemo(() => new THREE.Vector3(), []);
@@ -258,7 +255,13 @@ function HumanOrbs({
   const { camera, gl, size } = useThree();
   const mobile = size.width <= 760;
   const poolSize = mobile ? 10 : 18;
-  const visibleSlots = useMemo(() => new Uint8Array(poolSize), [poolSize]);
+  const [activeHumanIds, setActiveHumanIds] = useState<string[]>([]);
+  const indexByHumanId = useMemo(
+    () => new Map(humans.map((human, index) => [human.id, index] as const)),
+    [humans],
+  );
+  const selectedIndex = selectedHumanId === null ? null : indexByHumanId.get(selectedHumanId) ?? null;
+  const hoveredIndex = hoveredHumanId === null ? null : indexByHumanId.get(hoveredHumanId) ?? null;
   const candidatePositions = useMemo(
     () => humans.map(human => latLngVector(human.lat, human.lng, 1.0085)),
     [humans],
@@ -295,7 +298,6 @@ function HumanOrbs({
     return result;
   }, [poolSize]);
   const contactGeometry = useMemo(() => new THREE.CircleGeometry(1, 40), []);
-  const hitTargetGeometry = useMemo(() => new THREE.SphereGeometry(0.026, 10, 8), []);
   const contactMaterial = useMemo(() => new THREE.ShaderMaterial({
     transparent: true,
     depthTest: true,
@@ -331,14 +333,6 @@ function HumanOrbs({
       }
     `,
   }), []);
-  const hitTargetMaterial = useMemo(() => new THREE.MeshBasicMaterial({
-    transparent: true,
-    opacity: 0,
-    depthTest: true,
-    depthWrite: false,
-    toneMapped: false,
-  }), []);
-
   const uniforms = useMemo(() => ({
     uTime: { value: 0 },
     uSelected: { value: -1 },
@@ -353,29 +347,26 @@ function HumanOrbs({
     uniforms.uPixelRatio.value = Math.min(gl.getPixelRatio(), 1.8);
   }, [gl, uniforms]);
   useEffect(() => { uniforms.uSelected.value = selectedIndex ?? -1; }, [selectedIndex, uniforms]);
+  useEffect(() => {
+    uniforms.uHovered.value = hoveredIndex ?? -1;
+    uniforms.uHoverStrength.value = hoveredIndex === null ? 0 : 1;
+  }, [hoveredIndex, uniforms]);
   useEffect(() => { uniforms.uMotion.value = reducedMotion ? 0 : 1; }, [reducedMotion, uniforms]);
   useEffect(() => () => geometry.dispose(), [geometry]);
   useEffect(() => () => {
     contactGeometry.dispose();
     contactMaterial.dispose();
-    hitTargetGeometry.dispose();
-    hitTargetMaterial.dispose();
-  }, [contactGeometry, contactMaterial, hitTargetGeometry, hitTargetMaterial]);
+  }, [contactGeometry, contactMaterial]);
   useEffect(() => {
     if (contactRef.current) contactRef.current.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    if (hitTargetRef.current) hitTargetRef.current.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   }, []);
   useEffect(() => {
     activeKeyRef.current = "";
     onActiveChange([]);
   }, [discovery, onActiveChange]);
-
-  useFrame(({ clock }, delta) => {
+  useFrame(({ clock }) => {
     if (!materialRef.current) return;
     materialRef.current.uniforms.uTime.value = clock.elapsedTime;
-    const strength = materialRef.current.uniforms.uHoverStrength;
-    strength.value = THREE.MathUtils.damp(strength.value, hoverTargetRef.current ? 1 : 0, 3.4, delta);
-    if (!hoverTargetRef.current && strength.value < 0.01) uniforms.uHovered.value = -1;
 
     const world = worldRef.current;
     if (!world) return;
@@ -385,7 +376,7 @@ function HumanOrbs({
     const membershipChanged = discovery.update({
       now: clock.elapsedTime,
       selectedIndex,
-      hoveredIndex: hoveredRef.current >= 0 ? hoveredRef.current : null,
+      hoveredIndex,
       activelyExploring: controls.current.dragging || performance.now() - controls.current.lastInteraction < 1700,
       reducedMotion,
       visibilityFor: candidateIndex => surfaceDirection
@@ -404,7 +395,6 @@ function HumanOrbs({
     const scale = geometry.getAttribute("aScale") as THREE.BufferAttribute;
     const intensity = geometry.getAttribute("aIntensity") as THREE.BufferAttribute;
     discovery.slots.forEach((slot, slotIndex) => {
-      visibleSlots[slotIndex] = 0;
       position.setXYZ(slotIndex, slot.position.x, slot.position.y, slot.position.z);
       phase.setX(slotIndex, slot.phase);
       index.setX(slotIndex, slot.candidateIndex);
@@ -426,7 +416,6 @@ function HumanOrbs({
           contactPosition.copy(contactNormal).multiplyScalar(1.0012);
           contactQuaternion.setFromUnitVectors(UNIT_Z, contactNormal);
           const facing = surfaceDirection.copy(contactNormal).applyQuaternion(worldQuaternion).dot(cameraDirection);
-          visibleSlots[slotIndex] = facing > 0.035 ? 1 : 0;
           const limb = THREE.MathUtils.smoothstep(facing, 0.055, 0.3);
           const selectedContact = slot.candidateIndex === selectedIndex;
           contactScale.setScalar(0.0225 * slot.scale * (selectedContact ? 1.2 : 1));
@@ -437,25 +426,6 @@ function HumanOrbs({
         contactMatrix.compose(contactPosition, contactQuaternion, contactScale);
         contact.setMatrixAt(slotIndex, contactMatrix);
         contact.setColorAt(slotIndex, contactColor);
-      }
-
-      const hitTarget = hitTargetRef.current;
-      if (hitTarget) {
-        if (slot.candidateIndex < 0 || slot.coreOpacity <= 0.001) {
-          contactPosition.set(100, 100, 100);
-          contactQuaternion.identity();
-          contactScale.setScalar(0.0001);
-        } else {
-          contactNormal.copy(slot.position).normalize();
-          contactPosition.copy(contactNormal).multiplyScalar(1.0102);
-          contactQuaternion.setFromUnitVectors(UNIT_Z, contactNormal);
-          const facing = surfaceDirection.copy(contactNormal).applyQuaternion(worldQuaternion).dot(cameraDirection);
-          visibleSlots[slotIndex] = facing > 0.035 ? 1 : 0;
-          const selectedLocator = slot.candidateIndex === selectedIndex;
-          contactScale.setScalar(slot.scale * (selectedLocator ? 1.25 : 1));
-        }
-        contactMatrix.compose(contactPosition, contactQuaternion, contactScale);
-        hitTarget.setMatrixAt(slotIndex, contactMatrix);
       }
     });
     position.needsUpdate = true;
@@ -470,42 +440,23 @@ function HumanOrbs({
       contactRef.current.instanceMatrix.needsUpdate = true;
       if (contactRef.current.instanceColor) contactRef.current.instanceColor.needsUpdate = true;
     }
-    if (hitTargetRef.current) hitTargetRef.current.instanceMatrix.needsUpdate = true;
-
-    if (membershipChanged) {
-      const active = discovery.activeCandidateIndices();
-      const activeKey = active.slice().sort((first, second) => first - second).join(",");
+    const active = discovery.slots
+      .filter(slot => slot.state !== "inactive" && slot.coreOpacity >= 0.34 && slot.candidateIndex >= 0)
+      .map(slot => humans[slot.candidateIndex]?.id)
+      .filter((humanId): humanId is string => Boolean(humanId));
+    const activeKey = active.slice().sort().join(",");
+    if (membershipChanged || activeKey !== activeKeyRef.current) {
       if (activeKey !== activeKeyRef.current) {
         activeKeyRef.current = activeKey;
+        setActiveHumanIds(active);
         onActiveChange(active);
       }
     }
   });
 
-  const hover = (event: ThreeEvent<PointerEvent>) => {
-    event.stopPropagation();
-    const slotIndex = event.instanceId ?? -1;
-    if (slotIndex < 0 || visibleSlots[slotIndex] !== 1) return;
-    const index = discovery.candidateForSlot(slotIndex) ?? -1;
-    if (index < 0 || index === hoveredRef.current) return;
-    if (
-      hoveredRef.current >= 0
-      && Math.hypot(event.nativeEvent.clientX - hoveredPositionRef.current.x, event.nativeEvent.clientY - hoveredPositionRef.current.y) < 18
-    ) return;
-    hoveredRef.current = index;
-    hoveredPositionRef.current = { x: event.nativeEvent.clientX, y: event.nativeEvent.clientY };
-    hoverTargetRef.current = true;
-    uniforms.uHovered.value = index;
-    onHover({ index, x: event.nativeEvent.clientX, y: event.nativeEvent.clientY });
-    document.body.style.cursor = "pointer";
-  };
-
-  const clearHover = () => {
-    hoveredRef.current = -1;
-    hoverTargetRef.current = false;
-    onHover(null);
-    document.body.style.cursor = "";
-  };
+  const activeHumans = activeHumanIds
+    .map(humanId => humans[indexByHumanId.get(humanId) ?? -1])
+    .filter((human): human is GlobeHuman => Boolean(human));
 
   return (
     <group>
@@ -578,8 +529,8 @@ function HumanOrbs({
             vBreath = mix(0.92, 1.0, 0.5 + breatheWave * 0.5 * uMotion);
             vSelected = selected;
             vHovered = hovered;
-            float glintEligible = step(0.82, fract(sin(aPhase * 41.73) * 27581.11));
-            vGlint = pow(max(0.0, sin(uTime * 0.24 + aPhase * 7.13)), 48.0) * glintEligible * uMotion;
+            float glintBreath = 0.82 + sin(uTime * 0.58 + aPhase * 2.7) * 0.08 * uMotion;
+            vGlint = glintBreath * aInnerOpacity;
           }
         `}
         fragmentShader={`
@@ -595,17 +546,23 @@ function HumanOrbs({
           varying float vGlint;
           uniform float uMobile;
           void main() {
-            float radius = length(gl_PointCoord - 0.5) * 2.0;
+            vec2 point = (gl_PointCoord - 0.5) * 2.0;
+            float radius = length(point);
             float pinpoint = 1.0 - smoothstep(0.105, 0.17, radius);
             float hotCenter = 1.0 - smoothstep(0.0, 0.072, radius);
             float innerBloom = exp(-pow(radius / 0.205, 2.0));
             float outerAura = exp(-pow(radius / 0.52, 2.0))
               * (1.0 - smoothstep(0.74, 1.0, radius))
               * mix(1.0, 0.78, uMobile);
-            float horizontalGlint = exp(-pow(abs(gl_PointCoord.y - 0.5) / 0.012, 2.0))
-              * exp(-pow(radius / 0.58, 2.0));
-            float verticalGlint = exp(-pow(abs(gl_PointCoord.x - 0.5) / 0.015, 2.0))
-              * exp(-pow(radius / 0.34, 2.0)) * 0.32;
+            float horizontalGlint = exp(-pow(abs(gl_PointCoord.y - 0.5) / 0.010, 2.0))
+              * exp(-pow(radius / 0.62, 2.0));
+            float verticalGlint = exp(-pow(abs(gl_PointCoord.x - 0.5) / 0.012, 2.0))
+              * exp(-pow(radius / 0.46, 2.0)) * 0.64;
+            vec2 diagonalA = vec2(point.x + point.y, point.x - point.y);
+            float diagonalGlint = (
+              exp(-pow(abs(diagonalA.x) / 0.022, 2.0))
+              + exp(-pow(abs(diagonalA.y) / 0.022, 2.0))
+            ) * exp(-pow(radius / 0.36, 2.0)) * 0.16;
 
             float coreLimb = smoothstep(-0.045, 0.065, vFacing);
             float innerLimb = smoothstep(0.005, 0.145, vFacing);
@@ -623,7 +580,7 @@ function HumanOrbs({
             vec3 light = coreColor * pinpoint * vCoreOpacity * coreLimb * (1.78 + hotCenter * 0.92)
               + innerColor * innerBloom * vInnerOpacity * innerLimb * mix(0.82, 1.02, vSelected)
               + auraColor * outerAura * vHaloOpacity * auraLimb * vBreath * mix(0.28, 0.46, vSelected)
-              + mix(paper, hotBlue, 0.78) * (horizontalGlint + verticalGlint) * vGlint * coreLimb * 0.38;
+              + mix(paper, hotBlue, 0.78) * (horizontalGlint + verticalGlint + diagonalGlint) * vGlint * coreLimb * 0.72;
             light *= vIntensity * attention;
             float alpha = max(max(light.r, light.g), light.b);
             if (alpha < 0.008) discard;
@@ -633,90 +590,20 @@ function HumanOrbs({
         toneMapped={false}
       />
       </points>
-      <points geometry={geometry} frustumCulled={false} raycast={() => undefined} renderOrder={3}>
-        <shaderMaterial
-          transparent
-          depthTest
-          depthWrite={false}
-          blending={THREE.NormalBlending}
-          uniforms={uniforms}
-          vertexShader={`
-            attribute float aPhase;
-            attribute float aIndex;
-            attribute float aInnerOpacity;
-            attribute float aScale;
-            uniform float uSelected;
-            uniform float uHovered;
-            uniform float uHoverStrength;
-            uniform float uPixelRatio;
-            uniform float uMobile;
-            varying float vOpacity;
-            varying float vFacing;
-            varying float vSelected;
-            varying float vHovered;
-            void main() {
-              float selected = step(abs(aIndex - uSelected), 0.1);
-              float hovered = step(abs(aIndex - uHovered), 0.1) * uHoverStrength;
-              float naturalSize = 0.96 + fract(sin(aPhase * 12.9898) * 43758.5453) * 0.08;
-              vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-              gl_Position = projectionMatrix * mvPosition;
-              float baseSize = mix(56.0, 48.0, uMobile) * naturalSize;
-              float interactionScale = 1.0 + selected * 0.22 + hovered * 0.055;
-              float projectedSize = baseSize * interactionScale * aScale
-                * uPixelRatio * (2.75 / max(1.0, -mvPosition.z));
-              gl_PointSize = clamp(projectedSize, 20.0 * uPixelRatio, 70.0 * uPixelRatio);
-              vec3 viewNormal = normalize(normalMatrix * normalize(position));
-              vec3 viewDirection = normalize(-mvPosition.xyz);
-              vFacing = dot(viewNormal, viewDirection);
-              float selectionQuiet = mix(0.84, 1.0, max(selected, 1.0 - step(0.0, uSelected)));
-              vOpacity = aInnerOpacity * selectionQuiet;
-              vSelected = selected;
-              vHovered = hovered;
-            }
-          `}
-          fragmentShader={`
-            varying float vOpacity;
-            varying float vFacing;
-            varying float vSelected;
-            varying float vHovered;
-            void main() {
-              vec2 point = (gl_PointCoord - 0.5) * 2.0;
-              float radius = length(point);
-              float ringOuter = 1.0 - smoothstep(0.405, 0.435, radius);
-              float ringInner = 1.0 - smoothstep(0.335, 0.365, radius);
-              float locatorRing = max(0.0, ringOuter - ringInner);
-              float stemX = 1.0 - smoothstep(0.016, 0.034, abs(point.x));
-              float stemStart = smoothstep(0.41, 0.46, point.y);
-              float stemEnd = 1.0 - smoothstep(0.65, 0.72, point.y);
-              float presenceTick = stemX * stemStart * stemEnd;
-              float limb = smoothstep(-0.012, 0.14, vFacing);
-              float attention = clamp(vSelected + vHovered, 0.0, 1.0);
-              vec3 lapis = vec3(0.188, 0.275, 0.647);
-              vec3 beaconBlue = vec3(0.302, 0.451, 1.0);
-              vec3 color = mix(lapis, beaconBlue, 0.34 + attention * 0.54);
-              float alpha = (locatorRing + presenceTick * 0.82)
-                * vOpacity * limb * mix(0.88, 1.0, attention);
-              if (alpha < 0.008) discard;
-              gl_FragColor = vec4(color, min(alpha, 1.0));
-            }
-          `}
-          toneMapped={false}
-        />
-      </points>
-      <instancedMesh
-        ref={hitTargetRef}
-        args={[hitTargetGeometry, hitTargetMaterial, poolSize]}
-        frustumCulled={false}
-        renderOrder={4}
-        onPointerDown={event => event.stopPropagation()}
-        onPointerMove={hover}
-        onPointerOut={clearHover}
-        onClick={event => {
-          event.stopPropagation();
-          if (event.instanceId === undefined || visibleSlots[event.instanceId] !== 1) return;
-          const candidateIndex = discovery.candidateForSlot(event.instanceId);
-          if (candidateIndex !== null) onSelect(candidateIndex);
-        }}
+      <HumanBeaconShafts
+        slots={discovery.slots}
+        selectedIndex={selectedIndex}
+        hoveredIndex={hoveredIndex}
+        worldRef={worldRef}
+        reducedMotion={reducedMotion}
+      />
+      <HumanBeaconHitTargets
+        humans={activeHumans}
+        positionFor={human => candidatePositions[indexByHumanId.get(human.id) ?? 0]}
+        onHover={onHover}
+        onHoverEnd={() => onHover(null)}
+        onSelect={onSelect}
+        debug={GLOBE_DEBUG}
       />
     </group>
   );
@@ -824,25 +711,31 @@ function OrbitLines() {
 
 export function GlobeScene({
   humans,
-  selectedIndex,
+  selectedHumanId,
+  hoveredHumanId,
   controls,
   reducedMotion,
   lineRef,
   previewRef,
+  calloutAnchorRef,
   onHover,
   onSelect,
   onActiveChange,
+  onSelectedHidden,
   onReady,
 }: {
   humans: GlobeHuman[];
-  selectedIndex: number | null;
+  selectedHumanId: string | null;
+  hoveredHumanId: string | null;
   controls: MutableRefObject<GlobeControls>;
   reducedMotion: boolean;
   lineRef: RefObject<SVGPathElement | null>;
   previewRef: RefObject<HTMLElement | null>;
+  calloutAnchorRef: RefObject<HTMLDivElement | null>;
   onHover: (hover: GlobeHover) => void;
-  onSelect: (index: number) => void;
-  onActiveChange: (indices: number[]) => void;
+  onSelect: (humanId: string) => void;
+  onActiveChange: (humanIds: string[]) => void;
+  onSelectedHidden: (humanId: string) => void;
   onReady: () => void;
 }) {
   const worldRef = useRef<THREE.Group>(null);
@@ -851,7 +744,11 @@ export function GlobeScene({
   const worldCenter = useMemo(() => new THREE.Vector3(), []);
   const surfaceDirection = useMemo(() => new THREE.Vector3(), []);
   const cameraDirection = useMemo(() => new THREE.Vector3(), []);
+  const hiddenSelectionRef = useRef<string | null>(null);
   const { camera, gl, size } = useThree();
+  const selected = selectedHumanId === null
+    ? null
+    : humans.find(human => human.id === selectedHumanId) ?? null;
 
   useEffect(() => {
     gl.setClearColor("#05070B", 1);
@@ -861,21 +758,11 @@ export function GlobeScene({
     onReady();
   }, [gl, onReady]);
 
-  useEffect(() => {
-    if (selectedIndex === null || !humans[selectedIndex]) return;
-    const human = humans[selectedIndex];
-    const current = worldRef.current?.rotation.y ?? controls.current.targetY;
-    const faceLongitude = -THREE.MathUtils.degToRad(human.lng + 90) - 0.03;
-    controls.current.targetY = nearestAngle(current, faceLongitude);
-    controls.current.targetX = THREE.MathUtils.clamp(0.425 - THREE.MathUtils.degToRad(human.lat) * 0.05, -0.52, 0.52);
-    controls.current.lastInteraction = performance.now();
-  }, [controls, humans, selectedIndex]);
-
   useFrame((_, delta) => {
     const world = worldRef.current;
     if (!world) return;
 
-    if (!reducedMotion && selectedIndex === null && !controls.current.dragging && performance.now() - controls.current.lastInteraction > 2800) {
+    if (!reducedMotion && selectedHumanId === null && !controls.current.dragging && performance.now() - controls.current.lastInteraction > 2800) {
       // Positive Y advances longitude eastward: Earth's west-to-east rotation.
       controls.current.targetY += delta * EASTWARD_ROTATION_SPEED;
     }
@@ -884,8 +771,8 @@ export function GlobeScene({
     camera.position.z = THREE.MathUtils.damp(camera.position.z, controls.current.distance, 4.4, delta);
     camera.lookAt(0, 0, 0);
 
-    if (selectedIndex !== null && humans[selectedIndex] && lineRef.current && previewRef.current) {
-      selectedPoint.copy(latLngVector(humans[selectedIndex].lat, humans[selectedIndex].lng, 1.025));
+    if (selected && lineRef.current && previewRef.current && calloutAnchorRef.current) {
+      selectedPoint.copy(latLngVector(selected.lat, selected.lng, 1.0085));
       world.localToWorld(selectedPoint);
       projectedPoint.copy(selectedPoint).project(camera);
       const markerX = (projectedPoint.x * 0.5 + 0.5) * size.width;
@@ -897,24 +784,25 @@ export function GlobeScene({
         && markerX > -20 && markerX < size.width + 20
         && markerY > -20 && markerY < size.height + 20;
       const preview = previewRef.current;
+      const anchor = calloutAnchorRef.current;
+      const connector = lineRef.current;
 
-      // Place the single selected-Human panel once the selected point is
-      // projected. This keeps the panel clear of the beacon and flips it to
-      // the opposite side near viewport edges without running React state in
-      // the render loop. Mobile retains its deliberate docked treatment.
-      const previousViewportWidth = Number.parseFloat(preview.dataset.viewportWidth ?? "0");
-      const previousMarkerX = Number.parseFloat(preview.dataset.markerX ?? String(markerX));
-      const previousMarkerY = Number.parseFloat(preview.dataset.markerY ?? String(markerY));
-      const markerDrift = Math.hypot(markerX - previousMarkerX, markerY - previousMarkerY);
-      const needsDesktopPlacement = preview.dataset.placedFor !== humans[selectedIndex].id
-        || Math.abs(previousViewportWidth - size.width) > 80
-        || markerDrift > 72;
-      if (size.width > 760 && markerIsVisible && needsDesktopPlacement) {
-        const panelWidth = preview.offsetWidth || 230;
-        const panelHeight = preview.offsetHeight || 176;
-        const placeLeft = markerX + panelWidth + 190 > size.width;
+      if (!markerIsVisible) {
+        connector.setAttribute("opacity", "0");
+        if (hiddenSelectionRef.current !== selected.id) {
+          hiddenSelectionRef.current = selected.id;
+          onSelectedHidden(selected.id);
+        }
+        return;
+      }
+      hiddenSelectionRef.current = null;
+
+      if (size.width > 760) {
+        const panelWidth = preview.offsetWidth || 310;
+        const panelHeight = preview.offsetHeight || 244;
+        const placeLeft = markerX > size.width * 0.58;
         const panelX = THREE.MathUtils.clamp(
-          placeLeft ? markerX - panelWidth - 150 : markerX + 150,
+          placeLeft ? markerX - panelWidth - 142 : markerX + 142,
           34,
           size.width - panelWidth - 34,
         );
@@ -923,30 +811,15 @@ export function GlobeScene({
           112,
           size.height - panelHeight - 34,
         );
-        preview.style.left = `${panelX}px`;
-        preview.style.top = `${panelY}px`;
-        preview.style.right = "auto";
-        preview.style.bottom = "auto";
-        preview.dataset.placedFor = humans[selectedIndex].id;
-        preview.dataset.viewportWidth = String(size.width);
-        preview.dataset.markerX = String(markerX);
-        preview.dataset.markerY = String(markerY);
+        anchor.style.transform = `translate3d(${panelX.toFixed(1)}px, ${panelY.toFixed(1)}px, 0)`;
         preview.dataset.side = placeLeft ? "left" : "right";
-      } else if (size.width <= 760 && preview.dataset.placedFor) {
-        preview.style.removeProperty("left");
-        preview.style.removeProperty("top");
-        preview.style.removeProperty("right");
-        preview.style.removeProperty("bottom");
-        delete preview.dataset.placedFor;
-        delete preview.dataset.viewportWidth;
-        delete preview.dataset.markerX;
-        delete preview.dataset.markerY;
+      } else {
+        anchor.style.removeProperty("transform");
         delete preview.dataset.side;
       }
 
       const previewBounds = preview.getBoundingClientRect();
-      const connector = lineRef.current;
-      connector.setAttribute("opacity", markerIsVisible ? "1" : "0");
+      connector.setAttribute("opacity", "1");
       const endX = markerX <= previewBounds.left + previewBounds.width * 0.5
         ? previewBounds.left
         : previewBounds.right;
@@ -959,10 +832,8 @@ export function GlobeScene({
         `M ${markerX.toFixed(1)} ${markerY.toFixed(1)} L ${firstX.toFixed(1)} ${markerY.toFixed(1)} L ${secondX.toFixed(1)} ${endY.toFixed(1)} L ${endX.toFixed(1)} ${endY.toFixed(1)}`,
       );
 
-      if (!markerIsVisible) {
-        delete connector.dataset.drawnFor;
-      } else if (connector.dataset.drawnFor !== humans[selectedIndex].id) {
-        connector.dataset.drawnFor = humans[selectedIndex].id;
+      if (connector.dataset.drawnFor !== selected.id) {
+        connector.dataset.drawnFor = selected.id;
         connector.getAnimations().forEach(animation => animation.cancel());
         connector.animate(
           reducedMotion
@@ -981,17 +852,16 @@ export function GlobeScene({
     }
   });
 
-  const selected = selectedIndex === null ? null : humans[selectedIndex];
-
   return (
     <>
       <SpaceField />
       <OrbitLines />
       <group ref={worldRef} position={WORLD_POSITION.toArray()} scale={WORLD_SCALE} rotation={[0.47, -0.085, -0.025]}>
         <EarthSurface />
-        <HumanOrbs
+        <HumanBeaconSystem
           humans={humans}
-          selectedIndex={selectedIndex}
+          selectedHumanId={selectedHumanId}
+          hoveredHumanId={hoveredHumanId}
           controls={controls}
           worldRef={worldRef}
           reducedMotion={reducedMotion}
