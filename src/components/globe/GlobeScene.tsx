@@ -13,6 +13,7 @@ const WORLD_SCALE = 1.5;
 const WORLD_POSITION = new THREE.Vector3(0.118, -0.25, 0);
 const EARTH_ROTATION_SECONDS = 240;
 const EASTWARD_ROTATION_SPEED = Math.PI * 2 / EARTH_ROTATION_SECONDS;
+const TULSA_MARKER_VERIFICATION = true;
 const PAPER = new THREE.Color("#F2EBDD");
 const LAPIS = new THREE.Color("#3046A5");
 const GLOBE_DEBUG = process.env.NEXT_PUBLIC_GLOBE_DEBUG === "true";
@@ -275,6 +276,8 @@ export function GlobeScene({
   lineRef,
   previewRef,
   calloutAnchorRef,
+  debugProjectionRef,
+  debugWorldRef,
   onHover,
   onSelect,
   onActiveChange,
@@ -289,6 +292,8 @@ export function GlobeScene({
   lineRef: RefObject<SVGPathElement | null>;
   previewRef: RefObject<HTMLElement | null>;
   calloutAnchorRef: RefObject<HTMLDivElement | null>;
+  debugProjectionRef: RefObject<HTMLElement | null>;
+  debugWorldRef: RefObject<HTMLElement | null>;
   onHover: (hover: GlobeHover) => void;
   onSelect: (humanId: string) => void;
   onActiveChange: (humanIds: string[]) => void;
@@ -302,6 +307,8 @@ export function GlobeScene({
   const surfaceDirection = useMemo(() => new THREE.Vector3(), []);
   const cameraDirection = useMemo(() => new THREE.Vector3(), []);
   const hiddenSelectionRef = useRef<string | null>(null);
+  const debugWorldPoint = useMemo(() => new THREE.Vector3(), []);
+  const debugProjectedPoint = useMemo(() => new THREE.Vector3(), []);
   const { camera, gl, size } = useThree();
   const selected = selectedHumanId === null
     ? null
@@ -319,7 +326,7 @@ export function GlobeScene({
     const world = worldRef.current;
     if (!world) return;
 
-    if (!reducedMotion && selectedHumanId === null && !controls.current.dragging && performance.now() - controls.current.lastInteraction > 2800) {
+    if (!TULSA_MARKER_VERIFICATION && !reducedMotion && selectedHumanId === null && !controls.current.dragging && performance.now() - controls.current.lastInteraction > 2800) {
       // Positive Y advances longitude eastward: Earth's west-to-east rotation.
       controls.current.targetY += delta * EASTWARD_ROTATION_SPEED;
     }
@@ -327,6 +334,18 @@ export function GlobeScene({
     world.rotation.y = THREE.MathUtils.damp(world.rotation.y, controls.current.targetY, 4.1, delta);
     camera.position.z = THREE.MathUtils.damp(camera.position.z, controls.current.distance, 4.4, delta);
     camera.lookAt(0, 0, 0);
+
+    if (GLOBE_DEBUG && debugProjectionRef.current && humans[0]) {
+      debugWorldPoint.copy(latLngToVector3(humans[0].lat, humans[0].lng, HUMAN_SURFACE_RADIUS));
+      world.localToWorld(debugWorldPoint);
+      debugProjectedPoint.copy(debugWorldPoint).project(camera);
+      const debugX = (debugProjectedPoint.x * 0.5 + 0.5) * size.width;
+      const debugY = (-debugProjectedPoint.y * 0.5 + 0.5) * size.height;
+      debugProjectionRef.current.style.transform = `translate3d(${(debugX - 7).toFixed(1)}px, ${(debugY - 7).toFixed(1)}px, 0)`;
+      if (debugWorldRef.current) {
+        debugWorldRef.current.textContent = `WORLD ${debugWorldPoint.x.toFixed(3)}, ${debugWorldPoint.y.toFixed(3)}, ${debugWorldPoint.z.toFixed(3)}`;
+      }
+    }
 
     if (selected && lineRef.current && previewRef.current && calloutAnchorRef.current) {
       selectedPoint.copy(latLngToVector3(selected.lat, selected.lng, HUMAN_SURFACE_RADIUS));

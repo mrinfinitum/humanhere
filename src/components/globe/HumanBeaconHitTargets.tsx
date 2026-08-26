@@ -20,8 +20,9 @@ type Props = {
  */
 export function HumanBeaconHitTargets({ humans, positionFor, onHover, onHoverEnd, onSelect, debug }: Props) {
   const targetsRef = useRef(new Map<string, THREE.Mesh>());
-  const pointerDownRef = useRef<{ humanId: string; pointerId: number; x: number; y: number } | null>(null);
-  const geometry = useMemo(() => new THREE.SphereGeometry(0.034, 14, 10), []);
+  // The parent Earth scale makes this roughly a 38px desktop hit target while
+  // the visible flare remains much smaller.
+  const geometry = useMemo(() => new THREE.SphereGeometry(0.019, 14, 10), []);
   const material = useMemo(() => new THREE.MeshBasicMaterial({
     color: debug ? "#ff335f" : "#000000",
     transparent: true,
@@ -65,32 +66,6 @@ export function HumanBeaconHitTargets({ humans, positionFor, onHover, onHoverEnd
     onHoverEnd(humanId);
   };
 
-  const beginSelection = (event: ThreeEvent<PointerEvent>, humanId: string) => {
-    event.stopPropagation();
-    event.nativeEvent.stopPropagation();
-    event.nativeEvent.stopImmediatePropagation();
-    pointerDownRef.current = {
-      humanId,
-      pointerId: event.pointerId,
-      x: event.nativeEvent.clientX,
-      y: event.nativeEvent.clientY,
-    };
-  };
-
-  const finishSelection = (event: ThreeEvent<PointerEvent>, humanId: string) => {
-    event.stopPropagation();
-    event.nativeEvent.stopPropagation();
-    event.nativeEvent.stopImmediatePropagation();
-    const start = pointerDownRef.current;
-    pointerDownRef.current = null;
-    if (!start || start.humanId !== humanId || start.pointerId !== event.pointerId) return;
-    const movement = Math.hypot(
-      event.nativeEvent.clientX - start.x,
-      event.nativeEvent.clientY - start.y,
-    );
-    if (movement <= 6) onSelect(humanId);
-  };
-
   return (
     <group name="human-beacon-hit-targets">
       {humans.map(human => (
@@ -104,9 +79,11 @@ export function HumanBeaconHitTargets({ humans, positionFor, onHover, onHoverEnd
           position={positionFor(human)}
           geometry={geometry}
           material={material}
-          onPointerDown={event => beginSelection(event, human.id)}
-          onPointerUp={event => finishSelection(event, human.id)}
-          onPointerCancel={() => { pointerDownRef.current = null; }}
+          onPointerDown={event => {
+            event.stopPropagation();
+            event.nativeEvent.stopPropagation();
+            event.nativeEvent.stopImmediatePropagation();
+          }}
           onPointerOver={event => hover(event, human.id)}
           onPointerOut={event => clearHover(event, human.id)}
           onClick={event => {
@@ -115,6 +92,7 @@ export function HumanBeaconHitTargets({ humans, positionFor, onHover, onHoverEnd
             event.stopPropagation();
             event.nativeEvent.stopPropagation();
             event.nativeEvent.stopImmediatePropagation();
+            if (event.delta > 6) return;
             onSelect(human.id);
           }}
         />

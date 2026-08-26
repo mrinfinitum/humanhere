@@ -2,9 +2,10 @@
 
 import { Canvas } from "@react-three/fiber";
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { HumanCalloutOverlay } from "@/components/globe/HumanCalloutOverlay";
 import { GlobeScene } from "@/components/globe/GlobeScene";
+import { createTulsaTestHuman } from "@/components/globe/tulsaTestHuman";
 import type { GlobeControls, GlobeHover, GlobeHuman } from "@/components/globe/types";
 
 const MIN_DISTANCE = 2.82;
@@ -16,10 +17,13 @@ function clamp(value: number, minimum: number, maximum: number) {
 }
 
 export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
+  const globeHumans = useMemo(() => [createTulsaTestHuman(humans)], [humans]);
   const stageRef = useRef<HTMLElement | null>(null);
   const calloutAnchorRef = useRef<HTMLDivElement | null>(null);
   const previewRef = useRef<HTMLElement | null>(null);
   const connectorRef = useRef<SVGPathElement | null>(null);
+  const debugProjectionRef = useRef<HTMLElement | null>(null);
+  const debugWorldRef = useRef<HTMLElement | null>(null);
   const controls = useRef<GlobeControls>({ targetX: 0.47, targetY: -0.085, distance: 3.42, engaged: false, dragging: false, lastInteraction: 0 });
   const pointer = useRef<{ id: number; x: number; y: number; targetX: number; targetY: number; moved: boolean } | null>(null);
   const lastInteractionWasDrag = useRef(false);
@@ -36,7 +40,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   const [reducedMotion, setReducedMotion] = useState(false);
   const selected = selectedHumanId === null
     ? null
-    : humans.find(human => human.id === selectedHumanId) ?? null;
+    : globeHumans.find(human => human.id === selectedHumanId) ?? null;
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -215,7 +219,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   };
 
   const hoverHuman = hovered && !selected
-    ? humans.find(human => human.id === hovered.humanId) ?? null
+    ? globeHumans.find(human => human.id === hovered.humanId) ?? null
     : null;
 
   return (
@@ -249,7 +253,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
           >
             <Suspense fallback={null}>
               <GlobeScene
-                humans={humans}
+                humans={globeHumans}
                 selectedHumanId={selectedHumanId}
                 hoveredHumanId={hovered?.humanId ?? null}
                 controls={controls}
@@ -257,6 +261,8 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
                 lineRef={connectorRef}
                 previewRef={previewRef}
                 calloutAnchorRef={calloutAnchorRef}
+                debugProjectionRef={debugProjectionRef}
+                debugWorldRef={debugWorldRef}
                 onHover={updateHover}
                 onSelect={selectHuman}
                 onActiveChange={updateActiveHumanIds}
@@ -331,12 +337,17 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
       <div className="human-globe-orbit" aria-hidden="true"><i /><i /><span /></div>
 
       {GLOBE_DEBUG && (
-        <output className="human-globe-debug" aria-live="polite">
-          <b>GLOBE DEBUG</b>
-          <span>SELECTED {selectedHumanId ?? "—"}</span>
-          <span>HOVERED {hovered?.humanId ?? "—"}</span>
-          <span>ACTIVE {activeHumanIds.join(", ") || "—"}</span>
-        </output>
+        <>
+          <i ref={debugProjectionRef} className="human-globe-debug-point" aria-hidden="true" />
+          <output className="human-globe-debug" aria-live="polite">
+            <b>GLOBE DEBUG</b>
+            <span>SELECTED {selectedHumanId ?? "—"}</span>
+            <span>HOVERED {hovered?.humanId ?? "—"}</span>
+            <span>ACTIVE {activeHumanIds.join(", ") || "—"}</span>
+            <span ref={debugWorldRef}>WORLD —</span>
+            <span>GEO 36.1540, -95.9930 / R 1.0065</span>
+          </output>
+        </>
       )}
     </main>
   );

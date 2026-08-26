@@ -30,6 +30,9 @@ button { cursor: pointer; }
 .human-globe-stage:active { cursor: grabbing; }
 .human-globe-shell.has-hover .human-globe-stage { cursor: pointer; }
 .human-globe-debug { position: fixed; z-index: 40; left: 18px; bottom: 18px; display: grid; max-width: min(560px, calc(100vw - 36px)); gap: 4px; padding: 10px 12px; border: 1px solid rgb(255 51 95 / .5); background: rgb(5 7 11 / .88); color: #ff8aa2; font: 500 10px/1.35 var(--font-sans, sans-serif); letter-spacing: .08em; overflow-wrap: anywhere; pointer-events: none; }
+.human-globe-debug-point { position: fixed; z-index: 42; top: 0; left: 0; width: 14px; height: 14px; border: 1px solid #38ff9c; border-radius: 50%; box-shadow: 0 0 9px #38ff9c; pointer-events: none; }
+.human-globe-debug-point::before, .human-globe-debug-point::after { position: absolute; top: 6px; left: -5px; width: 22px; height: 1px; background: #38ff9c; content: ""; }
+.human-globe-debug-point::after { transform: rotate(90deg); }
 .human-globe-stage::after { position: absolute; inset: 0; z-index: 4; background: radial-gradient(ellipse at 67% 49%, transparent 34%, rgb(5 7 11 / .055) 62%, rgb(5 7 11 / .4) 100%), linear-gradient(90deg, rgb(5 7 11 / .28) 0, transparent 31%); content: ""; pointer-events: none; }
 .human-globe-canvas { position: absolute !important; inset: 0; z-index: 1; display: block; opacity: 0; transition: opacity 1.4s ease; }
 .human-globe-canvas.is-ready { opacity: 1; }
