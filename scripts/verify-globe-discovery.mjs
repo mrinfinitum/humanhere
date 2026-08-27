@@ -11,6 +11,7 @@ assert.equal(new Set(GLOBE_MOCK_ENTRIES.map(entry => entry.slug)).size, 25, "dem
 assert.ok(GLOBE_MOCK_ENTRIES.every(entry => entry.fixture && !entry.published && !entry.consentVerified), "demo Humans must remain unpublished code-only fixtures");
 assert.ok(GLOBE_MOCK_ENTRIES.every(entry => entry.person?.coordinates?.precision === "city"), "demo globe locations must remain city-level");
 assert.ok(GLOBE_MOCK_ENTRIES.every(entry => entry.headline && entry.story && entry.story.length > 200), "every demo Human needs a substantial fictional story");
+assert.ok(GLOBE_MOCK_ENTRIES.every(entry => /^(I'm|My name is)\b/.test(entry.quote ?? "")), "demo Human previews must use grounded first-person introductions");
 assert.ok(GLOBE_MOCK_ENTRIES.every(entry => (entry.blocks?.length ?? 0) >= 3), "every demo Human needs quote, story, and editorial-note blocks");
 assert.equal(new Set(GLOBE_MOCK_ENTRIES.map(entry => entry.headline)).size, 25, "demo Human headlines must be distinct");
 assert.ok(new Set(GLOBE_MOCK_ENTRIES.map(entry => entry.thumbnail?.path)).size >= 10, "the demo globe needs a varied image pool");

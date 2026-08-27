@@ -15,7 +15,7 @@ export function createTulsaTestHuman(humans: GlobeHuman[]): GlobeHuman {
     lat: TULSA_LAT,
     lng: TULSA_LNG,
     loveCount: source?.loveCount || 327,
-    quote: source?.quote ?? "People stopped asking my name.",
+    quote: source?.quote ?? "I'm James. I repair bikes in Tulsa and keep the shop open for anyone who needs a place to land.",
     featured: false,
     fixture: true,
   };
