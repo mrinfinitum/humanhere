@@ -111,7 +111,9 @@ export class HumanDiscoveryManager {
 
     if (!this.hasStarted) {
       this.hasStarted = true;
-      this.nextDiscoveryAt = frame.now + (frame.reducedMotion ? 0.18 : this.between(0.8, 1.35) * this.timingScale);
+      // The first Human should register almost as soon as Earth resolves. The
+      // longer organic discovery cadence begins after the initial set arrives.
+      this.nextDiscoveryAt = frame.now + (frame.reducedMotion ? 0.04 : this.between(0.06, 0.14) * this.timingScale);
     }
 
     if (this.previousSelectedIndex !== frame.selectedIndex) {
@@ -207,12 +209,13 @@ export class HumanDiscoveryManager {
       const candidateIndex = this.chooseCandidate(frame);
       const slot = candidateIndex === null ? null : this.slots.find(candidate => candidate.state === "inactive");
       if (slot && candidateIndex !== null) {
-        this.activate(slot, candidateIndex, frame.now, frame.reducedMotion);
+        const introducingFirstHumans = activeCount < this.initialBudget;
+        this.activate(slot, candidateIndex, frame.now, frame.reducedMotion, introducingFirstHumans);
         membershipChanged = true;
       }
       const fillingFirstFrame = this.activeCount() < this.initialBudget;
       this.nextDiscoveryAt = frame.now + (fillingFirstFrame
-        ? this.between(1.25, 2.35)
+        ? this.between(0.22, 0.52)
         : frame.activelyExploring
           ? this.between(2.5, 4.6)
           : this.between(3.6, 6.9)) * this.timingScale;
@@ -270,13 +273,17 @@ export class HumanDiscoveryManager {
     return result;
   }
 
-  private activate(slot: HumanOrbSlot, candidateIndex: number, now: number, reducedMotion: boolean) {
+  private activate(slot: HumanOrbSlot, candidateIndex: number, now: number, reducedMotion: boolean, introducingFirstHumans: boolean) {
     slot.candidateIndex = candidateIndex;
     slot.state = "emerging";
     slot.position.copy(this.candidatePositions[candidateIndex]);
     slot.phase = this.nextRandom() * Math.PI * 2;
     slot.stateStartedAt = now;
-    slot.emergenceDuration = reducedMotion ? 0.34 : this.between(1.4, 2.6);
+    slot.emergenceDuration = reducedMotion
+      ? 0.22
+      : introducingFirstHumans
+        ? this.between(0.62, 0.92)
+        : this.between(1.4, 2.6);
     slot.restAt = now + slot.emergenceDuration + this.between(5.5, 9.5);
     slot.retireAt = now + this.between(26, 48);
     slot.fadeDuration = this.between(1.8, 3.2);

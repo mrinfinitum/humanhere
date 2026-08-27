@@ -34,6 +34,8 @@ function simulate(mobile) {
     seed: mobile ? 4812 : 1729,
   });
   let maximumActive = 0;
+  let firstVisibleAt = null;
+  let initialSetAt = null;
   let observedArrivalRipple = false;
   let observedOpticalStaging = false;
   let observedPhysicalFade = false;
@@ -56,6 +58,10 @@ function simulate(mobile) {
     });
 
     const active = manager.activeCandidateIndices();
+    if (firstVisibleAt === null && manager.slots.some((_slot, slotIndex) => manager.candidateForSlot(slotIndex) !== null)) {
+      firstVisibleAt = now;
+    }
+    if (initialSetAt === null && active.length >= (mobile ? 3 : 4)) initialSetAt = now;
     active.forEach(candidateIndex => encounteredCandidates.add(candidateIndex));
     observedArrivalRipple ||= manager.slots.some(slot => (
       slot.state === "present"
@@ -88,6 +94,8 @@ function simulate(mobile) {
   }
 
   assert.ok(maximumActive >= (mobile ? 3 : 4), "the first-load sequence should populate gradually");
+  assert.ok(firstVisibleAt !== null && firstVisibleAt <= 0.5, "the first Human should become visible almost immediately");
+  assert.ok(initialSetAt !== null && initialSetAt <= 2.25, "the initial Human set should establish quickly");
   assert.ok(encounteredCandidates.size > visibleBudget, "the active set should turn over and reveal new Humans over time");
   assert.ok(observedArrivalRipple, "an emerged Human should receive one bounded arrival ripple");
   assert.ok(observedOpticalStaging, "the warm core should resolve before bloom, aura, and contact light");
