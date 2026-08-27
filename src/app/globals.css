@@ -114,22 +114,22 @@ button { cursor: pointer; }
 .human-story-actions-fixture span, .human-story-note-success > span { color: var(--lapis); font-size: 8px; letter-spacing: .18em; text-transform: uppercase; }
 .human-story-actions-fixture p { max-width: 45ch; margin: 12px 0 0; color: rgb(23 23 22 / .65); font-size: 12px; line-height: 1.5; }
 .human-story-action-error { margin: 16px 0 0; color: #852e31; font-size: 11px; line-height: 1.5; }
-.human-story-note-form, .human-story-note-success { margin-top: 20px; padding: 30px; background: var(--human-ink); color: var(--human-paper); animation: human-note-open 240ms cubic-bezier(.18,.72,.16,1) both; }
+.human-story-note-form, .human-story-note-success { margin-top: 20px; padding: 30px; border: 1px solid rgb(23 23 22 / .14); background: #e8e3db; color: var(--human-ink); animation: human-note-open 240ms cubic-bezier(.18,.72,.16,1) both; }
 @keyframes human-note-open { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .human-story-note-form > header { display: flex; margin-bottom: 34px; align-items: flex-start; justify-content: space-between; gap: 20px; }
 .human-story-note-form > header span { color: #8098ff; font-size: 8px; letter-spacing: .18em; text-transform: uppercase; }
 .human-story-note-form > header h3 { margin: 8px 0 0; font-size: 26px; font-weight: 390; letter-spacing: -.03em; }
-.human-story-note-form > header button { padding: 0; border: 0; background: transparent; color: var(--human-paper); font-size: 22px; font-weight: 300; }
-.human-story-note-form label { display: grid; gap: 10px; color: rgb(242 235 221 / .65); font-size: 8px; letter-spacing: .16em; text-transform: uppercase; }
-.human-story-note-form textarea { width: 100%; resize: vertical; border: 0; border-bottom: 1px solid rgb(242 235 221 / .34); border-radius: 0; outline: 0; background: transparent; color: var(--human-paper); font: inherit; font-size: 17px; letter-spacing: -.01em; line-height: 1.5; text-transform: none; }
-.human-story-note-form textarea::placeholder { color: rgb(242 235 221 / .34); }
-.human-story-note-form textarea:focus { border-bottom-color: #8098ff; }
-.human-story-note-form > div { display: flex; margin-top: 14px; color: rgb(242 235 221 / .5); align-items: flex-start; justify-content: space-between; gap: 24px; }
+.human-story-note-form > header button { padding: 0; border: 0; background: transparent; color: var(--human-ink); font-size: 22px; font-weight: 300; }
+.human-story-note-form label { display: grid; gap: 10px; color: rgb(23 23 22 / .62); font-size: 8px; letter-spacing: .16em; text-transform: uppercase; }
+.human-story-note-form textarea { width: 100%; min-height: 150px; padding: 16px; resize: vertical; border: 1px solid rgb(23 23 22 / .18); border-radius: 0; outline: 0; background: rgb(242 235 221 / .78); color: var(--human-ink); font: inherit; font-size: 17px; letter-spacing: -.01em; line-height: 1.5; text-transform: none; transition: border-color 180ms ease, background-color 180ms ease; }
+.human-story-note-form textarea::placeholder { color: rgb(23 23 22 / .36); }
+.human-story-note-form textarea:focus { border-color: var(--lapis); background: var(--human-paper); }
+.human-story-note-form > div { display: flex; margin-top: 14px; color: rgb(23 23 22 / .58); align-items: flex-start; justify-content: space-between; gap: 24px; }
 .human-story-note-form > div p { max-width: 43ch; margin: 0; font-size: 9px; line-height: 1.55; }
 .human-story-note-form > div span { flex: none; font-size: 8px; letter-spacing: .08em; }
 .human-story-note-form > button, .human-story-note-success button { margin-top: 28px; padding: 10px 0; border: 0; border-bottom: 1px solid #8098ff; background: transparent; color: #8098ff; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; }
 .human-story-note-form > button:disabled { opacity: .42; }
-.human-story-note-form .human-story-action-error { color: #f1aba5; }
+.human-story-note-form .human-story-action-error { color: #852e31; }
 .human-story-note-success { padding-block: 34px; }
 .human-story-note-success p { max-width: 44ch; margin: 16px 0 0; font-size: 17px; line-height: 1.45; }
 .human-story-drawer-hero, .human-story-drawer-secondary { position: relative; width: 100%; min-height: min(70svh, 720px); margin: 0; background: #d8d0c2; }
