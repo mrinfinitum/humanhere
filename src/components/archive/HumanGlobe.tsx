@@ -39,6 +39,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   const pinch = useRef<{ distance: number; cameraDistance: number } | null>(null);
   const storyRequest = useRef<AbortController | null>(null);
   const storyCache = useRef(new Map<string, HumanEntry>());
+  const deepLinkOpened = useRef(false);
   const [selectedHumanId, setSelectedHumanId] = useState<string | null>(null);
   const [storyDrawer, setStoryDrawer] = useState<StoryDrawerState | null>(null);
   const [activeHumanIds, setActiveHumanIds] = useState<string[]>([]);
@@ -85,6 +86,23 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
       });
     }
   }, []);
+
+  useEffect(() => {
+    if (deepLinkOpened.current || !globeHumans.length) return;
+    deepLinkOpened.current = true;
+    const url = new URL(window.location.href);
+    const slug = url.searchParams.get("human");
+    if (!slug) return;
+    const human = globeHumans.find(candidate => candidate.slug === slug);
+    if (!human) return;
+    const frame = window.requestAnimationFrame(() => {
+      setSelectedHumanId(human.id);
+      void openStory(human);
+      url.searchParams.delete("human");
+      window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [globeHumans, openStory]);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -340,6 +358,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
 
       {storyDrawer && (
         <HumanStoryDrawer
+          key={storyDrawer.entry?.id ?? `${storyDrawer.slug}-loading`}
           entry={storyDrawer.entry}
           loading={storyDrawer.loading}
           error={storyDrawer.error}

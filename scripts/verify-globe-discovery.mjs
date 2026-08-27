@@ -2,13 +2,16 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import * as THREE from "three";
 import { HumanDiscoveryManager } from "../src/components/globe/HumanDiscoveryManager.ts";
-import { GLOBE_MOCK_ENTRIES } from "../src/lib/archive/globe-mocks.ts";
+import { GLOBE_MOCK_ENTRIES, shouldShowGlobeMocks } from "../src/lib/archive/globe-mocks.ts";
 
 assert.equal(GLOBE_MOCK_ENTRIES.length, 25, "the removable globe demo must contain exactly 25 Humans");
 assert.equal(new Set(GLOBE_MOCK_ENTRIES.map(entry => entry.id)).size, 25, "demo Human IDs must be unique");
 assert.equal(new Set(GLOBE_MOCK_ENTRIES.map(entry => entry.slug)).size, 25, "demo Human slugs must be unique");
 assert.ok(GLOBE_MOCK_ENTRIES.every(entry => entry.fixture && !entry.published && !entry.consentVerified), "demo Humans must remain unpublished code-only fixtures");
 assert.ok(GLOBE_MOCK_ENTRIES.every(entry => entry.person?.coordinates?.precision === "city"), "demo globe locations must remain city-level");
+assert.equal(shouldShowGlobeMocks("production", "true"), false, "demo Humans must fail closed in production");
+assert.equal(shouldShowGlobeMocks("development", undefined), true, "demo Humans should remain available for local development");
+assert.equal(shouldShowGlobeMocks("development", "false"), false, "demo Humans may be explicitly disabled during development");
 
 function candidateSphere(count) {
   const goldenAngle = Math.PI * (3 - Math.sqrt(5));

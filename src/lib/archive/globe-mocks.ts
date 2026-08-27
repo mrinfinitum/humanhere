@@ -94,8 +94,12 @@ export const GLOBE_MOCK_ENTRIES: HumanEntry[] = mockHumans.map((human, index) =>
   fixture: true,
 }));
 
+export function shouldShowGlobeMocks(nodeEnv: string | undefined, flag: string | undefined) {
+  return nodeEnv === "development" && flag !== "false";
+}
+
 export function globeMocksEnabled() {
-  return process.env.NEXT_PUBLIC_SHOW_GLOBE_MOCKS !== "false";
+  return shouldShowGlobeMocks(process.env.NODE_ENV, process.env.NEXT_PUBLIC_SHOW_GLOBE_MOCKS);
 }
 
 export function getGlobeMockBySlug(slug: string) {
