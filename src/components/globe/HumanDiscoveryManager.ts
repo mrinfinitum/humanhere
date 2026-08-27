@@ -36,6 +36,7 @@ type HumanDiscoveryOptions = {
   visibleBudget: number;
   initialBudget: number;
   recentlySeenLimit: number;
+  showAll?: boolean;
   timingScale?: number;
   seed?: number;
 };
@@ -64,6 +65,7 @@ export class HumanDiscoveryManager {
   private readonly visibleBudget: number;
   private readonly initialBudget: number;
   private readonly recentlySeenLimit: number;
+  private readonly showAll: boolean;
   private readonly timingScale: number;
   private readonly recentlySeen = new Set<number>();
   private readonly recentlySeenOrder: number[] = [];
@@ -78,6 +80,7 @@ export class HumanDiscoveryManager {
     this.visibleBudget = Math.min(options.visibleBudget, options.poolSize, candidatePositions.length);
     this.initialBudget = Math.min(options.initialBudget, this.visibleBudget);
     this.recentlySeenLimit = Math.max(1, options.recentlySeenLimit);
+    this.showAll = Boolean(options.showAll);
     this.timingScale = Math.max(0.5, options.timingScale ?? 1);
     this.randomState = hashSeed(options.seed ?? 0x48554d41);
     this.slots = Array.from({ length: options.poolSize }, (_, slotIndex): HumanOrbSlot => ({
@@ -111,9 +114,19 @@ export class HumanDiscoveryManager {
 
     if (!this.hasStarted) {
       this.hasStarted = true;
-      // The first Human should register almost as soon as Earth resolves. The
-      // longer organic discovery cadence begins after the initial set arrives.
-      this.nextDiscoveryAt = frame.now + (frame.reducedMotion ? 0.04 : this.between(0.06, 0.14) * this.timingScale);
+      if (this.showAll) {
+        for (let candidateIndex = 0; candidateIndex < this.candidatePositions.length; candidateIndex += 1) {
+          const slot = this.slots[candidateIndex];
+          if (!slot) break;
+          this.activate(slot, candidateIndex, frame.now, frame.reducedMotion, true);
+        }
+        this.nextDiscoveryAt = Number.POSITIVE_INFINITY;
+        membershipChanged = true;
+      } else {
+        // The first Human should register almost as soon as Earth resolves. The
+        // longer organic discovery cadence begins after the initial set arrives.
+        this.nextDiscoveryAt = frame.now + (frame.reducedMotion ? 0.04 : this.between(0.06, 0.14) * this.timingScale);
+      }
     }
 
     if (this.previousSelectedIndex !== frame.selectedIndex) {
@@ -167,7 +180,8 @@ export class HumanDiscoveryManager {
       }
 
       if (
-        (slot.state === "present" || slot.state === "resting")
+        !this.showAll
+        && (slot.state === "present" || slot.state === "resting")
         && !protectedHuman
         && (frame.now >= slot.retireAt || (frame.now - slot.stateStartedAt > 9 && frame.visibilityFor(slot.candidateIndex) < -0.12))
       ) {
@@ -205,7 +219,7 @@ export class HumanDiscoveryManager {
 
     const selectionQuiet = frame.selectedIndex !== null || frame.hoveredIndex !== null;
     const activeCount = this.activeCount();
-    if (!selectionQuiet && frame.now >= this.pauseUntil && frame.now >= this.nextDiscoveryAt && activeCount < this.visibleBudget) {
+    if (!this.showAll && !selectionQuiet && frame.now >= this.pauseUntil && frame.now >= this.nextDiscoveryAt && activeCount < this.visibleBudget) {
       const candidateIndex = this.chooseCandidate(frame);
       const slot = candidateIndex === null ? null : this.slots.find(candidate => candidate.state === "inactive");
       if (slot && candidateIndex !== null) {

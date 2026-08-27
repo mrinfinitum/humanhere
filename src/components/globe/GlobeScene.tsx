@@ -304,13 +304,17 @@ export function GlobeScene({
     () => humans.map(human => latLngToVector3(human.lat, human.lng, HUMAN_SURFACE_RADIUS)),
     [humans],
   );
+  const showAllTestBeacons = process.env.NEXT_PUBLIC_SHOW_ALL_GLOBE_BEACONS !== "false"
+    && humans.length > 0
+    && humans.every(human => human.fixture);
   const discoveryManager = useMemo(() => new HumanDiscoveryManager(candidatePositions, {
-    poolSize: Math.min(size.width <= 760 ? 10 : 16, humans.length),
-    visibleBudget: size.width <= 760 ? 6 : 10,
-    initialBudget: size.width <= 760 ? 2 : 4,
+    poolSize: showAllTestBeacons ? humans.length : Math.min(size.width <= 760 ? 10 : 16, humans.length),
+    visibleBudget: showAllTestBeacons ? humans.length : size.width <= 760 ? 6 : 10,
+    initialBudget: showAllTestBeacons ? humans.length : size.width <= 760 ? 2 : 4,
     recentlySeenLimit: Math.min(80, Math.max(12, humans.length)),
+    showAll: showAllTestBeacons,
     timingScale: size.width <= 760 ? 1.18 : 1,
-  }), [candidatePositions, humans.length, size.width]);
+  }), [candidatePositions, humans.length, showAllTestBeacons, size.width]);
   const selectedCandidateIndex = selectedHumanId === null
     ? null
     : humans.findIndex(human => human.id === selectedHumanId);

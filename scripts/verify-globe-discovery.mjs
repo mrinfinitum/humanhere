@@ -118,6 +118,28 @@ function simulate(mobile) {
 simulate(false);
 simulate(true);
 
+const showcaseCandidates = candidateSphere(25);
+const showcaseManager = new HumanDiscoveryManager(showcaseCandidates, {
+  poolSize: showcaseCandidates.length,
+  visibleBudget: showcaseCandidates.length,
+  initialBudget: showcaseCandidates.length,
+  recentlySeenLimit: showcaseCandidates.length,
+  showAll: true,
+  seed: 20260826,
+});
+const showcaseFrame = now => ({
+  now,
+  selectedIndex: null,
+  hoveredIndex: null,
+  activelyExploring: false,
+  reducedMotion: false,
+  visibilityFor: () => -1,
+});
+assert.equal(showcaseManager.update(showcaseFrame(0)), true, "the development showcase must activate its full Human set immediately");
+assert.equal(showcaseManager.activeCandidateIndices().length, 25, "the development showcase must keep every test beacon active");
+showcaseManager.update(showcaseFrame(120));
+assert.equal(showcaseManager.activeCandidateIndices().length, 25, "test beacons must not retire while full showcase mode is active");
+
 const globeSceneSource = await readFile(new URL("../src/components/globe/GlobeScene.tsx", import.meta.url), "utf8");
 const billboardSource = await readFile(new URL("../src/components/globe/HumanBillboardLayer.tsx", import.meta.url), "utf8");
 assert.match(globeSceneSource, /discoveryManager\.update\(/, "the live globe scene must drive the discovery manager");
