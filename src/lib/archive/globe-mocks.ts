@@ -1,7 +1,7 @@
 import type { HumanEntry, MediaAsset } from "./types";
 import { GLOBE_MOCK_STORIES, type GlobeMockPortrait } from "./globe-mock-content.ts";
 
-const portraits: Record<GlobeMockPortrait, { path: string; width: number; height: number; position: string }> = {
+const portraits: Record<GlobeMockPortrait, { path: string; width: number; height: number; position: string; alt?: string }> = {
   james: { path: "/images/portrait-james.jpg", width: 1024, height: 1536, position: "center 32%" },
   maya: { path: "/images/hero-maya.jpg", width: 1536, height: 1024, position: "center 42%" },
   lena: { path: "/images/portrait-lena.jpg", width: 1024, height: 1536, position: "center 34%" },
@@ -12,6 +12,15 @@ const portraits: Record<GlobeMockPortrait, { path: string; width: number; height
   jonah: { path: "/images/demo-jonah.jpg", width: 1024, height: 1536, position: "center 36%" },
   ren: { path: "/images/demo-ren.jpg", width: 1024, height: 1536, position: "center 34%" },
   mara: { path: "/images/demo-mara.jpg", width: 1024, height: 1536, position: "center 32%" },
+  "phone-selfie-home": { path: "/images/phone-selfie-home.jpg", width: 1200, height: 1600, position: "center 35%" },
+  "phone-selfie-car": { path: "/images/phone-selfie-car.jpg", width: 1200, height: 1600, position: "center 32%" },
+  "phone-mirror-home": { path: "/images/phone-mirror-home.jpg", width: 1200, height: 1600, position: "center 40%" },
+  "phone-kitchen-table": { path: "/images/phone-kitchen-table.jpg", width: 1200, height: 1600, position: "center 38%" },
+  "phone-study-bedroom": { path: "/images/phone-study-bedroom.jpg", width: 1200, height: 1600, position: "center 38%" },
+  "phone-selfie-cafe": { path: "/images/phone-selfie-cafe.jpg", width: 1200, height: 1600, position: "center 32%" },
+  "phone-breakfast-alone": { path: "/images/phone-breakfast-alone.jpg", width: 1200, height: 1600, position: "center", alt: "AI-generated fictional phone snapshot of breakfast and an empty chair" },
+  "phone-rainy-window": { path: "/images/phone-rainy-window.jpg", width: 1200, height: 1600, position: "center", alt: "AI-generated fictional phone snapshot through a rainy apartment window" },
+  "phone-waterfront-walk": { path: "/images/phone-waterfront-walk.jpg", width: 1200, height: 1600, position: "center", alt: "AI-generated fictional phone snapshot taken during a waterfront walk" },
 };
 
 function mockPortrait(index: number, name: string, portrait: GlobeMockPortrait): MediaAsset {
@@ -20,7 +29,7 @@ function mockPortrait(index: number, name: string, portrait: GlobeMockPortrait):
     id: `globe-demo-${String(index + 1).padStart(2, "0")}-image`,
     provider: "local",
     path: source.path,
-    alt: `AI-generated fictional development portrait representing ${name}`,
+    alt: source.alt ?? `AI-generated fictional development portrait representing ${name}`,
     mimeType: "image/jpeg",
     width: source.width,
     height: source.height,

@@ -1,4 +1,9 @@
-export type GlobeMockPortrait = "james" | "maya" | "lena" | "miguel" | "table" | "avery" | "elena" | "jonah" | "ren" | "mara";
+export type GlobeMockPortrait =
+  | "james" | "maya" | "lena" | "miguel" | "table"
+  | "avery" | "elena" | "jonah" | "ren" | "mara"
+  | "phone-selfie-home" | "phone-selfie-car" | "phone-mirror-home"
+  | "phone-kitchen-table" | "phone-study-bedroom" | "phone-selfie-cafe"
+  | "phone-breakfast-alone" | "phone-rainy-window" | "phone-waterfront-walk";
 
 export type GlobeMockStory = {
   name: string;
@@ -23,7 +28,7 @@ export const GLOBE_MOCK_STORIES: GlobeMockStory[] = [
   {
     name: "James", location: "Tulsa, Oklahoma", lat: 36.154, lng: -95.993, loveCount: 327,
     headline: "I'm tired of pretending I'm not lonely.", sectionHeading: "What I need tonight",
-    quote: "I'm James from Tulsa. I could use a little encouragement tonight.", portrait: "james",
+    quote: "I'm James from Tulsa. I could use a little encouragement tonight.", portrait: "phone-selfie-car",
     paragraphs: [
       "I spend most days talking with customers at my bike shop, but the room gets painfully quiet after I lock the door. I have gotten good at telling everyone that I am fine, even when I go home wishing somebody would ask twice.",
       "I'm here because I do not want to keep carrying that feeling by myself. I would appreciate a note, a prayer, or honest advice from anyone who has learned how to build a life that does not feel so isolated.",
@@ -33,7 +38,7 @@ export const GLOBE_MOCK_STORIES: GlobeMockStory[] = [
   {
     name: "Avery", location: "Los Angeles, California", lat: 34.052, lng: -118.244, loveCount: 84,
     headline: "I'm new here and having a hard time finding my people.", sectionHeading: "Why I'm reaching out",
-    quote: "I'm Avery from Los Angeles. I feel invisible in a city full of people.", portrait: "avery",
+    quote: "I'm Avery from Los Angeles. I feel invisible in a city full of people.", portrait: "phone-selfie-home",
     paragraphs: [
       "I moved to Los Angeles six months ago for work and thought friendship would happen naturally. I know plenty of names now, but I still eat most dinners alone and spend weekends wondering whether anyone would notice if I stayed home.",
       "I'm posting because I need courage to keep reaching out without feeling embarrassed. I would love advice from someone who has started over in a new city, or a simple note reminding me that belonging can take time.",
@@ -53,7 +58,7 @@ export const GLOBE_MOCK_STORIES: GlobeMockStory[] = [
   {
     name: "Elena", location: "Mexico City, Mexico", lat: 19.433, lng: -99.133, loveCount: 59,
     headline: "I'm caring for my mother and I feel overwhelmed.", sectionHeading: "What I cannot say at home",
-    quote: "I'm Elena from Mexico City. I love my family, but I am running out of strength.", portrait: "elena",
+    quote: "I'm Elena from Mexico City. I love my family, but I am running out of strength.", portrait: "phone-kitchen-table",
     paragraphs: [
       "I care for my mother before work and again when I come home. I am grateful for every day together, but I feel guilty admitting how exhausted and frightened I have become, so I keep smiling and say I can handle it.",
       "I'm here because I need prayer for patience and enough rest to keep going. I would be grateful for a note from another caregiver who understands how love and exhaustion can exist in the same heart.",
@@ -93,7 +98,7 @@ export const GLOBE_MOCK_STORIES: GlobeMockStory[] = [
   {
     name: "June", location: "Paris, France", lat: 48.857, lng: 2.352, loveCount: 91,
     headline: "I'm learning how to live alone after twenty years.", sectionHeading: "What evenings feel like now",
-    quote: "I'm June from Paris. My home became quiet very suddenly.", portrait: "mara",
+    quote: "I'm June from Paris. My home became quiet very suddenly.", portrait: "phone-rainy-window",
     paragraphs: [
       "I recently began living alone after sharing everyday life for two decades. I can manage the practical parts, but dinner and Sunday mornings still feel like rooms that are much larger than they used to be.",
       "I'm here because I need advice about becoming a whole person again instead of waiting for my old life to return. I would welcome a kind note from anyone who has learned to enjoy company without fearing solitude.",
@@ -123,7 +128,7 @@ export const GLOBE_MOCK_STORIES: GlobeMockStory[] = [
   {
     name: "Mae", location: "Nairobi, Kenya", lat: -1.286, lng: 36.818, loveCount: 64,
     headline: "I'm scared I am not good enough for the future I want.", sectionHeading: "What I need to hear",
-    quote: "I'm Mae from Nairobi. I am studying hard and still feel afraid.", portrait: "lena",
+    quote: "I'm Mae from Nairobi. I am studying hard and still feel afraid.", portrait: "phone-study-bedroom",
     paragraphs: [
       "I am preparing for exams that could change what becomes possible for me, and the pressure has started following me into every part of the day. I study until I cannot focus, then feel guilty whenever I rest.",
       "I'm posting because I need advice about working hard without measuring my worth by one result. I would be grateful for a note or prayer that reminds me my future is larger than a score.",
@@ -173,7 +178,7 @@ export const GLOBE_MOCK_STORIES: GlobeMockStory[] = [
   {
     name: "Rowan", location: "Bangkok, Thailand", lat: 13.756, lng: 100.502, loveCount: 69,
     headline: "I'm surrounded by people and still feel alone.", sectionHeading: "What I wish I could say out loud",
-    quote: "I'm Rowan from Bangkok. I talk all day and still miss being known.", portrait: "avery",
+    quote: "I'm Rowan from Bangkok. I talk all day and still miss being known.", portrait: "phone-selfie-cafe",
     paragraphs: [
       "I work in a busy café and spend every shift remembering names, orders, and small details about regular customers. I enjoy the work, but most conversations belong to my role, and very few people know anything real about me.",
       "I'm here because I need the courage to let friendship become more than friendly service. I would value advice from anyone who has learned how to be known after years of being the person who listens.",
@@ -193,7 +198,7 @@ export const GLOBE_MOCK_STORIES: GlobeMockStory[] = [
   {
     name: "Ren", location: "Tokyo, Japan", lat: 35.677, lng: 139.65, loveCount: 198,
     headline: "I'm afraid to make the decision in front of me.", sectionHeading: "What I need help sorting out",
-    quote: "I'm Ren from Tokyo. I need advice because fear is making every option look wrong.", portrait: "ren",
+    quote: "I'm Ren from Tokyo. I need advice because fear is making every option look wrong.", portrait: "phone-mirror-home",
     paragraphs: [
       "I have an opportunity to change careers, but accepting it would mean leaving the work and routines that have made me feel safe. I keep making lists, and every list ends with the same uncertainty instead of an answer.",
       "I'm here because I need advice about knowing the difference between wisdom and fear. I would be grateful for a note from someone who made a major change without feeling completely ready.",
@@ -213,7 +218,7 @@ export const GLOBE_MOCK_STORIES: GlobeMockStory[] = [
   {
     name: "Sam", location: "Singapore", lat: 1.352, lng: 103.82, loveCount: 51,
     headline: "I'm eating breakfast alone again.", sectionHeading: "The small thing I am asking for",
-    quote: "I'm Sam from Singapore. I would like someone to sit with me.", portrait: "table",
+    quote: "I'm Sam from Singapore. I would like someone to sit with me.", portrait: "phone-breakfast-alone",
     paragraphs: [
       "I eat at the same corner table before work and usually place my bag on the chair across from me. I tell myself that I enjoy the quiet, but lately I have noticed how carefully I avoid looking at groups laughing nearby.",
       "I'm here because I want to try one simple act of connection instead of waiting to feel less lonely. I would like someone nearby to share breakfast and an ordinary conversation with me.",
@@ -263,7 +268,7 @@ export const GLOBE_MOCK_STORIES: GlobeMockStory[] = [
   {
     name: "Leah", location: "Vancouver, Canada", lat: 49.283, lng: -123.121, loveCount: 72,
     headline: "I'm looking for someone who will listen without fixing me.", sectionHeading: "What I need from a conversation",
-    quote: "I'm Leah from Vancouver. I need an honest conversation and a steady friend.", portrait: "jonah",
+    quote: "I'm Leah from Vancouver. I need an honest conversation and a steady friend.", portrait: "phone-waterfront-walk",
     paragraphs: [
       "I have learned that I can say difficult things more easily while walking. I do not need an immediate solution; I need enough silence to finish a sentence and enough trust to admit when I am not doing well.",
       "I'm here because the friendship that gave me that space has changed, and I do not want to retreat into isolation. I would appreciate a kind note now and hope to find someone nearby for a weekly public walk.",
