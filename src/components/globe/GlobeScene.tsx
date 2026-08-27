@@ -273,15 +273,11 @@ export function GlobeScene({
   hoveredHumanId,
   controls,
   reducedMotion,
-  lineRef,
-  previewRef,
-  calloutAnchorRef,
   debugProjectionRef,
   debugWorldRef,
   onHover,
   onSelect,
   onActiveChange,
-  onSelectedHidden,
   onReady,
 }: {
   humans: GlobeHuman[];
@@ -289,24 +285,16 @@ export function GlobeScene({
   hoveredHumanId: string | null;
   controls: MutableRefObject<GlobeControls>;
   reducedMotion: boolean;
-  lineRef: RefObject<SVGPathElement | null>;
-  previewRef: RefObject<HTMLElement | null>;
-  calloutAnchorRef: RefObject<HTMLDivElement | null>;
   debugProjectionRef: RefObject<HTMLElement | null>;
   debugWorldRef: RefObject<HTMLElement | null>;
   onHover: (hover: GlobeHover) => void;
   onSelect: (humanId: string) => void;
   onActiveChange: (humanIds: string[]) => void;
-  onSelectedHidden: (humanId: string) => void;
   onReady: () => void;
 }) {
   const worldRef = useRef<THREE.Group>(null);
-  const selectedPoint = useMemo(() => new THREE.Vector3(), []);
-  const projectedPoint = useMemo(() => new THREE.Vector3(), []);
   const worldCenter = useMemo(() => new THREE.Vector3(), []);
-  const surfaceDirection = useMemo(() => new THREE.Vector3(), []);
   const cameraDirection = useMemo(() => new THREE.Vector3(), []);
-  const hiddenSelectionRef = useRef<string | null>(null);
   const debugWorldPoint = useMemo(() => new THREE.Vector3(), []);
   const debugProjectedPoint = useMemo(() => new THREE.Vector3(), []);
   const worldQuaternion = useMemo(() => new THREE.Quaternion(), []);
@@ -323,9 +311,6 @@ export function GlobeScene({
     recentlySeenLimit: Math.min(80, Math.max(12, humans.length)),
     timingScale: size.width <= 760 ? 1.18 : 1,
   }), [candidatePositions, humans.length, size.width]);
-  const selected = selectedHumanId === null
-    ? null
-    : humans.find(human => human.id === selectedHumanId) ?? null;
   const selectedCandidateIndex = selectedHumanId === null
     ? null
     : humans.findIndex(human => human.id === selectedHumanId);
@@ -392,85 +377,6 @@ export function GlobeScene({
       }
     }
 
-    if (selected && lineRef.current && previewRef.current && calloutAnchorRef.current) {
-      selectedPoint.copy(latLngToVector3(selected.lat, selected.lng, HUMAN_SURFACE_RADIUS));
-      world.localToWorld(selectedPoint);
-      projectedPoint.copy(selectedPoint).project(camera);
-      const markerX = (projectedPoint.x * 0.5 + 0.5) * size.width;
-      const markerY = (-projectedPoint.y * 0.5 + 0.5) * size.height;
-      world.getWorldPosition(worldCenter);
-      surfaceDirection.copy(selectedPoint).sub(worldCenter).normalize();
-      cameraDirection.copy(camera.position).sub(worldCenter).normalize();
-      const markerIsVisible = surfaceDirection.dot(cameraDirection) > 0.08
-        && markerX > -20 && markerX < size.width + 20
-        && markerY > -20 && markerY < size.height + 20;
-      const preview = previewRef.current;
-      const anchor = calloutAnchorRef.current;
-      const connector = lineRef.current;
-
-      if (!markerIsVisible) {
-        connector.setAttribute("opacity", "0");
-        if (hiddenSelectionRef.current !== selected.id) {
-          hiddenSelectionRef.current = selected.id;
-          onSelectedHidden(selected.id);
-        }
-        return;
-      }
-      hiddenSelectionRef.current = null;
-
-      if (size.width > 760) {
-        const panelWidth = preview.offsetWidth || 310;
-        const panelHeight = preview.offsetHeight || 244;
-        const placeLeft = markerX > size.width * 0.58;
-        const panelX = THREE.MathUtils.clamp(
-          placeLeft ? markerX - panelWidth - 142 : markerX + 142,
-          34,
-          size.width - panelWidth - 34,
-        );
-        const panelY = THREE.MathUtils.clamp(
-          markerY - panelHeight * 0.42,
-          112,
-          size.height - panelHeight - 34,
-        );
-        anchor.style.transform = `translate3d(${panelX.toFixed(1)}px, ${panelY.toFixed(1)}px, 0)`;
-        preview.dataset.side = placeLeft ? "left" : "right";
-      } else {
-        anchor.style.removeProperty("transform");
-        delete preview.dataset.side;
-      }
-
-      const previewBounds = preview.getBoundingClientRect();
-      connector.setAttribute("opacity", "1");
-      const endX = markerX <= previewBounds.left + previewBounds.width * 0.5
-        ? previewBounds.left
-        : previewBounds.right;
-      const endY = previewBounds.top + Math.min(62, previewBounds.height * 0.34);
-      const direction = endX >= markerX ? 1 : -1;
-      const firstX = markerX + direction * 38;
-      const secondX = endX - direction * 22;
-      connector.setAttribute(
-        "d",
-        `M ${markerX.toFixed(1)} ${markerY.toFixed(1)} L ${firstX.toFixed(1)} ${markerY.toFixed(1)} L ${secondX.toFixed(1)} ${endY.toFixed(1)} L ${endX.toFixed(1)} ${endY.toFixed(1)}`,
-      );
-
-      if (connector.dataset.drawnFor !== selected.id) {
-        connector.dataset.drawnFor = selected.id;
-        connector.getAnimations().forEach(animation => animation.cancel());
-        connector.animate(
-          reducedMotion
-            ? [{ opacity: 1, strokeDashoffset: 0 }]
-            : [
-              { opacity: 0, strokeDashoffset: 1 },
-              { opacity: 1, strokeDashoffset: 0 },
-            ],
-          {
-            duration: reducedMotion ? 1 : 480,
-            easing: "cubic-bezier(.18,.72,.16,1)",
-            fill: "forwards",
-          },
-        );
-      }
-    }
   });
 
   return (

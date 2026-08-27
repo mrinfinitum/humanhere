@@ -210,7 +210,7 @@ export function HumanStoryDrawer({ entry, loading, error, onClose, onRetry }: Pr
               {entry.headline && <h3>{entry.headline}</h3>}
               {entry.blocks?.map(block => {
                 if (block.type === "text") return <section key={block.id}>{block.heading && <h3>{block.heading}</h3>}{block.body.map(paragraph => <p key={paragraph}>{paragraph}</p>)}</section>;
-                if (block.type === "quote") return <blockquote key={block.id}>“{block.quote}”</blockquote>;
+                if (block.type === "quote") return block.quote.trim() === entry.quote?.trim() ? null : <blockquote key={block.id}>“{block.quote}”</blockquote>;
                 if (block.type === "note") return <aside key={block.id}><p>{block.text}</p>{block.attribution && <small>{block.attribution}</small>}</aside>;
                 return null;
               })}

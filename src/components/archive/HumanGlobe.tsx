@@ -3,7 +3,6 @@
 import { Canvas } from "@react-three/fiber";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { HumanCalloutOverlay } from "@/components/globe/HumanCalloutOverlay";
 import { HumanStoryDrawer } from "@/components/globe/HumanStoryDrawer";
 import { GlobeScene } from "@/components/globe/GlobeScene";
 import type { GlobeControls, GlobeHover, GlobeHuman } from "@/components/globe/types";
@@ -27,9 +26,6 @@ function clamp(value: number, minimum: number, maximum: number) {
 export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   const globeHumans = useMemo(() => humans, [humans]);
   const stageRef = useRef<HTMLElement | null>(null);
-  const calloutAnchorRef = useRef<HTMLDivElement | null>(null);
-  const previewRef = useRef<HTMLElement | null>(null);
-  const connectorRef = useRef<SVGPathElement | null>(null);
   const debugProjectionRef = useRef<HTMLElement | null>(null);
   const debugWorldRef = useRef<HTMLElement | null>(null);
   const controls = useRef<GlobeControls>({ targetX: 0.47, targetY: -0.085, distance: 3.42, engaged: false, dragging: false, lastInteraction: 0 });
@@ -55,6 +51,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
     storyRequest.current?.abort();
     storyRequest.current = null;
     setStoryDrawer(null);
+    setSelectedHumanId(null);
   }, []);
 
   const openStory = useCallback(async (human: GlobeHuman) => {
@@ -165,7 +162,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   }, [closeStory, storyDrawer]);
 
   const beginInteraction = (event: ReactPointerEvent<HTMLElement>) => {
-    if ((event.target as HTMLElement).closest("a, button, .human-globe-preview")) return;
+    if ((event.target as HTMLElement).closest("a, button")) return;
     controls.current.engaged = true;
     controls.current.dragging = true;
     controls.current.lastInteraction = performance.now();
@@ -232,11 +229,14 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   }, []);
 
   const selectHuman = useCallback((humanId: string) => {
+    const human = globeHumans.find(candidate => candidate.id === humanId);
+    if (!human) return;
     controls.current.engaged = true;
     controls.current.lastInteraction = performance.now();
     setSelectedHumanId(humanId);
     setHovered(null);
-  }, []);
+    void openStory(human);
+  }, [globeHumans, openStory]);
 
   const sceneReady = useCallback(() => setReady(true), []);
   const updateActiveHumanIds = useCallback((next: string[]) => {
@@ -301,17 +301,11 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
                 hoveredHumanId={hovered?.humanId ?? null}
                 controls={controls}
                 reducedMotion={reducedMotion}
-                lineRef={connectorRef}
-                previewRef={previewRef}
-                calloutAnchorRef={calloutAnchorRef}
                 debugProjectionRef={debugProjectionRef}
                 debugWorldRef={debugWorldRef}
                 onHover={updateHover}
                 onSelect={selectHuman}
                 onActiveChange={updateActiveHumanIds}
-                onSelectedHidden={humanId => {
-                  setSelectedHumanId(current => current === humanId ? null : current);
-                }}
                 onReady={sceneReady}
               />
             </Suspense>
@@ -344,18 +338,6 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
       <div className="human-globe-scale" aria-hidden="true">
         <b>0</b><i /><i /><span /><i /><i /><b>5</b>
       </div>
-
-      {selected && !storyDrawer && (
-        <HumanCalloutOverlay
-          key={selected.id}
-          human={selected}
-          anchorRef={calloutAnchorRef}
-          panelRef={previewRef}
-          connectorRef={connectorRef}
-          onClose={() => setSelectedHumanId(null)}
-          onViewHuman={() => void openStory(selected)}
-        />
-      )}
 
       {storyDrawer && (
         <HumanStoryDrawer
