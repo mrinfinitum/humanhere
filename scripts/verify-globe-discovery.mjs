@@ -9,6 +9,11 @@ assert.equal(new Set(GLOBE_MOCK_ENTRIES.map(entry => entry.id)).size, 25, "demo 
 assert.equal(new Set(GLOBE_MOCK_ENTRIES.map(entry => entry.slug)).size, 25, "demo Human slugs must be unique");
 assert.ok(GLOBE_MOCK_ENTRIES.every(entry => entry.fixture && !entry.published && !entry.consentVerified), "demo Humans must remain unpublished code-only fixtures");
 assert.ok(GLOBE_MOCK_ENTRIES.every(entry => entry.person?.coordinates?.precision === "city"), "demo globe locations must remain city-level");
+assert.ok(GLOBE_MOCK_ENTRIES.every(entry => entry.headline && entry.story && entry.story.length > 200), "every demo Human needs a substantial fictional story");
+assert.ok(GLOBE_MOCK_ENTRIES.every(entry => (entry.blocks?.length ?? 0) >= 3), "every demo Human needs quote, story, and editorial-note blocks");
+assert.equal(new Set(GLOBE_MOCK_ENTRIES.map(entry => entry.headline)).size, 25, "demo Human headlines must be distinct");
+assert.ok(new Set(GLOBE_MOCK_ENTRIES.map(entry => entry.thumbnail?.path)).size >= 10, "the demo globe needs a varied image pool");
+await Promise.all(GLOBE_MOCK_ENTRIES.map(entry => readFile(new URL(`../public${entry.thumbnail?.path}`, import.meta.url))));
 assert.equal(shouldShowGlobeMocks("production", "true"), false, "demo Humans must fail closed in production");
 assert.equal(shouldShowGlobeMocks("development", undefined), true, "demo Humans should remain available for local development");
 assert.equal(shouldShowGlobeMocks("development", "false"), false, "demo Humans may be explicitly disabled during development");
