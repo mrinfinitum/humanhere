@@ -73,6 +73,14 @@ button { cursor: pointer; }
 .human-globe-preview blockquote { max-width: 26ch; margin: 22px 0 0; color: rgb(242 235 221 / .68); font-size: 11px; letter-spacing: .02em; line-height: 1.45; text-transform: none; animation-delay: 810ms; }
 .human-globe-preview > div { display: grid; margin-top: 27px; gap: 26px; animation-delay: 870ms; }
 .human-globe-preview small { color: rgb(242 235 221 / .86); font-size: 12px; letter-spacing: .18em; }
+.human-globe-love { display: grid; width: max-content; padding: 0; border: 0; background: transparent; color: var(--human-paper); font: inherit; font-size: 9px; grid-template-columns: auto auto auto; align-items: center; gap: 8px; letter-spacing: .18em; text-transform: uppercase; transition: color 180ms ease, opacity 180ms ease; }
+.human-globe-love > span { color: #5d7fff; font-size: 15px; filter: drop-shadow(0 0 5px rgb(77 115 255 / .65)); }
+.human-globe-love > small { font-size: 10px; }
+.human-globe-love:hover, .human-globe-love:focus-visible, .human-globe-love.is-loved { color: #8098ff; }
+.human-globe-love:disabled { cursor: wait; opacity: .45; }
+.human-globe-love-error, .human-globe-love-demo { display: block; margin-top: 13px; font-size: 7px !important; line-height: 1.4; letter-spacing: .12em !important; text-transform: none; }
+.human-globe-love-error { color: #f1aba5 !important; }
+.human-globe-love-demo { color: rgb(242 235 221 / .4) !important; }
 .human-globe-view { width: max-content; padding: 0; border: 0; background: transparent; color: #4d73ff; font: inherit; font-size: 10px; font-weight: 560; letter-spacing: .25em; text-align: left; text-transform: uppercase; }
 .human-globe-view b { padding-left: 4px; font-size: 14px; font-weight: 350; }
 .human-globe-view:hover, .human-globe-view:focus-visible { color: #7d98ff; }

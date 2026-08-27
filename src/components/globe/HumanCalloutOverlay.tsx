@@ -2,6 +2,7 @@
 
 import type { RefObject } from "react";
 import type { GlobeHuman } from "./types";
+import { useHumanLove } from "./useHumanLove";
 
 type Props = {
   human: GlobeHuman;
@@ -14,6 +15,13 @@ type Props = {
 
 /** The sole DOM representation of a selected Human. */
 export function HumanCalloutOverlay({ human, anchorRef, panelRef, connectorRef, onClose, onViewHuman }: Props) {
+  const love = useHumanLove({
+    humanId: human.id,
+    slug: human.slug,
+    initialCount: human.loveCount,
+    fixture: human.fixture,
+  });
+
   return (
     <>
       <svg className="human-globe-connector" aria-hidden="true">
@@ -26,9 +34,21 @@ export function HumanCalloutOverlay({ human, anchorRef, panelRef, connectorRef, 
           {human.city && <span>{human.city}</span>}
           {human.quote && <blockquote>{human.quote}</blockquote>}
           <div>
-            <small>{human.loveCount > 0 ? `♡ ${human.loveCount.toLocaleString()}` : "♡ LOVE"}</small>
+            <button
+              className={`human-globe-love${love.loved ? " is-loved" : ""}`}
+              type="button"
+              aria-pressed={love.loved}
+              disabled={love.pending || love.authenticated === null}
+              onClick={() => void love.toggle()}
+            >
+              <span aria-hidden="true">{love.loved ? "♥" : "♡"}</span>
+              {love.loved ? "Love sent" : "Send love"}
+              <small>{love.loveCount.toLocaleString()}</small>
+            </button>
             <button className="human-globe-view" type="button" onClick={onViewHuman}>View human <b aria-hidden="true">→</b></button>
           </div>
+          {love.error && <small className="human-globe-love-error" role="alert">{love.error}</small>}
+          {human.fixture && <small className="human-globe-love-demo">Demo count · this browser session only</small>}
         </aside>
       </div>
       <p className="human-globe-coordinate-hud" aria-hidden="true">

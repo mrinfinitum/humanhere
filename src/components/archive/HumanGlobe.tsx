@@ -347,6 +347,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
 
       {selected && !storyDrawer && (
         <HumanCalloutOverlay
+          key={selected.id}
           human={selected}
           anchorRef={calloutAnchorRef}
           panelRef={previewRef}

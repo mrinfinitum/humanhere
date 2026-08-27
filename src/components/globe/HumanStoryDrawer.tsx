@@ -1,10 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { HumanEntry } from "@/lib/archive/types";
 import { resolveMediaUrl } from "@/lib/media/resolver";
+import { useHumanLove } from "./useHumanLove";
 
 type Props = {
   entry: HumanEntry | null;
@@ -15,86 +15,27 @@ type Props = {
 };
 
 export function HumanStoryDrawer({ entry, loading, error, onClose, onRetry }: Props) {
-  const router = useRouter();
   const closeRef = useRef<HTMLButtonElement | null>(null);
-  const [authenticated, setAuthenticated] = useState<boolean | null>(null);
-  const [loved, setLoved] = useState(false);
-  const [loveCount, setLoveCount] = useState(entry?.loveCount ?? 0);
-  const [lovePending, setLovePending] = useState(false);
-  const [socialError, setSocialError] = useState<string | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteBody, setNoteBody] = useState("");
   const [notePending, setNotePending] = useState(false);
   const [noteSubmitted, setNoteSubmitted] = useState(false);
   const [noteError, setNoteError] = useState<string | null>(null);
+  const love = useHumanLove({
+    humanId: entry?.id ?? "loading",
+    slug: entry?.slug ?? "",
+    initialCount: entry?.loveCount ?? 0,
+    fixture: Boolean(entry?.fixture),
+  });
 
   useEffect(() => {
     closeRef.current?.focus({ preventScroll: true });
   }, []);
 
-  useEffect(() => {
-    if (!entry || entry.fixture) return;
-
-    const controller = new AbortController();
-    void fetch(`/api/humans/${entry.id}/love`, {
-      cache: "no-store",
-      signal: controller.signal,
-    }).then(async response => {
-      const payload = await response.json() as {
-        authenticated?: boolean;
-        loved?: boolean;
-        loveCount?: number;
-      };
-      if (!response.ok) throw new Error("Love is temporarily unavailable.");
-      setAuthenticated(Boolean(payload.authenticated));
-      setLoved(Boolean(payload.loved));
-      setLoveCount(Number(payload.loveCount ?? entry.loveCount));
-    }).catch(fetchError => {
-      if (controller.signal.aborted) return;
-      setAuthenticated(false);
-      setSocialError(fetchError instanceof Error ? fetchError.message : "Love is temporarily unavailable.");
-    });
-
-    return () => controller.abort();
-  }, [entry]);
-
-  const signIn = () => {
-    if (!entry) return;
-    router.push(`/login?next=${encodeURIComponent(`/?human=${entry.slug}`)}`);
-  };
-
-  const toggleLove = async () => {
-    if (!entry || entry.fixture || lovePending) return;
-    if (!authenticated) {
-      signIn();
-      return;
-    }
-
-    setLovePending(true);
-    setSocialError(null);
-    try {
-      const response = await fetch(`/api/humans/${entry.id}/love`, {
-        method: loved ? "DELETE" : "POST",
-      });
-      const payload = await response.json() as { loved?: boolean; loveCount?: number; error?: string };
-      if (response.status === 401) {
-        signIn();
-        return;
-      }
-      if (!response.ok) throw new Error(payload.error ?? "Love could not be updated.");
-      setLoved(Boolean(payload.loved));
-      setLoveCount(Number(payload.loveCount ?? loveCount));
-    } catch (loveError) {
-      setSocialError(loveError instanceof Error ? loveError.message : "Love could not be updated.");
-    } finally {
-      setLovePending(false);
-    }
-  };
-
   const beginNote = () => {
     if (!entry || entry.fixture) return;
-    if (!authenticated) {
-      signIn();
+    if (!love.authenticated) {
+      love.signIn();
       return;
     }
     setNoteOpen(true);
@@ -120,7 +61,7 @@ export function HumanStoryDrawer({ entry, loading, error, onClose, onRetry }: Pr
       });
       const payload = await response.json() as { error?: string };
       if (response.status === 401) {
-        signIn();
+        love.signIn();
         return;
       }
       if (!response.ok) throw new Error(payload.error ?? "Your note could not be sent.");
@@ -174,40 +115,42 @@ export function HumanStoryDrawer({ entry, loading, error, onClose, onRetry }: Pr
               <h2 id="human-story-drawer-title">{identity}</h2>
               {entry.person?.location && <span>{entry.person.location}</span>}
               {entry.quote && <blockquote>“{entry.quote}”</blockquote>}
-              <small>{loveCount > 0 ? `${loveCount.toLocaleString()} people sent love` : "Be the first to send love"}</small>
+              <small>{love.loveCount > 0 ? `${love.loveCount.toLocaleString()} people sent love` : "Be the first to send love"}</small>
             </section>
 
             <section className="human-story-actions" aria-label={`Ways to show up for ${identity}`}>
-              {entry.fixture ? (
+              <div className="human-story-actions-primary">
+                <button
+                  className={love.loved ? "is-loved" : undefined}
+                  type="button"
+                  aria-pressed={love.loved}
+                  disabled={love.pending || love.authenticated === null}
+                  onClick={() => void love.toggle()}
+                >
+                  <span aria-hidden="true">♥</span>
+                  <b>{love.loved ? "Love sent" : "Send love"}</b>
+                  <small>{love.loveCount.toLocaleString()}</small>
+                </button>
+                {!entry.fixture && entry.allowPrivateNotes && (
+                  <button type="button" onClick={beginNote} aria-expanded={noteOpen}>
+                    <span aria-hidden="true">↗</span>
+                    <b>Leave a note</b>
+                    <small>Private</small>
+                  </button>
+                )}
+              </div>
+
+              {love.error && <p className="human-story-action-error" role="alert">{love.error}</p>}
+
+              {entry.fixture && (
                 <div className="human-story-actions-fixture">
                   <span>Development story</span>
-                  <p>Love and private Notes become available only on real, consent-verified published Humans.</p>
+                  <p>This Love count is a browser-session demonstration only. It never enters Supabase or production mission metrics.</p>
                 </div>
-              ) : (
+              )}
+
+              {!entry.fixture && (
                 <>
-                  <div className="human-story-actions-primary">
-                    <button
-                      className={loved ? "is-loved" : undefined}
-                      type="button"
-                      aria-pressed={loved}
-                      disabled={lovePending || authenticated === null}
-                      onClick={() => void toggleLove()}
-                    >
-                      <span aria-hidden="true">♥</span>
-                      <b>{loved ? "Love sent" : "Send love"}</b>
-                      <small>{loveCount.toLocaleString()}</small>
-                    </button>
-                    {entry.allowPrivateNotes && (
-                      <button type="button" onClick={beginNote} aria-expanded={noteOpen}>
-                        <span aria-hidden="true">↗</span>
-                        <b>Leave a note</b>
-                        <small>Private</small>
-                      </button>
-                    )}
-                  </div>
-
-                  {socialError && <p className="human-story-action-error" role="alert">{socialError}</p>}
-
                   {entry.allowPrivateNotes && noteOpen && !noteSubmitted && (
                     <form className="human-story-note-form" onSubmit={submitNote}>
                       <header>
