@@ -74,9 +74,10 @@ button { cursor: pointer; }
 .human-globe-preview > div { display: grid; margin-top: 27px; gap: 26px; animation-delay: 870ms; }
 .human-globe-preview small { color: rgb(242 235 221 / .86); font-size: 12px; letter-spacing: .18em; }
 .human-globe-love { display: grid; width: max-content; padding: 0; border: 0; background: transparent; color: var(--human-paper); font: inherit; font-size: 9px; grid-template-columns: auto auto auto; align-items: center; gap: 8px; letter-spacing: .18em; text-transform: uppercase; transition: color 180ms ease, opacity 180ms ease; }
-.human-globe-love > span { color: #5d7fff; font-size: 23px; line-height: 1; filter: drop-shadow(0 0 7px rgb(77 115 255 / .7)); }
+.human-globe-love > span { display: grid; width: 23px; height: 23px; color: #5d7fff; place-items: center; filter: drop-shadow(0 0 7px rgb(77 115 255 / .7)); }
+.human-globe-love > span svg { display: block; width: 100%; height: 100%; }
 .human-globe-love > small { font-size: 16px; font-weight: 580; letter-spacing: .04em; }
-.human-globe-love:hover, .human-globe-love:focus-visible, .human-globe-love.is-loved { color: #8098ff; }
+.human-globe-love:hover, .human-globe-love:focus-visible { color: #8098ff; }
 .human-globe-love:disabled { cursor: wait; opacity: .45; }
 .human-globe-love-error, .human-globe-love-demo { display: block; margin-top: 13px; font-size: 7px !important; line-height: 1.4; letter-spacing: .12em !important; text-transform: none; }
 .human-globe-love-error { color: #f1aba5 !important; }
@@ -134,9 +135,8 @@ button { cursor: pointer; }
 .human-story-actions-primary > button:hover, .human-story-actions-primary > button:focus-visible { background: rgb(48 70 165 / .08); outline: 0; }
 .human-story-actions-primary > button:focus-visible { box-shadow: inset 0 0 0 1px var(--lapis); }
 .human-story-actions-primary > button:disabled { cursor: wait; opacity: .5; }
-.human-story-actions-primary > button.is-loved { background: var(--lapis); color: white; }
-.human-story-actions-primary > button > span { color: var(--lapis); font-size: 32px; line-height: .85; }
-.human-story-actions-primary > button.is-loved > span { color: var(--human-paper); }
+.human-story-actions-primary > button > span { display: grid; width: 32px; height: 32px; color: var(--lapis); place-items: center; }
+.human-story-actions-primary > button > span svg { display: block; width: 100%; height: 100%; }
 .human-story-actions-primary > button > b { align-self: end; font-size: 9px; font-weight: 520; letter-spacing: .16em; text-transform: uppercase; }
 .human-story-actions-primary > button > small { align-self: end; font-size: 18px; font-weight: 580; letter-spacing: .03em; line-height: 1; }
 .human-story-actions-fixture { padding: 25px 0; border-top: 1px solid rgb(23 23 22 / .2); border-bottom: 1px solid rgb(23 23 22 / .2); }

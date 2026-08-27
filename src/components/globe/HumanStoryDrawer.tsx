@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { HeartIcon } from "@/components/HeartIcon";
 import type { HumanEntry } from "@/lib/archive/types";
 import { resolveMediaUrl } from "@/lib/media/resolver";
 import { useHumanLove } from "./useHumanLove";
@@ -127,7 +128,7 @@ export function HumanStoryDrawer({ entry, loading, error, onClose, onRetry }: Pr
                   disabled={love.pending || love.authenticated === null}
                   onClick={() => void love.toggle()}
                 >
-                  <span aria-hidden="true">♥</span>
+                  <span><HeartIcon filled={love.loved} /></span>
                   <b>{love.loved ? "Love sent" : "Send love"}</b>
                   <small>{love.loveCount.toLocaleString()}</small>
                 </button>

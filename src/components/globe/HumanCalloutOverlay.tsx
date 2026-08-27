@@ -1,6 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
+import { HeartIcon } from "@/components/HeartIcon";
 import type { GlobeHuman } from "./types";
 import { useHumanLove } from "./useHumanLove";
 
@@ -41,7 +42,7 @@ export function HumanCalloutOverlay({ human, anchorRef, panelRef, connectorRef, 
               disabled={love.pending || love.authenticated === null}
               onClick={() => void love.toggle()}
             >
-              <span aria-hidden="true">{love.loved ? "♥" : "♡"}</span>
+              <span><HeartIcon filled={love.loved} /></span>
               {love.loved ? "Love sent" : "Send love"}
               <small>{love.loveCount.toLocaleString()}</small>
             </button>
