@@ -15,6 +15,7 @@ assert.ok(GLOBE_MOCK_ENTRIES.every(entry => /^(I'm|My name is)\b/.test(entry.quo
 assert.ok(GLOBE_MOCK_ENTRIES.every(entry => /^(I|I'm|My)\b/.test(entry.headline ?? "")), "demo Human headlines must remain in the poster's voice");
 assert.ok(GLOBE_MOCK_ENTRIES.every(entry => entry.blocks?.filter(block => block.type === "text").every(block => block.body.every(paragraph => /^(I|I'm|My)\b/.test(paragraph)))), "demo story paragraphs must remain first-person posts");
 assert.ok(GLOBE_MOCK_ENTRIES.every(entry => !/\b(he|she|his|her|him|hers)\b/i.test([entry.headline, entry.story].join(" "))), "demo stories must not narrate the poster in third person");
+assert.ok(GLOBE_MOCK_ENTRIES.every(entry => entry.allowPrivateNotes), "demo Humans must expose the non-persistent private Note preview");
 assert.ok(GLOBE_MOCK_ENTRIES.every(entry => (entry.blocks?.length ?? 0) >= 3), "every demo Human needs quote, story, and editorial-note blocks");
 assert.equal(new Set(GLOBE_MOCK_ENTRIES.map(entry => entry.headline)).size, 25, "demo Human headlines must be distinct");
 assert.ok(new Set(GLOBE_MOCK_ENTRIES.map(entry => entry.thumbnail?.path)).size >= 10, "the demo globe needs a varied image pool");

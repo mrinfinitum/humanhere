@@ -57,7 +57,7 @@ export const GLOBE_MOCK_ENTRIES: HumanEntry[] = GLOBE_MOCK_STORIES.map((human, i
   published: false,
   featured: false,
   loveCount: human.loveCount,
-  allowPrivateNotes: false,
+  allowPrivateNotes: true,
   socialImageAllowed: false,
   createdAt: "2026-08-26T00:00:00.000Z",
   publishedAt: "2026-08-26T00:00:00.000Z",

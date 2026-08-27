@@ -34,8 +34,8 @@ export function HumanStoryDrawer({ entry, loading, error, onClose, onRetry }: Pr
   }, []);
 
   const beginNote = () => {
-    if (!entry || entry.fixture) return;
-    if (!love.authenticated) {
+    if (!entry || !entry.allowPrivateNotes) return;
+    if (!entry.fixture && !love.authenticated) {
       love.signIn();
       return;
     }
@@ -45,10 +45,17 @@ export function HumanStoryDrawer({ entry, loading, error, onClose, onRetry }: Pr
 
   const submitNote = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!entry || entry.fixture || notePending) return;
+    if (!entry || notePending) return;
     const body = noteBody.trim();
     if (!body) {
       setNoteError("Write a note before sending it.");
+      return;
+    }
+
+    if (entry.fixture) {
+      setNoteBody("");
+      setNoteError(null);
+      setNoteSubmitted(true);
       return;
     }
 
@@ -132,7 +139,7 @@ export function HumanStoryDrawer({ entry, loading, error, onClose, onRetry }: Pr
                   <b>{love.loved ? "Love sent" : "Send love"}</b>
                   <small>{love.loveCount.toLocaleString()}</small>
                 </button>
-                {!entry.fixture && entry.allowPrivateNotes && (
+                {entry.allowPrivateNotes && (
                   <button type="button" onClick={beginNote} aria-expanded={noteOpen}>
                     <span aria-hidden="true">↗</span>
                     <b>Leave a note</b>
@@ -146,50 +153,52 @@ export function HumanStoryDrawer({ entry, loading, error, onClose, onRetry }: Pr
               {entry.fixture && (
                 <div className="human-story-actions-fixture">
                   <span>Development story</span>
-                  <p>This Love count is a browser-session demonstration only. It never enters Supabase or production mission metrics.</p>
+                  <p>Love and private-note interactions are demonstrations in this browser. Demo notes are not sent, stored, moderated, or included in production metrics.</p>
                 </div>
               )}
 
-              {!entry.fixture && (
-                <>
-                  {entry.allowPrivateNotes && noteOpen && !noteSubmitted && (
-                    <form className="human-story-note-form" onSubmit={submitNote}>
-                      <header>
-                        <div>
-                          <span>Private encouragement</span>
-                          <h3>Say something human.</h3>
-                        </div>
-                        <button type="button" onClick={() => setNoteOpen(false)} aria-label="Close private note form">×</button>
-                      </header>
-                      <label htmlFor={`private-note-${entry.id}`}>
-                        Your note
-                        <textarea
-                          id={`private-note-${entry.id}`}
-                          value={noteBody}
-                          maxLength={2000}
-                          rows={6}
-                          autoFocus
-                          onChange={event => setNoteBody(event.target.value)}
-                          placeholder={`A private note for ${identity}…`}
-                        />
-                      </label>
-                      <div>
-                        <p>Delivered anonymously after safety review. HUMAN:HERE staff can review the sender account and note for moderation.</p>
-                        <span>{noteBody.length.toLocaleString()} / 2,000</span>
-                      </div>
-                      {noteError && <p className="human-story-action-error" role="alert">{noteError}</p>}
-                      <button type="submit" disabled={notePending || !noteBody.trim()}>{notePending ? "Sending…" : "Send private note →"}</button>
-                    </form>
-                  )}
-
-                  {noteSubmitted && (
-                    <div className="human-story-note-success" role="status">
-                      <span>Note received</span>
-                      <p>Your note is awaiting moderation. If approved, it will be delivered anonymously to {identity}.</p>
-                      <button type="button" onClick={() => { setNoteSubmitted(false); setNoteOpen(false); }}>Done</button>
+              {entry.allowPrivateNotes && noteOpen && !noteSubmitted && (
+                <form className="human-story-note-form" onSubmit={submitNote}>
+                  <header>
+                    <div>
+                      <span>Private encouragement</span>
+                      <h3>Say something human.</h3>
                     </div>
-                  )}
-                </>
+                    <button type="button" onClick={() => setNoteOpen(false)} aria-label="Close private note form">×</button>
+                  </header>
+                  <label htmlFor={`private-note-${entry.id}`}>
+                    Your note
+                    <textarea
+                      id={`private-note-${entry.id}`}
+                      value={noteBody}
+                      maxLength={2000}
+                      rows={6}
+                      autoFocus
+                      onChange={event => setNoteBody(event.target.value)}
+                      placeholder={`A private note for ${identity}…`}
+                    />
+                  </label>
+                  <div>
+                    <p>{entry.fixture
+                      ? "Demo only. This note will not be sent, stored, or reviewed."
+                      : "Delivered anonymously after safety review. HUMAN:HERE staff can review the sender account and note for moderation."}</p>
+                    <span>{noteBody.length.toLocaleString()} / 2,000</span>
+                  </div>
+                  {noteError && <p className="human-story-action-error" role="alert">{noteError}</p>}
+                  <button type="submit" disabled={notePending || !noteBody.trim()}>
+                    {notePending ? "Sending…" : entry.fixture ? "Preview private note →" : "Send private note →"}
+                  </button>
+                </form>
+              )}
+
+              {noteSubmitted && (
+                <div className="human-story-note-success" role="status">
+                  <span>{entry.fixture ? "Demo note complete" : "Note received"}</span>
+                  <p>{entry.fixture
+                    ? "This demonstrates the private Note flow. Nothing was sent or stored."
+                    : `Your note is awaiting moderation. If approved, it will be delivered anonymously to ${identity}.`}</p>
+                  <button type="button" onClick={() => { setNoteSubmitted(false); setNoteOpen(false); }}>Done</button>
+                </div>
               )}
             </section>
 
