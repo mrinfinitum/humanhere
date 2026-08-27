@@ -140,10 +140,10 @@ export function HumanStoryDrawer({ entry, loading, error, onClose, onRetry }: Pr
                   <small>{love.loveCount.toLocaleString()}</small>
                 </button>
                 {entry.allowPrivateNotes && (
-                  <button type="button" onClick={beginNote} aria-expanded={noteOpen}>
+                  <button className="human-story-note-action" type="button" onClick={beginNote} aria-expanded={noteOpen}>
                     <span aria-hidden="true">↗</span>
                     <b>Leave a note</b>
-                    <small>Private</small>
+                    <small>A few words can matter.</small>
                   </button>
                 )}
               </div>
