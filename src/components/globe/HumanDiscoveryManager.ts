@@ -101,6 +101,11 @@ export class HumanDiscoveryManager {
     }));
   }
 
+  /** Randomize a new browser session before the first discovery frame. */
+  reseed(seed: number) {
+    if (!this.hasStarted) this.randomState = hashSeed(seed);
+  }
+
   update(frame: HumanDiscoveryFrame) {
     let membershipChanged = false;
 
@@ -166,7 +171,7 @@ export class HumanDiscoveryManager {
       ) {
         slot.state = "fading";
         slot.stateStartedAt = frame.now;
-        slot.fadeDuration = frame.reducedMotion ? 0.34 : this.between(0.8, 1.4);
+        slot.fadeDuration = frame.reducedMotion ? 0.34 : this.between(1.8, 3.2);
       }
 
       if (slot.state === "fading") {
@@ -190,7 +195,7 @@ export class HumanDiscoveryManager {
         slot.intensity = 1;
         if (progress >= 1) {
           this.release(slot);
-          this.nextDiscoveryAt = Math.max(this.nextDiscoveryAt, frame.now + this.between(0.9, 2.4) * this.timingScale);
+          this.nextDiscoveryAt = Math.max(this.nextDiscoveryAt, frame.now + this.between(1.2, 3.1) * this.timingScale);
           membershipChanged = true;
         }
       }
@@ -234,39 +239,33 @@ export class HumanDiscoveryManager {
       .filter(slot => slot.state !== "inactive")
       .map(slot => slot.position.clone().normalize());
 
-    const score = (candidateIndex: number, respectHistory: boolean, minimumSpacing: number) => {
-      if (active.has(candidateIndex) || (respectHistory && this.recentlySeen.has(candidateIndex))) return Number.NEGATIVE_INFINITY;
+    const eligible = (candidateIndex: number, respectHistory: boolean, minimumSpacing: number) => {
+      if (active.has(candidateIndex) || (respectHistory && this.recentlySeen.has(candidateIndex))) return false;
       const visibility = frame.visibilityFor(candidateIndex);
-      if (visibility < 0.035) return Number.NEGATIVE_INFINITY;
+      if (visibility < 0.035) return false;
       const normal = this.candidatePositions[candidateIndex].clone().normalize();
       let nearestAngle = Math.PI;
       for (const activePosition of activePositions) {
         nearestAngle = Math.min(nearestAngle, Math.acos(THREE.MathUtils.clamp(normal.dot(activePosition), -1, 1)));
       }
-      if (nearestAngle < minimumSpacing) return Number.NEGATIVE_INFINITY;
-      const limbBonus = visibility < 0.32 ? 0.24 * (1 - Math.abs(visibility - 0.17) / 0.15) : 0;
-      const diversity = Math.min(nearestAngle / 0.72, 1) * 0.26;
-      return visibility * 0.44 + Math.max(0, limbBonus) + diversity + this.nextRandom() * 0.18;
+      return nearestAngle >= minimumSpacing;
     };
 
-    const findBest = (respectHistory: boolean, minimumSpacing: number) => {
-      let bestIndex: number | null = null;
-      let bestScore = Number.NEGATIVE_INFINITY;
+    // Selection is intentionally random for now. Visibility, spacing and the
+    // session history are safety/clarity filters, not editorial ranking.
+    const chooseRandom = (respectHistory: boolean, minimumSpacing: number) => {
+      const candidates: number[] = [];
       for (let candidateIndex = 0; candidateIndex < this.candidatePositions.length; candidateIndex += 1) {
-        const candidateScore = score(candidateIndex, respectHistory, minimumSpacing);
-        if (candidateScore > bestScore) {
-          bestScore = candidateScore;
-          bestIndex = candidateIndex;
-        }
+        if (eligible(candidateIndex, respectHistory, minimumSpacing)) candidates.push(candidateIndex);
       }
-      return bestIndex;
+      return candidates.length ? candidates[Math.floor(this.nextRandom() * candidates.length)] : null;
     };
 
-    let result = findBest(true, 0.16);
-    if (result === null) result = findBest(true, 0.08);
+    let result = chooseRandom(true, 0.16);
+    if (result === null) result = chooseRandom(true, 0.08);
     if (result === null) {
       this.relaxHistory();
-      result = findBest(false, 0.08);
+      result = chooseRandom(false, 0.08);
     }
     return result;
   }
@@ -277,10 +276,10 @@ export class HumanDiscoveryManager {
     slot.position.copy(this.candidatePositions[candidateIndex]);
     slot.phase = this.nextRandom() * Math.PI * 2;
     slot.stateStartedAt = now;
-    slot.emergenceDuration = reducedMotion ? 0.34 : this.between(0.8, 1.6);
-    slot.restAt = now + slot.emergenceDuration + this.between(3.8, 6.5);
-    slot.retireAt = now + this.between(28, 52);
-    slot.fadeDuration = this.between(0.8, 1.4);
+    slot.emergenceDuration = reducedMotion ? 0.34 : this.between(1.4, 2.6);
+    slot.restAt = now + slot.emergenceDuration + this.between(5.5, 9.5);
+    slot.retireAt = now + this.between(26, 48);
+    slot.fadeDuration = this.between(1.8, 3.2);
     slot.arrivalRippleDuration = this.between(1.45, 1.9);
     slot.arrivalRippleProgress = reducedMotion ? 1 : 0;
     slot.coreOpacity = 0;

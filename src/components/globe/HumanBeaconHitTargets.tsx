@@ -8,6 +8,7 @@ import type { GlobeHover, GlobeHuman } from "./types";
 type Props = {
   humans: GlobeHuman[];
   positionFor: (human: GlobeHuman) => THREE.Vector3;
+  isActive: (humanId: string) => boolean;
   onHover: (hover: NonNullable<GlobeHover>) => void;
   onHoverEnd: (humanId: string) => void;
   onSelect: (humanId: string) => void;
@@ -18,7 +19,7 @@ type Props = {
  * Interaction-only layer. The visual beacon remains GPU-rendered; these few
  * normal meshes provide generous, stable-ID pointer targets for active Humans.
  */
-export function HumanBeaconHitTargets({ humans, positionFor, onHover, onHoverEnd, onSelect, debug }: Props) {
+export function HumanBeaconHitTargets({ humans, positionFor, isActive, onHover, onHoverEnd, onSelect, debug }: Props) {
   const targetsRef = useRef(new Map<string, THREE.Mesh>());
   // The parent Earth scale makes this roughly a 38px desktop hit target while
   // the visible flare remains much smaller.
@@ -43,7 +44,11 @@ export function HumanBeaconHitTargets({ humans, positionFor, onHover, onHoverEnd
   }, [geometry, material]);
 
   useFrame(({ camera }) => {
-    for (const target of targetsRef.current.values()) {
+    for (const [humanId, target] of targetsRef.current) {
+      if (!isActive(humanId)) {
+        target.visible = false;
+        continue;
+      }
       target.getWorldPosition(worldPosition);
       target.parent?.getWorldPosition(worldCenter);
       cameraDirection.copy(camera.position).sub(worldCenter).normalize();

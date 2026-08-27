@@ -1,9 +1,12 @@
+/* eslint-disable react-hooks/immutability -- Three.js materials, refs and typed buffers are intentionally updated in the render loop. */
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useFrame } from "@react-three/fiber";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { HUMAN_SURFACE_RADIUS, latLngToVector3 } from "./coordinates";
 import { HumanBeaconHitTargets } from "./HumanBeaconHitTargets";
+import type { HumanDiscoveryManager } from "./HumanDiscoveryManager";
 import type { GlobeHover, GlobeHuman } from "./types";
 
 function createFlareTexture() {
@@ -81,9 +84,9 @@ type Props = {
   humans: GlobeHuman[];
   selectedHumanId: string | null;
   hoveredHumanId: string | null;
+  discoveryManager: HumanDiscoveryManager;
   onHover: (hover: GlobeHover) => void;
   onSelect: (humanId: string) => void;
-  onActiveChange: (humanIds: string[]) => void;
   debug: boolean;
 };
 
@@ -92,23 +95,13 @@ export function HumanBillboardLayer({
   humans,
   selectedHumanId,
   hoveredHumanId,
+  discoveryManager,
   onHover,
   onSelect,
-  onActiveChange,
   debug,
 }: Props) {
   const texture = useMemo(() => createFlareTexture(), []);
   const columnTexture = useMemo(() => createLightColumnTexture(), []);
-  const flareMaterials = useMemo(() => ({
-    idle: createFlareMaterial(texture, 0.91),
-    hover: createFlareMaterial(texture, 0.98),
-    selected: createFlareMaterial(texture, 1),
-  }), [texture]);
-  const columnMaterials = useMemo(() => ({
-    idle: createColumnMaterial(columnTexture, 0.76),
-    hover: createColumnMaterial(columnTexture, 0.9),
-    selected: createColumnMaterial(columnTexture, 1),
-  }), [columnTexture]);
   const columnGeometry = useMemo(() => {
     const geometry = new THREE.PlaneGeometry(0.04, 0.28);
     geometry.rotateX(Math.PI / 2);
@@ -121,39 +114,99 @@ export function HumanBillboardLayer({
       new THREE.Vector3(0, 0, 1),
       position.clone().normalize(),
     );
-    return { human, position, orientation, variation: 0.97 + (index % 7) * 0.01 };
-  }), [humans]);
+    return {
+      human,
+      position,
+      orientation,
+      variation: 0.97 + (index % 7) * 0.01,
+      flareMaterial: createFlareMaterial(texture, 0),
+      columnMaterial: createColumnMaterial(columnTexture, 0),
+    };
+  }), [columnTexture, humans, texture]);
   const positionById = useMemo(() => new Map(placements.map(placement => [placement.human.id, placement.position])), [placements]);
+  const indexById = useMemo(() => new Map(placements.map((placement, index) => [placement.human.id, index])), [placements]);
+  const groupsRef = useRef(new Map<string, THREE.Group>());
+  const spritesRef = useRef(new Map<string, THREE.Sprite>());
+  const candidateSlots = useMemo(() => new Int16Array(humans.length).fill(-1), [humans.length]);
 
-  useEffect(() => {
-    onActiveChange(humans.map(human => human.id));
-    return () => onActiveChange([]);
-  }, [humans, onActiveChange]);
+  const isActive = useCallback((humanId: string) => {
+    const candidateIndex = indexById.get(humanId);
+    if (candidateIndex === undefined) return false;
+    return discoveryManager.slots.some(slot => (
+      slot.candidateIndex === candidateIndex
+      && slot.state !== "inactive"
+      && slot.coreOpacity >= 0.34
+    ));
+  }, [discoveryManager, indexById]);
+
+  useFrame(() => {
+    candidateSlots.fill(-1);
+    for (let slotIndex = 0; slotIndex < discoveryManager.slots.length; slotIndex += 1) {
+      const candidateIndex = discoveryManager.slots[slotIndex].candidateIndex;
+      if (candidateIndex >= 0 && candidateIndex < candidateSlots.length) candidateSlots[candidateIndex] = slotIndex;
+    }
+
+    for (let candidateIndex = 0; candidateIndex < placements.length; candidateIndex += 1) {
+      const placement = placements[candidateIndex];
+      const group = groupsRef.current.get(placement.human.id);
+      const sprite = spritesRef.current.get(placement.human.id);
+      const slotIndex = candidateSlots[candidateIndex];
+      const slot = slotIndex >= 0 ? discoveryManager.slots[slotIndex] : null;
+      if (!group || !sprite || !slot || slot.state === "inactive") {
+        if (group) group.visible = false;
+        continue;
+      }
+
+      group.visible = slot.coreOpacity > 0.005;
+      const selected = placement.human.id === selectedHumanId;
+      const hovered = placement.human.id === hoveredHumanId;
+      const interactionIntensity = selected ? 1 : hovered ? 0.96 : 0.88;
+      const opticalOpacity = Math.min(1, slot.coreOpacity * 0.52 + slot.innerOpacity * 0.3 + slot.haloOpacity * 0.18);
+      placement.flareMaterial.opacity = opticalOpacity * interactionIntensity * slot.intensity;
+      placement.columnMaterial.opacity = slot.innerOpacity * (selected ? 0.94 : hovered ? 0.82 : 0.68);
+      const baseSize = selected ? 0.036 : hovered ? 0.032 : 0.029;
+      const size = baseSize * placement.variation * slot.scale;
+      sprite.scale.set(size, size, 1);
+    }
+  });
+
   useEffect(() => () => {
     texture.dispose();
     columnTexture.dispose();
     columnGeometry.dispose();
-    Object.values(flareMaterials).forEach(material => material.dispose());
-    Object.values(columnMaterials).forEach(material => material.dispose());
-  }, [columnGeometry, columnMaterials, columnTexture, flareMaterials, texture]);
+    placements.forEach(placement => {
+      placement.flareMaterial.dispose();
+      placement.columnMaterial.dispose();
+    });
+  }, [columnGeometry, columnTexture, placements, texture]);
 
   if (!humans.length) return null;
 
   return (
     <group name="human-billboard-layer">
-      {placements.map(({ human, position, orientation, variation }) => {
-        const selected = human.id === selectedHumanId;
-        const hovered = human.id === hoveredHumanId;
-        const state = selected ? "selected" : hovered ? "hover" : "idle";
-        const size = (selected ? 0.036 : hovered ? 0.032 : 0.029) * variation;
+      {placements.map(({ human, position, orientation, flareMaterial, columnMaterial }) => {
         return (
-          <group key={human.id} name={`human-beacon-${human.id}`} position={position} quaternion={orientation}>
-            <mesh geometry={columnGeometry} material={columnMaterials[state]} renderOrder={3} raycast={() => undefined} />
-            <mesh geometry={columnGeometry} material={columnMaterials[state]} rotation={[0, 0, Math.PI / 2]} renderOrder={3} raycast={() => undefined} />
+          <group
+            key={human.id}
+            ref={group => {
+              if (group) groupsRef.current.set(human.id, group);
+              else groupsRef.current.delete(human.id);
+            }}
+            name={`human-beacon-${human.id}`}
+            position={position}
+            quaternion={orientation}
+            visible={false}
+          >
+            <mesh geometry={columnGeometry} material={columnMaterial} renderOrder={3} raycast={() => undefined} />
+            <mesh geometry={columnGeometry} material={columnMaterial} rotation={[0, 0, Math.PI / 2]} renderOrder={3} raycast={() => undefined} />
             <sprite
+              ref={sprite => {
+                if (sprite) spritesRef.current.set(human.id, sprite);
+                else spritesRef.current.delete(human.id);
+              }}
               name={`human-flare-${human.id}`}
-              scale={[size, size, 1]}
-              material={flareMaterials[state]}
+              scale={[0.001, 0.001, 1]}
+              material={flareMaterial}
               renderOrder={4}
               raycast={() => undefined}
             />
@@ -163,6 +216,7 @@ export function HumanBillboardLayer({
       <HumanBeaconHitTargets
         humans={humans}
         positionFor={human => positionById.get(human.id) ?? new THREE.Vector3(100, 100, 100)}
+        isActive={isActive}
         onHover={onHover}
         onHoverEnd={() => onHover(null)}
         onSelect={onSelect}

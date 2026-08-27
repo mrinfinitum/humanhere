@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, type MutableRefObject, type RefObject } fro
 import * as THREE from "three";
 import { EARTH_RADIUS, HUMAN_SURFACE_RADIUS, latLngToVector3 } from "./coordinates";
 import { HumanBillboardLayer } from "./HumanBillboardLayer";
+import { HumanDiscoveryManager } from "./HumanDiscoveryManager";
 import type { GlobeControls, GlobeHover, GlobeHuman } from "./types";
 
 const WORLD_RADIUS = EARTH_RADIUS;
@@ -308,10 +309,29 @@ export function GlobeScene({
   const hiddenSelectionRef = useRef<string | null>(null);
   const debugWorldPoint = useMemo(() => new THREE.Vector3(), []);
   const debugProjectedPoint = useMemo(() => new THREE.Vector3(), []);
+  const worldQuaternion = useMemo(() => new THREE.Quaternion(), []);
+  const candidateDirection = useMemo(() => new THREE.Vector3(), []);
   const { camera, gl, size } = useThree();
+  const candidatePositions = useMemo(
+    () => humans.map(human => latLngToVector3(human.lat, human.lng, HUMAN_SURFACE_RADIUS)),
+    [humans],
+  );
+  const discoveryManager = useMemo(() => new HumanDiscoveryManager(candidatePositions, {
+    poolSize: Math.min(size.width <= 760 ? 10 : 16, humans.length),
+    visibleBudget: size.width <= 760 ? 6 : 10,
+    initialBudget: size.width <= 760 ? 2 : 4,
+    recentlySeenLimit: Math.min(80, Math.max(12, humans.length)),
+    timingScale: size.width <= 760 ? 1.18 : 1,
+  }), [candidatePositions, humans.length, size.width]);
   const selected = selectedHumanId === null
     ? null
     : humans.find(human => human.id === selectedHumanId) ?? null;
+  const selectedCandidateIndex = selectedHumanId === null
+    ? null
+    : humans.findIndex(human => human.id === selectedHumanId);
+  const hoveredCandidateIndex = hoveredHumanId === null
+    ? null
+    : humans.findIndex(human => human.id === hoveredHumanId);
 
   useEffect(() => {
     gl.setClearColor("#05070B", 1);
@@ -320,6 +340,13 @@ export function GlobeScene({
     gl.toneMappingExposure = 1.2;
     onReady();
   }, [gl, onReady]);
+
+  useEffect(() => {
+    const seed = new Uint32Array(1);
+    globalThis.crypto?.getRandomValues(seed);
+    discoveryManager.reseed(seed[0] || Date.now());
+    return () => onActiveChange([]);
+  }, [discoveryManager, onActiveChange]);
 
   useFrame((_, delta) => {
     const world = worldRef.current;
@@ -333,6 +360,25 @@ export function GlobeScene({
     world.rotation.y = THREE.MathUtils.damp(world.rotation.y, controls.current.targetY, 4.1, delta);
     camera.position.z = THREE.MathUtils.damp(camera.position.z, controls.current.distance, 4.4, delta);
     camera.lookAt(0, 0, 0);
+
+    world.getWorldQuaternion(worldQuaternion);
+    world.getWorldPosition(worldCenter);
+    cameraDirection.copy(camera.position).sub(worldCenter).normalize();
+    const membershipChanged = discoveryManager.update({
+      now: performance.now() / 1000,
+      selectedIndex: selectedCandidateIndex !== null && selectedCandidateIndex >= 0 ? selectedCandidateIndex : null,
+      hoveredIndex: hoveredCandidateIndex !== null && hoveredCandidateIndex >= 0 ? hoveredCandidateIndex : null,
+      activelyExploring: controls.current.dragging || performance.now() - controls.current.lastInteraction < 1800,
+      reducedMotion,
+      visibilityFor: candidateIndex => candidateDirection
+        .copy(candidatePositions[candidateIndex])
+        .normalize()
+        .applyQuaternion(worldQuaternion)
+        .dot(cameraDirection),
+    });
+    if (membershipChanged) {
+      onActiveChange(discoveryManager.activeCandidateIndices().map(candidateIndex => humans[candidateIndex].id));
+    }
 
     if (GLOBE_DEBUG && debugProjectionRef.current && humans[0]) {
       debugWorldPoint.copy(latLngToVector3(humans[0].lat, humans[0].lng, HUMAN_SURFACE_RADIUS));
@@ -437,9 +483,9 @@ export function GlobeScene({
           humans={humans}
           selectedHumanId={selectedHumanId}
           hoveredHumanId={hoveredHumanId}
+          discoveryManager={discoveryManager}
           onHover={onHover}
           onSelect={onSelect}
-          onActiveChange={onActiveChange}
           debug={GLOBE_DEBUG}
         />
         <Atmosphere />

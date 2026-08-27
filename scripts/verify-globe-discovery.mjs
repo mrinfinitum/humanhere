@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import * as THREE from "three";
 import { HumanDiscoveryManager } from "../src/components/globe/HumanDiscoveryManager.ts";
 import { GLOBE_MOCK_ENTRIES } from "../src/lib/archive/globe-mocks.ts";
@@ -35,6 +36,7 @@ function simulate(mobile) {
   let observedPhysicalFade = false;
   let selectedIndex = null;
   let selectedAt = 0;
+  const encounteredCandidates = new Set();
 
   for (let frame = 0; frame < 60 * 150; frame += 1) {
     const now = frame / 60;
@@ -51,6 +53,7 @@ function simulate(mobile) {
     });
 
     const active = manager.activeCandidateIndices();
+    active.forEach(candidateIndex => encounteredCandidates.add(candidateIndex));
     observedArrivalRipple ||= manager.slots.some(slot => (
       slot.state === "present"
       && slot.arrivalRippleProgress > 0
@@ -82,6 +85,7 @@ function simulate(mobile) {
   }
 
   assert.ok(maximumActive >= (mobile ? 3 : 4), "the first-load sequence should populate gradually");
+  assert.ok(encounteredCandidates.size > visibleBudget, "the active set should turn over and reveal new Humans over time");
   assert.ok(observedArrivalRipple, "an emerged Human should receive one bounded arrival ripple");
   assert.ok(observedOpticalStaging, "the warm core should resolve before bloom, aura, and contact light");
   assert.ok(observedPhysicalFade, "contact light and aura should leave before the Human core");
@@ -89,4 +93,9 @@ function simulate(mobile) {
 
 simulate(false);
 simulate(true);
+
+const globeSceneSource = await readFile(new URL("../src/components/globe/GlobeScene.tsx", import.meta.url), "utf8");
+const billboardSource = await readFile(new URL("../src/components/globe/HumanBillboardLayer.tsx", import.meta.url), "utf8");
+assert.match(globeSceneSource, /discoveryManager\.update\(/, "the live globe scene must drive the discovery manager");
+assert.match(billboardSource, /slot\.coreOpacity/, "the live Human renderer must consume lifecycle opacity");
 console.log("Globe discovery pool verified: bounded, unique, and selection-safe.");
