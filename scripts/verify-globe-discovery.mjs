@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import * as THREE from "three";
 import { HumanDiscoveryManager } from "../src/components/globe/HumanDiscoveryManager.ts";
 import { GLOBE_MOCK_ENTRIES, shouldShowGlobeMocks } from "../src/lib/archive/globe-mocks.ts";
+import { DEV_FIXTURE_HUMAN_ENTRIES } from "../src/lib/archive/fixtures.ts";
 
 assert.equal(GLOBE_MOCK_ENTRIES.length, 25, "the removable globe demo must contain exactly 25 Humans");
 assert.equal(new Set(GLOBE_MOCK_ENTRIES.map(entry => entry.id)).size, 25, "demo Human IDs must be unique");
@@ -14,6 +15,8 @@ assert.ok(GLOBE_MOCK_ENTRIES.every(entry => (entry.blocks?.length ?? 0) >= 3), "
 assert.equal(new Set(GLOBE_MOCK_ENTRIES.map(entry => entry.headline)).size, 25, "demo Human headlines must be distinct");
 assert.ok(new Set(GLOBE_MOCK_ENTRIES.map(entry => entry.thumbnail?.path)).size >= 10, "the demo globe needs a varied image pool");
 await Promise.all(GLOBE_MOCK_ENTRIES.map(entry => readFile(new URL(`../public${entry.thumbnail?.path}`, import.meta.url))));
+assert.deepEqual(DEV_FIXTURE_HUMAN_ENTRIES, GLOBE_MOCK_ENTRIES, "archive and globe must use the same complete demo Humans");
+assert.ok(DEV_FIXTURE_HUMAN_ENTRIES.every(entry => entry.person?.firstName && entry.person.location), "demo archive must contain people, not blank content fragments");
 assert.equal(shouldShowGlobeMocks("production", "true"), false, "demo Humans must fail closed in production");
 assert.equal(shouldShowGlobeMocks("development", undefined), true, "demo Humans should remain available for local development");
 assert.equal(shouldShowGlobeMocks("development", "false"), false, "demo Humans may be explicitly disabled during development");
