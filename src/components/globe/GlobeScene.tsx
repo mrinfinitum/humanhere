@@ -323,6 +323,17 @@ export function GlobeScene({
     : humans.findIndex(human => human.id === hoveredHumanId);
 
   useEffect(() => {
+    if (!(camera instanceof THREE.PerspectiveCamera)) return;
+    // Portrait screens need a wider cinematic lens. Keeping the desktop FOV
+    // on a narrow phone viewport crops the planet into an unreadable strip.
+    // This preserves the close-orbit scale while revealing enough curvature
+    // for the object to register immediately as Earth.
+    const portrait = size.height / Math.max(size.width, 1) > 1.35;
+    camera.fov = size.width <= 760 ? (portrait ? 68 : 52) : size.width <= 900 ? 46 : 38;
+    camera.updateProjectionMatrix();
+  }, [camera, size.height, size.width]);
+
+  useEffect(() => {
     gl.setClearColor("#05070B", 1);
     gl.outputColorSpace = THREE.SRGBColorSpace;
     gl.toneMapping = THREE.ACESFilmicToneMapping;

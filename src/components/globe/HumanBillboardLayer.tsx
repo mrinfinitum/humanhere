@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/immutability -- Three.js materials, refs and typed buffers are intentionally updated in the render loop. */
 "use client";
 
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { HUMAN_SURFACE_RADIUS, latLngToVector3 } from "./coordinates";
@@ -128,6 +128,7 @@ export function HumanBillboardLayer({
   const groupsRef = useRef(new Map<string, THREE.Group>());
   const spritesRef = useRef(new Map<string, THREE.Sprite>());
   const candidateSlots = useMemo(() => new Int16Array(humans.length).fill(-1), [humans.length]);
+  const { size: viewportSize } = useThree();
 
   const isActive = useCallback((humanId: string) => {
     const candidateIndex = indexById.get(humanId);
@@ -164,7 +165,8 @@ export function HumanBillboardLayer({
       const opticalOpacity = Math.min(1, slot.coreOpacity * 0.52 + slot.innerOpacity * 0.3 + slot.haloOpacity * 0.18);
       placement.flareMaterial.opacity = opticalOpacity * interactionIntensity * slot.intensity;
       placement.columnMaterial.opacity = slot.innerOpacity * (selected ? 0.94 : hovered ? 0.82 : 0.68);
-      const baseSize = selected ? 0.036 : hovered ? 0.032 : 0.029;
+      const responsiveScale = viewportSize.width <= 760 ? 1.9 : viewportSize.width <= 900 ? 1.3 : 1;
+      const baseSize = (selected ? 0.036 : hovered ? 0.032 : 0.029) * responsiveScale;
       const size = baseSize * placement.variation * slot.scale;
       sprite.scale.set(size, size, 1);
     }

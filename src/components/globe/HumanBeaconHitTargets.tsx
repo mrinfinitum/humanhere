@@ -1,6 +1,6 @@
 "use client";
 
-import { useFrame, type ThreeEvent } from "@react-three/fiber";
+import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { GlobeHover, GlobeHuman } from "./types";
@@ -21,9 +21,13 @@ type Props = {
  */
 export function HumanBeaconHitTargets({ humans, positionFor, isActive, onHover, onHoverEnd, onSelect, debug }: Props) {
   const targetsRef = useRef(new Map<string, THREE.Mesh>());
-  // The parent Earth scale makes this roughly a 38px desktop hit target while
-  // the visible flare remains much smaller.
-  const geometry = useMemo(() => new THREE.SphereGeometry(0.019, 14, 10), []);
+  const { size } = useThree();
+  // The wider mobile camera preserves the Earth composition, so touch targets
+  // receive a larger world-space radius while remaining visually invisible.
+  const geometry = useMemo(
+    () => new THREE.SphereGeometry(size.width <= 760 ? 0.07 : size.width <= 900 ? 0.035 : 0.019, 14, 10),
+    [size.width],
+  );
   const material = useMemo(() => new THREE.MeshBasicMaterial({
     color: debug ? "#ff335f" : "#000000",
     transparent: true,

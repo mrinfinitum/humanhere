@@ -554,20 +554,23 @@ button { cursor: pointer; }
 
 @media (max-width: 760px) {
   .human-globe-shell { min-height: 560px; }
-  .human-globe-chrome { display: block; min-height: 76px; padding: 22px 16px; }
-  .human-globe-chrome nav { position: absolute; top: 58px; right: 15px; gap: 15px; font-size: 9px; }
-  .human-globe-chrome nav a.is-active::before { left: -8px; width: 3px; height: 3px; }
-  .human-wordmark { font-size: 17px; letter-spacing: .26em; }
-  .human-globe-copy { top: 20%; left: 20px; width: 260px; }
-  .human-globe-copy > p { margin-bottom: 24px; gap: 14px; font-size: 9px; letter-spacing: .32em; }
-  .human-globe-copy > p span { width: 20px; height: 20px; }
-  .human-globe-copy > p span::after { width: 3px; height: 3px; margin: 8px; }
-  .human-globe-copy h1 { font-size: clamp(29px, 9vw, 42px); letter-spacing: .21em; line-height: 1.08; }
-  .human-globe-copy small { margin: 20px 0 0; font-size: 9px; }
+  .human-globe-stage::after { background: radial-gradient(circle at 62% 51%, transparent 31%, rgb(5 7 11 / .04) 61%, rgb(5 7 11 / .34) 100%), linear-gradient(180deg, rgb(5 7 11 / .18) 0, transparent 22%, transparent 67%, rgb(5 7 11 / .74) 100%); }
+  .human-globe-chrome { display: block; min-height: 112px; padding: 21px 18px; background: linear-gradient(180deg, rgb(5 7 11 / .8), rgb(5 7 11 / .3) 70%, transparent); }
+  .human-globe-chrome nav { position: absolute; top: 66px; right: 18px; left: 18px; justify-content: space-between; gap: 0; padding-top: 12px; border-top: 1px solid rgb(242 235 221 / .14); font-size: 11px; letter-spacing: .16em; }
+  .human-globe-chrome nav a.is-active::before { top: -13px; left: 50%; width: 4px; height: 4px; transform: translate(-50%, -50%); }
+  .human-wordmark { font-size: clamp(22px, 6.2vw, 27px); letter-spacing: .29em; }
+  .human-globe-copy { top: auto; bottom: 10.5%; left: 20px; width: min(330px, calc(100vw - 40px)); }
+  .human-globe-copy > p { margin-bottom: 23px; gap: 15px; font-size: 10px; letter-spacing: .3em; }
+  .human-globe-copy > p span { width: 22px; height: 22px; }
+  .human-globe-copy > p span::after { width: 4px; height: 4px; margin: 8px; }
+  .human-globe-copy h1 { font-size: clamp(35px, 10.5vw, 44px); letter-spacing: .2em; line-height: 1.06; }
+  .human-globe-copy small { margin: 20px 0 0; font-size: 10px; }
+  .human-globe-fallback > div { top: 14%; right: -26%; width: 146vw; }
   .human-globe-scale, .human-globe-orbit, .human-globe-footer a { display: none; }
-  .human-globe-footer { bottom: 20px; left: 18px; font-size: 9px; }
+  .human-globe-footer { bottom: 20px; left: 20px; font-size: 10px; }
+  .human-globe-footer span { gap: 15px; }
   .human-story-drawer-scrim { background: rgb(5 7 11 / .48); }
-  .human-story-drawer { top: 76px; width: 100%; height: calc(100svh - 76px); box-shadow: 0 -22px 70px rgb(0 0 0 / .42); animation-name: human-story-drawer-mobile-in; }
+  .human-story-drawer { top: 112px; width: 100%; height: calc(100svh - 112px); box-shadow: 0 -22px 70px rgb(0 0 0 / .42); animation-name: human-story-drawer-mobile-in; }
   @keyframes human-story-drawer-mobile-in { from { opacity: .5; transform: translate3d(0, 32px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
   .human-story-drawer > header { min-height: 58px; padding-inline: 18px; }
   .human-story-drawer > header > span { font-size: 11px; }
