@@ -44,6 +44,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   const [ready, setReady] = useState(false);
   const [webglAvailable, setWebglAvailable] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [mobileIntroSettled, setMobileIntroSettled] = useState(false);
   const selected = selectedHumanId === null
     ? null
     : globeHumans.find(human => human.id === selectedHumanId) ?? null;
@@ -129,6 +130,13 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
+    const delay = reducedMotion ? 0 : 1650;
+    const timer = window.setTimeout(() => setMobileIntroSettled(true), delay);
+    return () => window.clearTimeout(timer);
+  }, [ready, reducedMotion]);
+
+  useEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
     const wheel = (event: WheelEvent) => {
@@ -164,6 +172,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
 
   const beginInteraction = (event: ReactPointerEvent<HTMLElement>) => {
     if ((event.target as HTMLElement).closest("a, button")) return;
+    setMobileIntroSettled(true);
     controls.current.engaged = true;
     controls.current.dragging = true;
     controls.current.lastInteraction = performance.now();
@@ -267,7 +276,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   };
 
   return (
-    <main className={`human-globe-shell${selected ? " has-selection" : ""}${hovered ? " has-hover" : ""}`}>
+    <main className={`human-globe-shell${selected ? " has-selection" : ""}${hovered ? " has-hover" : ""}${mobileIntroSettled ? " is-mobile-intro-settled" : ""}`}>
       <section
         ref={stageRef}
         className="human-globe-stage"
