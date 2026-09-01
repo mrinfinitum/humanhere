@@ -23,7 +23,7 @@ function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(maximum, Math.max(minimum, value));
 }
 
-export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
+export function HumanGlobe({ humans, mode = "home" }: { humans: GlobeHuman[]; mode?: "home" | "world" }) {
   const globeHumans = useMemo(() => humans, [humans]);
   const hasPublishedHumans = globeHumans.length > 0;
   const stageRef = useRef<HTMLElement | null>(null);
@@ -44,7 +44,6 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   const [ready, setReady] = useState(false);
   const [webglAvailable, setWebglAvailable] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const [mobileIntroSettled, setMobileIntroSettled] = useState(false);
   const selected = selectedHumanId === null
     ? null
     : globeHumans.find(human => human.id === selectedHumanId) ?? null;
@@ -130,13 +129,6 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   }, []);
 
   useEffect(() => {
-    if (!ready) return;
-    const delay = reducedMotion ? 0 : 1650;
-    const timer = window.setTimeout(() => setMobileIntroSettled(true), delay);
-    return () => window.clearTimeout(timer);
-  }, [ready, reducedMotion]);
-
-  useEffect(() => {
     const stage = stageRef.current;
     if (!stage) return;
     const wheel = (event: WheelEvent) => {
@@ -172,7 +164,6 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
 
   const beginInteraction = (event: ReactPointerEvent<HTMLElement>) => {
     if ((event.target as HTMLElement).closest("a, button")) return;
-    setMobileIntroSettled(true);
     controls.current.engaged = true;
     controls.current.dragging = true;
     controls.current.lastInteraction = performance.now();
@@ -276,7 +267,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   };
 
   return (
-    <main className={`human-globe-shell${selected ? " has-selection" : ""}${hovered ? " has-hover" : ""}${mobileIntroSettled ? " is-mobile-intro-settled" : ""}`}>
+    <main className={`human-globe-shell is-${mode}${selected ? " has-selection" : ""}${hovered ? " has-hover" : ""}`}>
       <section
         ref={stageRef}
         className="human-globe-stage"
@@ -342,6 +333,12 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
         </nav>
       </header>
 
+      {mode === "home" && (
+        <Link className="human-globe-enter" href="/world">
+          Explore the globe <span aria-hidden="true">→</span>
+        </Link>
+      )}
+
       <section className="human-globe-copy" aria-labelledby="globe-headline">
         <p><span aria-hidden="true" />{hasPublishedHumans ? "Each light is a human" : "A living archive is beginning"}</p>
         <h1 id="globe-headline">People<br />need<br />people</h1>
@@ -367,7 +364,9 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
 
       <footer className="human-globe-footer">
         <span><i aria-hidden="true" />People need people.</span>
-        <Link href={hasPublishedHumans ? "/humans" : "/share"}>{hasPublishedHumans ? "Explore the archive →" : "Share your story →"}</Link>
+        <Link href={mode === "home" ? "/world" : hasPublishedHumans ? "/humans" : "/share"}>
+          {mode === "home" ? "Enter the globe →" : hasPublishedHumans ? "Explore the archive →" : "Share your story →"}
+        </Link>
       </footer>
 
       <div className="human-globe-orbit" aria-hidden="true"><i /><i /><span /></div>
