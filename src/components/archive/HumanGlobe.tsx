@@ -341,7 +341,7 @@ export function HumanGlobe({ humans, mode = "home" }: { humans: GlobeHuman[]; mo
 
       {mode === "home" && (
         <Link className="human-globe-enter" href="/world">
-          Explore the globe <span aria-hidden="true">→</span>
+          Find people <span aria-hidden="true">→</span>
         </Link>
       )}
 
@@ -370,9 +370,11 @@ export function HumanGlobe({ humans, mode = "home" }: { humans: GlobeHuman[]; mo
 
       <footer className="human-globe-footer">
         <span><i aria-hidden="true" />People need people.</span>
-        <Link href={mode === "home" ? "/world" : hasPublishedHumans ? "/humans" : "/share"}>
-          {mode === "home" ? "Enter the globe →" : hasPublishedHumans ? "Explore the archive →" : "Share your story →"}
-        </Link>
+        {mode === "world" && (
+          <Link href={hasPublishedHumans ? "/humans" : "/share"}>
+            {hasPublishedHumans ? "Explore the archive →" : "Share your story →"}
+          </Link>
+        )}
       </footer>
 
       <div className="human-globe-orbit" aria-hidden="true"><i /><i /><span /></div>

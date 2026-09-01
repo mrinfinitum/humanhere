@@ -60,7 +60,10 @@ button { cursor: pointer; }
 .human-globe-footer span i { display: block; width: 8px; height: 8px; border-radius: 50%; background: #315dff; box-shadow: 0 0 10px #315dff; }
 .human-globe-footer a { color: rgb(242 235 221 / .45); transition: color 180ms ease; }
 .human-globe-footer a:hover, .human-globe-footer a:focus-visible { color: var(--human-paper); }
-.human-globe-enter { display: none; }
+.human-globe-enter { position: fixed; right: 5%; bottom: 7.2%; z-index: 31; display: flex; min-width: 250px; min-height: 64px; padding: 0 24px; border: 1px solid rgb(242 235 221 / .38); align-items: center; justify-content: space-between; gap: 32px; background: rgb(5 7 11 / .68); color: var(--human-paper); font-size: 14px; font-weight: 560; letter-spacing: .18em; text-transform: uppercase; backdrop-filter: blur(14px); transition: border-color 180ms ease, background 180ms ease, transform 180ms ease; }
+.human-globe-enter:hover, .human-globe-enter:focus-visible { border-color: rgb(90 118 240 / .88); background: rgb(9 13 28 / .82); transform: translateY(-2px); }
+.human-globe-enter span { color: #5a76f0; font-size: 22px; font-weight: 350; }
+.human-globe-shell.is-home .human-globe-orbit { display: none; }
 .human-globe-shell.is-world .human-globe-copy { display: none; }
 .human-globe-shell.is-world .human-globe-footer { bottom: 30px; left: 30px; }
 .human-globe-orbit { position: fixed; right: 4.1%; bottom: 10.5%; z-index: 12; width: 74px; height: 74px; border: 1px solid rgb(242 235 221 / .24); border-radius: 50%; pointer-events: none; }
@@ -78,6 +81,17 @@ button { cursor: pointer; }
 .human-globe-fallback { position: absolute; inset: 0; z-index: 1; display: grid; place-content: center; place-items: center; background: radial-gradient(circle at 66% 56%, rgb(48 70 165 / .18), transparent 28%), #05070b; }
 .human-globe-fallback > div { position: absolute; top: -12%; right: -12%; width: min(86vw, 1080px); aspect-ratio: 1; border: 1px solid rgb(77 115 255 / .36); border-radius: 50%; background: radial-gradient(circle at 30% 26%, rgb(242 235 221 / .1), transparent 25%), radial-gradient(circle at 54% 50%, #11182a, #05070b 68%); box-shadow: 0 0 42px rgb(48 70 165 / .15); }
 .human-globe-fallback > div i { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: var(--human-paper); box-shadow: 0 0 7px var(--human-paper); }
+
+@media (min-width: 901px) {
+  .human-globe-shell.is-home .human-globe-chrome { min-height: 126px; padding-inline: 42px; }
+  .human-globe-shell.is-home .human-wordmark { font-size: clamp(30px, 2.55vw, 41px); }
+  .human-globe-shell.is-home .human-globe-chrome nav { gap: clamp(42px, 4.6vw, 78px); font-size: 13px; }
+  .human-globe-shell.is-home .human-globe-copy { top: 29%; width: 570px; }
+  .human-globe-shell.is-home .human-globe-copy > p { margin-bottom: 52px; font-size: 13px; }
+  .human-globe-shell.is-home .human-globe-copy h1 { font-size: clamp(60px, 5.2vw, 84px); letter-spacing: .21em; line-height: 1.04; }
+  .human-globe-shell.is-home .human-globe-footer { bottom: 7.8%; font-size: 12px; }
+  .human-globe-shell.is-home .human-globe-enter { min-width: 330px; min-height: 72px; padding-inline: 30px; font-size: 16px; }
+}
 
 /* The globe remains in place while one public Human story opens editorially. */
 .human-story-drawer-layer { position: fixed; inset: 0; z-index: 50; color: var(--human-ink); }
@@ -600,8 +614,7 @@ button { cursor: pointer; }
   .human-globe-footer { bottom: 20px; left: 20px; font-size: 10px; opacity: 1; }
   .human-globe-footer span { gap: 15px; }
   .human-globe-shell.is-home .human-globe-footer { display: none; }
-  .human-globe-shell.is-home .human-globe-enter { position: fixed; right: 20px; bottom: 22px; z-index: 31; display: flex; min-height: 48px; padding: 0 18px; border: 1px solid rgb(242 235 221 / .34); align-items: center; gap: 18px; background: rgb(5 7 11 / .62); color: var(--human-paper); font-size: 11px; font-weight: 530; letter-spacing: .16em; text-transform: uppercase; backdrop-filter: blur(12px); }
-  .human-globe-shell.is-home .human-globe-enter span { color: #5a76f0; font-size: 18px; }
+  .human-globe-shell.is-home .human-globe-enter { right: 20px; bottom: 22px; left: 20px; min-width: 0; min-height: 64px; padding: 0 24px; font-size: 14px; }
   .human-globe-shell.is-world .human-globe-footer { right: 20px; bottom: 20px; left: auto; }
   .human-story-drawer-scrim { background: rgb(5 7 11 / .48); }
   .human-story-drawer { top: 102px; width: 100%; height: calc(100svh - 102px); box-shadow: 0 -22px 70px rgb(0 0 0 / .42); animation-name: human-story-drawer-mobile-in; }
