@@ -273,6 +273,7 @@ export function GlobeScene({
   hoveredHumanId,
   controls,
   reducedMotion,
+  interactive,
   debugProjectionRef,
   debugWorldRef,
   onHover,
@@ -285,6 +286,7 @@ export function GlobeScene({
   hoveredHumanId: string | null;
   controls: MutableRefObject<GlobeControls>;
   reducedMotion: boolean;
+  interactive: boolean;
   debugProjectionRef: RefObject<HTMLElement | null>;
   debugWorldRef: RefObject<HTMLElement | null>;
   onHover: (hover: GlobeHover) => void;
@@ -405,6 +407,7 @@ export function GlobeScene({
           selectedHumanId={selectedHumanId}
           hoveredHumanId={hoveredHumanId}
           discoveryManager={discoveryManager}
+          interactive={interactive}
           onHover={onHover}
           onSelect={onSelect}
           debug={GLOBE_DEBUG}

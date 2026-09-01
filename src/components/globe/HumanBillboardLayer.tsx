@@ -85,6 +85,7 @@ type Props = {
   selectedHumanId: string | null;
   hoveredHumanId: string | null;
   discoveryManager: HumanDiscoveryManager;
+  interactive: boolean;
   onHover: (hover: GlobeHover) => void;
   onSelect: (humanId: string) => void;
   debug: boolean;
@@ -96,6 +97,7 @@ export function HumanBillboardLayer({
   selectedHumanId,
   hoveredHumanId,
   discoveryManager,
+  interactive,
   onHover,
   onSelect,
   debug,
@@ -215,15 +217,17 @@ export function HumanBillboardLayer({
           </group>
         );
       })}
-      <HumanBeaconHitTargets
-        humans={humans}
-        positionFor={human => positionById.get(human.id) ?? new THREE.Vector3(100, 100, 100)}
-        isActive={isActive}
-        onHover={onHover}
-        onHoverEnd={() => onHover(null)}
-        onSelect={onSelect}
-        debug={debug}
-      />
+      {interactive && (
+        <HumanBeaconHitTargets
+          humans={humans}
+          positionFor={human => positionById.get(human.id) ?? new THREE.Vector3(100, 100, 100)}
+          isActive={isActive}
+          onHover={onHover}
+          onHoverEnd={() => onHover(null)}
+          onSelect={onSelect}
+          debug={debug}
+        />
+      )}
     </group>
   );
 }

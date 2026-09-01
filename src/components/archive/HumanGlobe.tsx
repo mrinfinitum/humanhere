@@ -25,6 +25,7 @@ function clamp(value: number, minimum: number, maximum: number) {
 
 export function HumanGlobe({ humans, mode = "home" }: { humans: GlobeHuman[]; mode?: "home" | "world" }) {
   const globeHumans = useMemo(() => humans, [humans]);
+  const interactive = mode === "world";
   const hasPublishedHumans = globeHumans.length > 0;
   const stageRef = useRef<HTMLElement | null>(null);
   const debugProjectionRef = useRef<HTMLElement | null>(null);
@@ -86,7 +87,7 @@ export function HumanGlobe({ humans, mode = "home" }: { humans: GlobeHuman[]; mo
   }, []);
 
   useEffect(() => {
-    if (deepLinkOpened.current || !globeHumans.length) return;
+    if (!interactive || deepLinkOpened.current || !globeHumans.length) return;
     deepLinkOpened.current = true;
     const url = new URL(window.location.href);
     const slug = url.searchParams.get("human");
@@ -100,7 +101,7 @@ export function HumanGlobe({ humans, mode = "home" }: { humans: GlobeHuman[]; mo
       window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [globeHumans, openStory]);
+  }, [globeHumans, interactive, openStory]);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -230,6 +231,7 @@ export function HumanGlobe({ humans, mode = "home" }: { humans: GlobeHuman[]; mo
   }, []);
 
   const selectHuman = useCallback((humanId: string) => {
+    if (!interactive) return;
     const human = globeHumans.find(candidate => candidate.id === humanId);
     if (!human) return;
     controls.current.engaged = true;
@@ -237,7 +239,7 @@ export function HumanGlobe({ humans, mode = "home" }: { humans: GlobeHuman[]; mo
     setSelectedHumanId(humanId);
     setHovered(null);
     void openStory(human);
-  }, [globeHumans, openStory]);
+  }, [globeHumans, interactive, openStory]);
 
   const sceneReady = useCallback(() => setReady(true), []);
   const updateActiveHumanIds = useCallback((next: string[]) => {
@@ -259,7 +261,7 @@ export function HumanGlobe({ humans, mode = "home" }: { humans: GlobeHuman[]; mo
       controls.current.lastInteraction = performance.now();
       controls.current.targetX = clamp(controls.current.targetX + (event.key === "ArrowUp" ? -step : step), -0.52, 0.52);
     }
-    if (event.key === "Enter" && activeHumanIds.length) {
+    if (interactive && event.key === "Enter" && activeHumanIds.length) {
       event.preventDefault();
       const activePosition = selectedHumanId === null ? -1 : activeHumanIds.indexOf(selectedHumanId);
       selectHuman(activeHumanIds[(activePosition + 1) % activeHumanIds.length]);
@@ -272,7 +274,9 @@ export function HumanGlobe({ humans, mode = "home" }: { humans: GlobeHuman[]; mo
         ref={stageRef}
         className="human-globe-stage"
         aria-label={hasPublishedHumans
-          ? "Living globe of published HUMAN:HERE stories. Drag or use arrow keys to rotate. Press Enter to meet a human."
+          ? interactive
+            ? "Living globe of published HUMAN:HERE stories. Drag or use arrow keys to rotate. Press Enter to meet a human."
+            : "Cinematic preview of the HUMAN:HERE world. Drag or use arrow keys to rotate, then enter the globe to meet people."
           : "HUMAN:HERE globe. The first consented stories are being prepared. Drag or use arrow keys to rotate."}
         tabIndex={0}
         onKeyDown={navigateGlobe}
@@ -289,6 +293,7 @@ export function HumanGlobe({ humans, mode = "home" }: { humans: GlobeHuman[]; mo
             gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
             raycaster={{ params: { Mesh: {}, Line: { threshold: 1 }, LOD: {}, Points: { threshold: 0.032 }, Sprite: {} } }}
             onPointerMissed={() => {
+              if (!interactive) return;
               if (lastInteractionWasDrag.current) {
                 lastInteractionWasDrag.current = false;
                 return;
@@ -304,6 +309,7 @@ export function HumanGlobe({ humans, mode = "home" }: { humans: GlobeHuman[]; mo
                 hoveredHumanId={hovered?.humanId ?? null}
                 controls={controls}
                 reducedMotion={reducedMotion}
+                interactive={interactive}
                 debugProjectionRef={debugProjectionRef}
                 debugWorldRef={debugWorldRef}
                 onHover={updateHover}
