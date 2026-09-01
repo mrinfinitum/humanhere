@@ -21,6 +21,9 @@ export type PublicHumanRow = {
   social_image_allowed: boolean;
   created_at: string;
   published_at: string;
+  public_latitude?: number | null;
+  public_longitude?: number | null;
+  public_location_precision?: "city" | "region" | "country" | null;
 };
 
 export function toHumanEntry(row: PublicHumanRow): HumanEntry {
@@ -33,6 +36,13 @@ export function toHumanEntry(row: PublicHumanRow): HumanEntry {
       displayName: row.anonymous ? "ANONYMOUS" : row.first_name ?? "ANONYMOUS",
       firstName: row.first_name ?? undefined,
       location: row.display_location ?? undefined,
+      coordinates: row.public_latitude != null && row.public_longitude != null && row.public_location_precision
+        ? {
+            latitude: Number(row.public_latitude),
+            longitude: Number(row.public_longitude),
+            precision: row.public_location_precision,
+          }
+        : undefined,
       anonymous: row.anonymous,
     } : undefined,
     thumbnail: row.thumbnail ?? undefined,

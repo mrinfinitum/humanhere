@@ -9,7 +9,17 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type PrivateMediaRow = { id: string; storage_path: string; mime_type: string; width: number | null; height: number | null; duration_seconds: number | null; blur_data_url: string | null; caption: string | null; media_type: string };
 
-export async function publishApprovedSubmission(submissionId: string, slug: string) {
+export type ApprovedPublicLocation = {
+  latitude: number;
+  longitude: number;
+  precision: "city" | "region" | "country";
+};
+
+export async function publishApprovedSubmission(
+  submissionId: string,
+  slug: string,
+  publicLocation?: ApprovedPublicLocation,
+) {
   await requireStaff(["editor", "admin"]);
   const admin = createSupabaseAdminClient();
   const [{ data: submission, error: submissionError }, { data: consent, error: consentError }] = await Promise.all([
@@ -48,11 +58,23 @@ export async function publishApprovedSubmission(submissionId: string, slug: stri
 
     const thumbnail = assets.find(asset => asset.kind === "image") ?? null;
     const supabase = await createSupabaseServerClient();
-    const { error } = await supabase.rpc("publish_submission", {
-      p_submission_id: submissionId, p_slug: slug, p_thumbnail: thumbnail as unknown as Json,
-      p_media: assets.length ? assets as unknown as Json : null, p_type: "story", p_layout: { size: "md" },
+    const publicationArgs = {
+      p_submission_id: submissionId,
+      p_slug: slug,
+      p_thumbnail: thumbnail as unknown as Json,
+      p_media: assets.length ? assets as unknown as Json : null,
+      p_type: "story" as const,
+      p_layout: { size: "md" },
       p_sensitive_story: false,
-    });
+    };
+    const { error } = publicLocation
+      ? await supabase.rpc("publish_submission_with_location", {
+          ...publicationArgs,
+          p_public_latitude: publicLocation.latitude,
+          p_public_longitude: publicLocation.longitude,
+          p_public_location_precision: publicLocation.precision,
+        })
+      : await supabase.rpc("publish_submission", publicationArgs);
     if (error) throw new Error(`Publication transaction failed: ${error.code}`);
     revalidatePublishedHuman(slug);
   } catch (error) {

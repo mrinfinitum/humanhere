@@ -37,6 +37,10 @@ function isPublicArchiveUnavailable(error: { code?: string } | null) {
   return error?.code === "PGRST205" || error?.code === "42P01";
 }
 
+function isPublicLocationSchemaUnavailable(error: { code?: string } | null) {
+  return error?.code === "PGRST204" || error?.code === "42703";
+}
+
 export async function getPublishedHumanBatch(query: ArchiveQuery = {}): Promise<ArchiveBatch> {
   "use cache";
   cacheLife("hours");
@@ -130,13 +134,36 @@ export async function getGlobeDiscoveryCandidates(limit = 96): Promise<HumanEntr
   const bounded = Math.min(Math.max(limit, 24), 120);
   if (!hasSupabasePublicEnvironment()) return developmentFallback({ limit: bounded }).entries;
 
-  const { data, error } = await createSupabasePublicClient()
+  const client = createSupabasePublicClient();
+  const locationResult = await client
     .from("human_entries_public")
-    .select(PUBLIC_COLUMNS)
+    // This is intentionally the public-safe view rather than the base table.
+    // Selecting the whole view keeps this deployment compatible both before
+    // and after the forward-only public-coordinate migration is applied.
+    .select("*")
+    .not("public_latitude", "is", null)
+    .not("public_longitude", "is", null)
     .order("featured", { ascending: false })
     .order("published_at", { ascending: false })
     .order("id", { ascending: false })
     .limit(bounded);
+  let data: unknown = locationResult.data;
+  let error = locationResult.error;
+
+  // Main can deploy before migration 006 is approved. In that short window,
+  // query the legacy public projection and fail closed: rows without explicit
+  // approved coordinates are removed by toGlobeHumans.
+  if (isPublicLocationSchemaUnavailable(error)) {
+    const legacyResult = await client
+      .from("human_entries_public")
+      .select(PUBLIC_COLUMNS)
+      .order("featured", { ascending: false })
+      .order("published_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(bounded);
+    data = legacyResult.data;
+    error = legacyResult.error;
+  }
 
   if (isPublicArchiveUnavailable(error)) return developmentFallback({ limit: bounded }).entries;
   if (error) throw new Error(`Globe discovery query failed: ${error.code}`);

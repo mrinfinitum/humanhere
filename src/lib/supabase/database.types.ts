@@ -63,6 +63,9 @@ export type Database = {
           social_image_allowed: boolean | null;
           created_at: string | null;
           published_at: string | null;
+          public_latitude: number | null;
+          public_longitude: number | null;
+          public_location_precision: Database["public"]["Enums"]["human_public_location_precision"] | null;
         };
         Relationships: [];
       };
@@ -91,6 +94,8 @@ export type Database = {
       current_account_role: { Args: Record<PropertyKey, never>; Returns: Database["public"]["Enums"]["account_role"] };
       is_staff: { Args: { allowed?: Database["public"]["Enums"]["account_role"][] }; Returns: boolean };
       publish_submission: { Args: { p_submission_id: string; p_slug: string; p_thumbnail: Json; p_media?: Json; p_type?: Database["public"]["Enums"]["human_entry_type"]; p_layout?: Json; p_sensitive_story?: boolean }; Returns: string };
+      publish_submission_with_location: { Args: { p_submission_id: string; p_slug: string; p_thumbnail: Json; p_media?: Json; p_type?: Database["public"]["Enums"]["human_entry_type"]; p_layout?: Json; p_sensitive_story?: boolean; p_public_latitude?: number; p_public_longitude?: number; p_public_location_precision?: Database["public"]["Enums"]["human_public_location_precision"] }; Returns: string };
+      set_human_entry_public_location: { Args: { p_human_entry_id: string; p_latitude?: number; p_longitude?: number; p_precision?: Database["public"]["Enums"]["human_public_location_precision"] }; Returns: string };
       revoke_owned_submission_consent: { Args: { p_submission_id: string }; Returns: string[] };
       unpublish_human_entry: { Args: { p_human_entry_id: string }; Returns: string };
       issue_social_creator_consent_token: { Args: { p_social_discovery_post_id: string; p_expires_in?: string }; Returns: string };
@@ -118,6 +123,7 @@ export type Database = {
       account_role: "user" | "moderator" | "editor" | "admin";
       human_entry_type: "portrait" | "story" | "note" | "video" | "audio" | "object" | "place" | "quote";
       human_entry_source: "direct" | "editorial" | "social";
+      human_public_location_precision: "city" | "region" | "country";
       help_need_type: "groceries" | "clothing" | "household" | "transportation" | "utilities" | "school" | "baby" | "employment" | "medical_nonclinical" | "housing" | "other";
       help_fulfillment_type: "goods" | "grocery" | "voucher" | "partner_service" | "other";
     };

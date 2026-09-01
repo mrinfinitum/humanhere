@@ -83,6 +83,25 @@ insert into public.human_entries (
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '20000000-0000-0000-0000-000000000002', true);
+
+do $$
+begin
+  begin
+    perform public.set_human_entry_public_location(
+      '30000000-0000-0000-0000-000000000003', 36.15398, -95.99277, 'city'
+    );
+    raise exception 'RLS FAILURE: normal user approved a globe location';
+  exception when raise_exception then
+    if sqlerrm = 'RLS FAILURE: normal user approved a globe location' then
+      raise;
+    end if;
+    if sqlerrm <> 'not authorized' then
+      raise;
+    end if;
+  end;
+end;
+$$;
+
 insert into public.human_entry_loves (human_entry_id, user_id)
 values ('30000000-0000-0000-0000-000000000003', auth.uid());
 
@@ -101,6 +120,14 @@ $$;
 select public.submit_private_note('30000000-0000-0000-0000-000000000003', 'I see you.');
 
 reset role;
+update public.human_entries
+set public_latitude = 36.15398,
+    public_longitude = -95.99277,
+    public_location_precision = 'city',
+    public_location_approved_at = now(),
+    public_location_approved_by = '10000000-0000-0000-0000-000000000001'
+where id = '30000000-0000-0000-0000-000000000003';
+
 do $$
 begin
   if (select love_count from public.human_entries where id = '30000000-0000-0000-0000-000000000003') <> 1 then
@@ -137,6 +164,15 @@ begin
   if (select count(*) from public.human_entries_public where slug = 'rls-test-human') <> 1 then
     raise exception 'RLS FAILURE: published public entry is not readable';
   end if;
+  if not exists (
+    select 1 from public.human_entries_public
+    where slug = 'rls-test-human'
+      and public_latitude = 36.15398
+      and public_longitude = -95.99277
+      and public_location_precision = 'city'
+  ) then
+    raise exception 'PUBLIC PROJECTION FAILURE: approved public coordinates are unavailable';
+  end if;
 end;
 $$;
 
@@ -146,7 +182,10 @@ begin
   if exists (
     select 1 from information_schema.columns
     where table_schema = 'public' and table_name = 'human_entries_public'
-      and column_name in ('public_name', 'age', 'source_url', 'subject_user_id', 'consent_verified')
+      and column_name in (
+        'public_name', 'age', 'source_url', 'subject_user_id', 'consent_verified',
+        'public_location_approved_at', 'public_location_approved_by'
+      )
   ) then
     raise exception 'PUBLIC PROJECTION FAILURE: private or unnecessary fields are exposed';
   end if;

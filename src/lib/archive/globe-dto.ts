@@ -3,37 +3,8 @@ import type { HumanEntry } from "./types";
 
 type Coordinate = [number, number];
 
-const PUBLIC_CITY_CENTROIDS: Record<string, Coordinate> = {
-  tulsa: [36.154, -95.993],
-  dallas: [32.777, -96.797],
-  atlanta: [33.749, -84.388],
-  chicago: [41.878, -87.63],
-  "los angeles": [34.052, -118.244],
-  "new york": [40.713, -74.006],
-  miami: [25.762, -80.192],
-  "mexico city": [19.433, -99.133],
-  "sao paulo": [-23.555, -46.633],
-  london: [51.507, -0.128],
-  nairobi: [-1.286, 36.818],
-  "cape town": [-33.925, 18.424],
-  lagos: [6.524, 3.379],
-  mumbai: [19.076, 72.878],
-  tokyo: [35.677, 139.65],
-  sydney: [-33.869, 151.209],
-  manila: [14.6, 120.984],
-};
-
 function normalized(value: string) {
   return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
-
-function hashUnit(value: string) {
-  let hash = 2166136261;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return ((hash >>> 0) % 10000) / 10000;
 }
 
 function publicCoordinate(entry: HumanEntry): Coordinate | null {
@@ -41,15 +12,7 @@ function publicCoordinate(entry: HumanEntry): Coordinate | null {
   if (explicit && ["city", "region", "country"].includes(explicit.precision)) {
     return [explicit.latitude, explicit.longitude];
   }
-
-  const publicLocation = normalized(entry.person?.location ?? "");
-  const match = Object.entries(PUBLIC_CITY_CENTROIDS).find(([city]) => publicLocation.includes(city));
-  if (!match) return null;
-
-  // Fixture records that share a city need slight, deterministic separation.
-  // Production points remain at their approved city/region centroid.
-  const jitter = entry.fixture ? (hashUnit(entry.id) - 0.5) * 1.05 : 0;
-  return [match[1][0] + jitter * 0.38, match[1][1] + jitter];
+  return null;
 }
 
 export function toGlobeHumans(entries: HumanEntry[], limit = 24): GlobeHuman[] {
