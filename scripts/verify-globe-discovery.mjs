@@ -26,6 +26,16 @@ assert.equal(shouldShowGlobeMocks("production", "true"), false, "demo Humans mus
 assert.equal(shouldShowGlobeMocks("development", undefined), true, "demo Humans should remain available for local development");
 assert.equal(shouldShowGlobeMocks("development", "false"), false, "demo Humans may be explicitly disabled during development");
 
+const repositorySource = await readFile(new URL("../src/lib/archive/repository.ts", import.meta.url), "utf8");
+const mockSource = await readFile(new URL("../src/lib/archive/globe-mocks.ts", import.meta.url), "utf8");
+const globeShellSource = await readFile(new URL("../src/components/archive/HumanGlobe.tsx", import.meta.url), "utf8");
+const archiveFieldSource = await readFile(new URL("../src/components/archive/ArchiveField.tsx", import.meta.url), "utf8");
+assert.match(repositorySource, /function developmentFallback[\s\S]*globeMocksEnabled\(\) \? fixtureBatch\(query\) : emptyBatch\(\)/, "archive fixtures must be gated behind the development-only mock policy");
+assert.doesNotMatch(repositorySource, /if \(!hasSupabasePublicEnvironment\(\)\) return fixtureBatch/, "missing production configuration must never reveal fixture Humans");
+assert.match(mockSource, /return globeMocksEnabled\(\) \? GLOBE_MOCK_ENTRIES\.find/, "fixture story lookup must also fail closed outside development");
+assert.match(globeShellSource, /The first consented stories are being prepared\./, "an empty production globe needs an honest consent-first state");
+assert.match(archiveFieldSource, /Nothing appears here until a person has chosen to be seen/, "an empty production archive must explain its publication boundary");
+
 function candidateSphere(count) {
   const goldenAngle = Math.PI * (3 - Math.sqrt(5));
   return Array.from({ length: count }, (_, index) => {

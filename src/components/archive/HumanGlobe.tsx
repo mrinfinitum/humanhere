@@ -25,6 +25,7 @@ function clamp(value: number, minimum: number, maximum: number) {
 
 export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
   const globeHumans = useMemo(() => humans, [humans]);
+  const hasPublishedHumans = globeHumans.length > 0;
   const stageRef = useRef<HTMLElement | null>(null);
   const debugProjectionRef = useRef<HTMLElement | null>(null);
   const debugWorldRef = useRef<HTMLElement | null>(null);
@@ -270,7 +271,9 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
       <section
         ref={stageRef}
         className="human-globe-stage"
-        aria-label="Living globe of published HUMAN:HERE stories. Drag or use arrow keys to rotate. Press Enter to meet a human."
+        aria-label={hasPublishedHumans
+          ? "Living globe of published HUMAN:HERE stories. Drag or use arrow keys to rotate. Press Enter to meet a human."
+          : "HUMAN:HERE globe. The first consented stories are being prepared. Drag or use arrow keys to rotate."}
         tabIndex={0}
         onKeyDown={navigateGlobe}
         onPointerDown={beginInteraction}
@@ -292,7 +295,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
               }
               setSelectedHumanId(null);
             }}
-            fallback={<GlobeFallback />}
+            fallback={<GlobeFallback hasHumans={hasPublishedHumans} />}
           >
             <Suspense fallback={null}>
               <GlobeScene
@@ -310,7 +313,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
               />
             </Suspense>
           </Canvas>
-        ) : <GlobeFallback />}
+        ) : <GlobeFallback hasHumans={hasPublishedHumans} />}
       </section>
 
       {!ready && webglAvailable && (
@@ -331,8 +334,9 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
       </header>
 
       <section className="human-globe-copy" aria-labelledby="globe-headline">
-        <p><span aria-hidden="true" />Each light is a human</p>
+        <p><span aria-hidden="true" />{hasPublishedHumans ? "Each light is a human" : "A living archive is beginning"}</p>
         <h1 id="globe-headline">People<br />need<br />people</h1>
+        {!hasPublishedHumans && <small>The first consented stories are being prepared.</small>}
       </section>
 
       <div className="human-globe-scale" aria-hidden="true">
@@ -354,7 +358,7 @@ export function HumanGlobe({ humans }: { humans: GlobeHuman[] }) {
 
       <footer className="human-globe-footer">
         <span><i aria-hidden="true" />People need people.</span>
-        <Link href="/humans">Explore the archive →</Link>
+        <Link href={hasPublishedHumans ? "/humans" : "/share"}>{hasPublishedHumans ? "Explore the archive →" : "Share your story →"}</Link>
       </footer>
 
       <div className="human-globe-orbit" aria-hidden="true"><i /><i /><span /></div>
@@ -380,11 +384,11 @@ function Wordmark() {
   return <Link className="human-wordmark" href="/" aria-label="HUMAN:HERE home">HUMAN<span>:</span>HERE</Link>;
 }
 
-function GlobeFallback() {
+function GlobeFallback({ hasHumans }: { hasHumans: boolean }) {
   return (
     <div className="human-globe-fallback">
-      <div role="img" aria-label="Static globe representing HUMAN:HERE stories around the world">
-        {Array.from({ length: 42 }, (_, index) => (
+      <div role="img" aria-label={hasHumans ? "Static globe representing HUMAN:HERE stories around the world" : "Static HUMAN:HERE globe awaiting its first published stories"}>
+        {hasHumans && Array.from({ length: 42 }, (_, index) => (
           <i
             key={index}
             style={{
@@ -394,8 +398,8 @@ function GlobeFallback() {
           />
         ))}
       </div>
-      <p>Every light is a human.</p>
-      <Link href="/humans">Meet the humans →</Link>
+      <p>{hasHumans ? "Every light is a human." : "The first stories are being prepared."}</p>
+      <Link href={hasHumans ? "/humans" : "/share"}>{hasHumans ? "Meet the humans →" : "Share your story →"}</Link>
     </div>
   );
 }

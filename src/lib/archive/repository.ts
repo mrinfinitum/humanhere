@@ -2,6 +2,7 @@ import "server-only";
 
 import { cacheLife, cacheTag } from "next/cache";
 import { DEV_FIXTURE_HUMAN_ENTRIES } from "./fixtures";
+import { globeMocksEnabled } from "./globe-mocks";
 import { decodeHumanCursor, encodeHumanCursor } from "./cursor";
 import { HUMAN_CACHE_TAGS } from "./cache";
 import { toHumanEntry, type PublicHumanRow } from "./public-dto";
@@ -24,6 +25,14 @@ function fixtureBatch(query: ArchiveQuery): ArchiveBatch {
   return { entries, nextCursor: next < filtered.length ? String(next) : null, total: filtered.length };
 }
 
+function emptyBatch(): ArchiveBatch {
+  return { entries: [], nextCursor: null, total: 0 };
+}
+
+function developmentFallback(query: ArchiveQuery): ArchiveBatch {
+  return globeMocksEnabled() ? fixtureBatch(query) : emptyBatch();
+}
+
 function isPublicArchiveUnavailable(error: { code?: string } | null) {
   return error?.code === "PGRST205" || error?.code === "42P01";
 }
@@ -33,7 +42,7 @@ export async function getPublishedHumanBatch(query: ArchiveQuery = {}): Promise<
   cacheLife("hours");
   cacheTag(HUMAN_CACHE_TAGS.list);
 
-  if (!hasSupabasePublicEnvironment()) return fixtureBatch(query);
+  if (!hasSupabasePublicEnvironment()) return developmentFallback(query);
 
   const limit = boundedLimit(query.limit);
   const cursor = decodeHumanCursor(query.cursor);
@@ -50,7 +59,7 @@ export async function getPublishedHumanBatch(query: ArchiveQuery = {}): Promise<
   }
 
   const { data, error } = await request;
-  if (isPublicArchiveUnavailable(error)) return fixtureBatch(query);
+  if (isPublicArchiveUnavailable(error)) return developmentFallback(query);
   if (error) throw new Error(`Public archive query failed: ${error.code}`);
   const rows = (data ?? []) as unknown as PublicHumanRow[];
   const hasNext = rows.length > limit;
@@ -68,9 +77,13 @@ export async function getPublishedHumanBySlug(slug: string): Promise<HumanEntry 
   cacheLife("hours");
   cacheTag(HUMAN_CACHE_TAGS.entry(slug));
 
-  if (!hasSupabasePublicEnvironment()) return DEV_FIXTURE_HUMAN_ENTRIES.find(entry => entry.slug === slug);
+  if (!hasSupabasePublicEnvironment()) {
+    return globeMocksEnabled() ? DEV_FIXTURE_HUMAN_ENTRIES.find(entry => entry.slug === slug) : undefined;
+  }
   const { data, error } = await createSupabasePublicClient().from("human_entries_public").select(PUBLIC_COLUMNS).eq("slug", slug).maybeSingle();
-  if (isPublicArchiveUnavailable(error)) return DEV_FIXTURE_HUMAN_ENTRIES.find(entry => entry.slug === slug);
+  if (isPublicArchiveUnavailable(error)) {
+    return globeMocksEnabled() ? DEV_FIXTURE_HUMAN_ENTRIES.find(entry => entry.slug === slug) : undefined;
+  }
   if (error) throw new Error(`Public story query failed: ${error.code}`);
   return data ? toHumanEntry(data as unknown as PublicHumanRow) : undefined;
 }
@@ -79,9 +92,13 @@ export async function getFeaturedHumans(limit = 24): Promise<HumanEntry[]> {
   "use cache";
   cacheLife("hours");
   cacheTag(HUMAN_CACHE_TAGS.featured, HUMAN_CACHE_TAGS.homepage);
-  if (!hasSupabasePublicEnvironment()) return DEV_FIXTURE_HUMAN_ENTRIES.filter(entry => entry.featured).slice(0, boundedLimit(limit));
+  if (!hasSupabasePublicEnvironment()) {
+    return globeMocksEnabled() ? DEV_FIXTURE_HUMAN_ENTRIES.filter(entry => entry.featured).slice(0, boundedLimit(limit)) : [];
+  }
   const { data, error } = await createSupabasePublicClient().from("human_entries_public").select(PUBLIC_COLUMNS).eq("featured", true).order("published_at", { ascending: false }).order("id", { ascending: false }).limit(boundedLimit(limit));
-  if (isPublicArchiveUnavailable(error)) return DEV_FIXTURE_HUMAN_ENTRIES.filter(entry => entry.featured).slice(0, boundedLimit(limit));
+  if (isPublicArchiveUnavailable(error)) {
+    return globeMocksEnabled() ? DEV_FIXTURE_HUMAN_ENTRIES.filter(entry => entry.featured).slice(0, boundedLimit(limit)) : [];
+  }
   if (error) throw new Error(`Featured archive query failed: ${error.code}`);
   return ((data ?? []) as unknown as PublicHumanRow[]).map(toHumanEntry);
 }
@@ -92,13 +109,12 @@ export async function getHomepageHumans(limit = 24): Promise<ArchiveBatch> {
   cacheTag(HUMAN_CACHE_TAGS.homepage);
   const bounded = boundedLimit(limit);
   const prototypeLimit = Math.min(Math.max(limit, 1), 96);
-  if (!hasSupabasePublicEnvironment()) return fixtureBatch({ limit: prototypeLimit });
+  if (!hasSupabasePublicEnvironment()) return developmentFallback({ limit: prototypeLimit });
   const [featured, recent] = await Promise.all([getFeaturedHumans(bounded), getPublishedHumanBatch({ limit: bounded })]);
   const entries = [...featured, ...recent.entries].filter((entry, index, all) => all.findIndex(candidate => candidate.id === entry.id) === index).slice(0, bounded);
-  // Keep the homepage visually useful before the first real story is published.
-  // These records are explicitly marked as fixtures in the public UI and never
-  // enter Supabase or masquerade as approved archive entries.
-  if (!entries.length || entries.every(entry => entry.fixture)) return fixtureBatch({ limit: prototypeLimit });
+  // Development may use visibly labelled fixtures before the first publication.
+  // Hosted production receives an honest empty result instead.
+  if (!entries.length || entries.every(entry => entry.fixture)) return developmentFallback({ limit: prototypeLimit });
   return { entries, nextCursor: recent.nextCursor };
 }
 
@@ -112,7 +128,7 @@ export async function getGlobeDiscoveryCandidates(limit = 96): Promise<HumanEntr
   cacheTag(HUMAN_CACHE_TAGS.homepage, HUMAN_CACHE_TAGS.list);
 
   const bounded = Math.min(Math.max(limit, 24), 120);
-  if (!hasSupabasePublicEnvironment()) return fixtureBatch({ limit: bounded }).entries;
+  if (!hasSupabasePublicEnvironment()) return developmentFallback({ limit: bounded }).entries;
 
   const { data, error } = await createSupabasePublicClient()
     .from("human_entries_public")
@@ -122,13 +138,12 @@ export async function getGlobeDiscoveryCandidates(limit = 96): Promise<HumanEntr
     .order("id", { ascending: false })
     .limit(bounded);
 
-  if (isPublicArchiveUnavailable(error)) return fixtureBatch({ limit: bounded }).entries;
+  if (isPublicArchiveUnavailable(error)) return developmentFallback({ limit: bounded }).entries;
   if (error) throw new Error(`Globe discovery query failed: ${error.code}`);
   const entries = ((data ?? []) as unknown as PublicHumanRow[]).map(toHumanEntry);
-  // Preserve the homepage's existing pre-launch behavior: fixture Humans keep
-  // the globe explorable until the first consented public entry is published.
-  // They remain code-only fixtures and are never written to Supabase.
-  return entries.length ? entries : fixtureBatch({ limit: bounded }).entries;
+  // Keep the globe explorable during local art-direction work only. Production
+  // never substitutes fictional Humans for an empty public archive.
+  return entries.length ? entries : developmentFallback({ limit: bounded }).entries;
 }
 
 async function getPublishedAdjacent(slug: string) {

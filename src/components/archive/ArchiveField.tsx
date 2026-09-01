@@ -47,6 +47,22 @@ function ArchiveIndex({ initialBatch }: { initialBatch: ArchiveBatch }) {
   const lead = entries.slice(0, 5);
   const remainder = entries.slice(5);
 
+  if (!entries.length) {
+    return (
+      <main className="human-field human-field--index human-field--empty" id="human-archive">
+        <ArchiveChrome count={0} total={0} />
+        <section className="archive-empty" aria-labelledby="archive-empty-title">
+          <p>Living archive · 000</p>
+          <h1 id="archive-empty-title">The first stories<br />are being prepared.</h1>
+          <div>
+            <p>Nothing appears here until a person has chosen to be seen, consent has been verified, and a human editor has approved the story.</p>
+            <a href="/share">Share your story →</a>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="human-field human-field--index" id="human-archive">
       <a className="archive-skip" href="#archive-progress">Skip archive objects</a>

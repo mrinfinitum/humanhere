@@ -82,5 +82,5 @@ export function globeMocksEnabled() {
 }
 
 export function getGlobeMockBySlug(slug: string) {
-  return GLOBE_MOCK_ENTRIES.find(entry => entry.slug === slug);
+  return globeMocksEnabled() ? GLOBE_MOCK_ENTRIES.find(entry => entry.slug === slug) : undefined;
 }
