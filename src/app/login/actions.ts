@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSiteUrl } from "@/lib/supabase/env";
+import { getAuthProviderAvailability } from "@/lib/auth/providers";
 
 function safeNext(value: FormDataEntryValue | null) {
   const path = typeof value === "string" ? value : "/account";
@@ -13,6 +14,8 @@ export async function signInWithOAuth(formData: FormData) {
   const value = formData.get("provider");
   if (value !== "google" && value !== "apple") redirect("/login?error=provider");
   const next = safeNext(formData.get("next"));
+  const available = await getAuthProviderAvailability();
+  if (!available[value]) redirect(`/login?error=provider-unavailable&next=${encodeURIComponent(next)}`);
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: value,
@@ -26,6 +29,8 @@ export async function signInWithMagicLink(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const next = safeNext(formData.get("next"));
   if (!/^\S+@\S+\.\S+$/.test(email)) redirect(`/login?error=email&next=${encodeURIComponent(next)}`);
+  const available = await getAuthProviderAvailability();
+  if (!available.email) redirect(`/login?error=email-unavailable&next=${encodeURIComponent(next)}`);
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.signInWithOtp({
     email,

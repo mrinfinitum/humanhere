@@ -9,6 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test:globe": "node --no-warnings scripts/verify-globe-discovery.mjs",
+    "test:auth": "node --no-warnings scripts/verify-auth-launch.mjs",
     "test:location": "node --no-warnings scripts/verify-public-globe-location.mjs",
     "test:help": "node --no-warnings scripts/verify-help-foundation.mjs",
     "test:help:remote": "node --no-warnings --env-file=.env.local scripts/verify-help-foundation-remote.mjs",
