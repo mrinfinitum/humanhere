@@ -30,7 +30,10 @@ class SupabaseSubmissionRepository implements SubmissionRepository {
     const { count, error: countError } = await client.from("submissions").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", since);
     if (countError) throw new Error(`Could not verify draft limit: ${countError.code}`);
     if ((count ?? 0) >= 10) throw new Error("Draft creation limit reached. Please continue an existing draft.");
-    const { data, error } = await client.from("submissions").insert({ user_id: userId, intent: intent ?? null, status: "draft" }).select(OWNED_COLUMNS).single();
+    // `status` is intentionally omitted. Authenticated users are not granted
+    // direct INSERT access to that workflow column; the database default and
+    // RLS policy establish every new submission as a draft.
+    const { data, error } = await client.from("submissions").insert({ user_id: userId, intent: intent ?? null }).select(OWNED_COLUMNS).single();
     if (error) throw new Error(`Could not create draft: ${error.code}`);
     return mapSubmission(data as unknown as SubmissionRow);
   }

@@ -36,4 +36,18 @@ assert.match(page, /providers\.google &&/, "Google must render only when enabled
 assert.match(page, /providers\.apple &&/, "Apple must render only when enabled remotely");
 assert.match(page, /providers\.email &&/, "email must render only when enabled remotely");
 
-console.log("Auth launch safeguards verified: fail-closed providers, server-side enforcement, and canonical HTTPS callbacks.");
+const submissionRepository = await readFile(new URL("../src/lib/submissions/repository.ts", import.meta.url), "utf8");
+assert.doesNotMatch(
+  submissionRepository,
+  /\.insert\(\{[^}]*status:/,
+  "draft creation must let the database default set status because authenticated users cannot insert that workflow column",
+);
+
+const submissionRoute = await readFile(new URL("../src/app/api/submissions/route.ts", import.meta.url), "utf8");
+assert.match(
+  submissionRoute,
+  /authentication_required[^\n]*status:\s*401/,
+  "draft creation must return a JSON 401 instead of redirecting fetch requests to HTML",
+);
+
+console.log("Auth launch safeguards verified: fail-closed providers, server-side enforcement, canonical HTTPS callbacks, and safe private-draft creation.");
