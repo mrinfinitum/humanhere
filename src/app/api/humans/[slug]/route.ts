@@ -1,5 +1,6 @@
 import { getGlobeMockBySlug } from "@/lib/archive/globe-mocks";
 import { getPublishedHumanBySlug } from "@/lib/archive/repository";
+import { getWorldDemoHumanBySlug } from "@/lib/archive/world-demo";
 
 const PUBLIC_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -11,7 +12,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
   // must resolve from the same source that placed them on the globe; otherwise
   // an empty Supabase archive produces clickable Humans that return a 404.
   const entry = slug.startsWith("globe-demo-")
-    ? getGlobeMockBySlug(slug)
+    ? getWorldDemoHumanBySlug(slug) ?? getGlobeMockBySlug(slug)
     : await getPublishedHumanBySlug(slug);
   if (!entry) return Response.json({ error: "Human not found." }, { status: 404 });
 

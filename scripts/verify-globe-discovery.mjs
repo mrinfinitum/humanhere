@@ -28,11 +28,18 @@ assert.equal(shouldShowGlobeMocks("development", "false"), false, "demo Humans m
 
 const repositorySource = await readFile(new URL("../src/lib/archive/repository.ts", import.meta.url), "utf8");
 const mockSource = await readFile(new URL("../src/lib/archive/globe-mocks.ts", import.meta.url), "utf8");
+const worldDemoSource = await readFile(new URL("../src/lib/archive/world-demo.ts", import.meta.url), "utf8");
+const worldPageSource = await readFile(new URL("../src/app/world/page.tsx", import.meta.url), "utf8");
+const humanApiSource = await readFile(new URL("../src/app/api/humans/[slug]/route.ts", import.meta.url), "utf8");
 const globeShellSource = await readFile(new URL("../src/components/archive/HumanGlobe.tsx", import.meta.url), "utf8");
 const archiveFieldSource = await readFile(new URL("../src/components/archive/ArchiveField.tsx", import.meta.url), "utf8");
 assert.match(repositorySource, /function developmentFallback[\s\S]*globeMocksEnabled\(\) \? fixtureBatch\(query\) : emptyBatch\(\)/, "archive fixtures must be gated behind the development-only mock policy");
 assert.doesNotMatch(repositorySource, /if \(!hasSupabasePublicEnvironment\(\)\) return fixtureBatch/, "missing production configuration must never reveal fixture Humans");
 assert.match(mockSource, /return globeMocksEnabled\(\) \? GLOBE_MOCK_ENTRIES\.find/, "fixture story lookup must also fail closed outside development");
+assert.match(worldDemoSource, /process\.env\.WORLD_DEMO_ENABLED !== "false"/, "the temporary World demonstration must retain a server-side real-data-only kill switch");
+assert.match(worldPageSource, /demoMode\s*\? getWorldDemoEntries\(\)/, "the World route must source its removable demonstration from the code-only fixture set");
+assert.match(humanApiSource, /getWorldDemoHumanBySlug\(slug\)/, "World demonstration Humans must resolve in the story drawer when selected");
+assert.match(globeShellSource, /Let me introduce you/, "the World experience must include its human invitation");
 assert.match(globeShellSource, /The first consented stories are being prepared\./, "an empty production globe needs an honest consent-first state");
 assert.match(archiveFieldSource, /Nothing appears here until a person has chosen to be seen/, "an empty production archive must explain its publication boundary");
 

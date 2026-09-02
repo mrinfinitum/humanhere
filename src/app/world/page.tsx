@@ -3,6 +3,7 @@ import { HumanGlobe } from "@/components/archive/HumanGlobe";
 import { toGlobeHumans } from "@/lib/archive/globe-dto";
 import { GLOBE_MOCK_ENTRIES, globeMocksEnabled } from "@/lib/archive/globe-mocks";
 import { getGlobeDiscoveryCandidates } from "@/lib/archive/repository";
+import { getWorldDemoEntries, worldDemoEnabled } from "@/lib/archive/world-demo";
 
 export const metadata: Metadata = {
   title: "Explore the World",
@@ -10,10 +11,14 @@ export const metadata: Metadata = {
 };
 
 export default async function WorldPage() {
-  const candidates = await getGlobeDiscoveryCandidates(96);
-  const humans = globeMocksEnabled()
-    ? toGlobeHumans(GLOBE_MOCK_ENTRIES, GLOBE_MOCK_ENTRIES.length)
-    : toGlobeHumans(candidates, 96);
+  const demoMode = worldDemoEnabled();
+  const developmentMocks = !demoMode && globeMocksEnabled();
+  const candidates = demoMode
+    ? getWorldDemoEntries()
+    : developmentMocks
+      ? GLOBE_MOCK_ENTRIES
+      : await getGlobeDiscoveryCandidates(96);
+  const humans = toGlobeHumans(candidates, demoMode || developmentMocks ? candidates.length : 96);
 
-  return <HumanGlobe humans={humans} mode="world" />;
+  return <HumanGlobe humans={humans} mode="world" demoMode={demoMode} />;
 }

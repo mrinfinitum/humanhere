@@ -23,7 +23,15 @@ function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(maximum, Math.max(minimum, value));
 }
 
-export function HumanGlobe({ humans, mode = "home" }: { humans: GlobeHuman[]; mode?: "home" | "world" }) {
+export function HumanGlobe({
+  humans,
+  mode = "home",
+  demoMode = false,
+}: {
+  humans: GlobeHuman[];
+  mode?: "home" | "world";
+  demoMode?: boolean;
+}) {
   const globeHumans = useMemo(() => humans, [humans]);
   const interactive = mode === "world";
   const hasPublishedHumans = globeHumans.length > 0;
@@ -350,6 +358,14 @@ export function HumanGlobe({ humans, mode = "home" }: { humans: GlobeHuman[]; mo
         <h1 id="globe-headline">People<br />need<br />people</h1>
         {!hasPublishedHumans && <small>The first consented stories are being prepared.</small>}
       </section>
+
+      {mode === "world" && hasPublishedHumans && (
+        <section className="human-world-intro" aria-labelledby="world-intro-title">
+          {demoMode && <small>Demonstration world</small>}
+          <h1 id="world-intro-title">Let me introduce you<br />{" "}to someone.</h1>
+          <p><span aria-hidden="true" />Choose a human light</p>
+        </section>
+      )}
 
       <div className="human-globe-scale" aria-hidden="true">
         <b>0</b><i /><i /><span /><i /><i /><b>5</b>
