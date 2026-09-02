@@ -143,7 +143,7 @@ export function HumanStoryDrawer({ entry, loading, error, onClose, onRetry }: Pr
                   <button className="human-story-note-action" type="button" onClick={beginNote} aria-expanded={noteOpen}>
                     <span aria-hidden="true">↗</span>
                     <b>Leave a note</b>
-                    <small>A few words can matter.</small>
+                    <strong>A few words can matter.</strong>
                   </button>
                 )}
               </div>

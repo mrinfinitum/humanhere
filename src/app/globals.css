@@ -130,8 +130,8 @@ button { cursor: pointer; }
 .human-story-actions-primary > button > span svg { display: block; width: 100%; height: 100%; }
 .human-story-actions-primary > button > b { align-self: end; font-size: 11px; font-weight: 520; letter-spacing: .16em; text-transform: uppercase; }
 .human-story-actions-primary > button > small { align-self: end; font-size: 18px; font-weight: 580; letter-spacing: .03em; line-height: 1; }
-.human-story-actions-primary > .human-story-note-action > b { font-size: 14px; font-weight: 560; letter-spacing: .12em; }
-.human-story-actions-primary > .human-story-note-action > small { max-width: 13ch; font-size: 17px; font-weight: 430; letter-spacing: -.015em; line-height: 1.08; }
+.human-story-actions-primary > .human-story-note-action > b { font-size: 13px; font-weight: 620; letter-spacing: .13em; }
+.human-story-actions-primary > .human-story-note-action > strong { max-width: 12ch; align-self: end; grid-column: 1 / -1; font-size: clamp(25px, 2.15vw, 32px); font-weight: 720; letter-spacing: -.035em; line-height: .96; }
 .human-story-actions-fixture { padding: 25px 0; border-top: 1px solid rgb(23 23 22 / .2); border-bottom: 1px solid rgb(23 23 22 / .2); }
 .human-story-actions-fixture span, .human-story-note-success > span { color: var(--lapis); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; }
 .human-story-actions-fixture p { max-width: 45ch; margin: 12px 0 0; color: rgb(23 23 22 / .65); font-size: 12px; line-height: 1.5; }
@@ -637,6 +637,8 @@ button { cursor: pointer; }
   .human-story-actions-primary { grid-template-columns: 1fr; }
   .human-story-actions-primary > button { min-height: 92px; }
   .human-story-actions-primary > button + button { border-top: 1px solid rgb(23 23 22 / .22); border-left: 0; }
+  .human-story-actions-primary > .human-story-note-action { min-height: 132px; }
+  .human-story-actions-primary > .human-story-note-action > strong { font-size: clamp(27px, 8.2vw, 34px); }
   .human-story-note-form, .human-story-note-success { padding: 24px 18px; }
   .human-story-note-form > div { display: block; }
   .human-story-note-form > div span { display: block; margin-top: 10px; }
