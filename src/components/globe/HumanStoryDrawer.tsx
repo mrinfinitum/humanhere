@@ -23,7 +23,7 @@ export function HumanStoryDrawer({ entry, loading, error, onClose, onRetry }: Pr
   const [noteSubmitted, setNoteSubmitted] = useState(false);
   const [noteError, setNoteError] = useState<string | null>(null);
   const love = useHumanLove({
-    humanId: entry?.id ?? "loading",
+    humanId: entry?.id ?? null,
     slug: entry?.slug ?? "",
     initialCount: entry?.loveCount ?? 0,
     fixture: Boolean(entry?.fixture),

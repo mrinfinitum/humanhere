@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 type HumanLoveOptions = {
-  humanId: string;
+  humanId: string | null;
   slug: string;
   initialCount: number;
   fixture: boolean;
@@ -34,6 +34,8 @@ export function useHumanLove({ humanId, slug, initialCount, fixture }: HumanLove
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!humanId) return;
+
     if (fixture) {
       const frame = window.requestAnimationFrame(() => {
         let saved = false;
@@ -73,7 +75,7 @@ export function useHumanLove({ humanId, slug, initialCount, fixture }: HumanLove
   }, [router, slug]);
 
   const toggle = useCallback(async () => {
-    if (pending) return;
+    if (!humanId || pending) return;
     setError(null);
 
     if (fixture) {

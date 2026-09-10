@@ -32,6 +32,8 @@ const worldDemoSource = await readFile(new URL("../src/lib/archive/world-demo.ts
 const worldPageSource = await readFile(new URL("../src/app/world/page.tsx", import.meta.url), "utf8");
 const humanApiSource = await readFile(new URL("../src/app/api/humans/[slug]/route.ts", import.meta.url), "utf8");
 const globeShellSource = await readFile(new URL("../src/components/archive/HumanGlobe.tsx", import.meta.url), "utf8");
+const storyDrawerSource = await readFile(new URL("../src/components/globe/HumanStoryDrawer.tsx", import.meta.url), "utf8");
+const humanLoveSource = await readFile(new URL("../src/components/globe/useHumanLove.ts", import.meta.url), "utf8");
 const archiveFieldSource = await readFile(new URL("../src/components/archive/ArchiveField.tsx", import.meta.url), "utf8");
 assert.match(repositorySource, /function developmentFallback[\s\S]*globeMocksEnabled\(\) \? fixtureBatch\(query\) : emptyBatch\(\)/, "archive fixtures must be gated behind the development-only mock policy");
 assert.doesNotMatch(repositorySource, /if \(!hasSupabasePublicEnvironment\(\)\) return fixtureBatch/, "missing production configuration must never reveal fixture Humans");
@@ -41,6 +43,9 @@ assert.match(worldPageSource, /demoMode\s*\? getWorldDemoEntries\(\)/, "the Worl
 assert.match(humanApiSource, /getWorldDemoHumanBySlug\(slug\)/, "World demonstration Humans must resolve in the story drawer when selected");
 assert.match(globeShellSource, /Let me introduce you/, "the World experience must include its human invitation");
 assert.match(globeShellSource, /The first consented stories are being prepared\./, "an empty production globe needs an honest consent-first state");
+assert.match(storyDrawerSource, /humanId: entry\?\.id \?\? null/, "the loading story drawer must not invent a Human ID");
+assert.match(humanLoveSource, /if \(!humanId\) return;/, "love requests must remain idle until a Human is loaded");
+assert.doesNotMatch(storyDrawerSource, /humanId: entry\?\.id \?\? ["']loading["']/, "the loading story drawer must never request a placeholder Human");
 assert.match(archiveFieldSource, /Nothing appears here until a person has chosen to be seen/, "an empty production archive must explain its publication boundary");
 
 function candidateSphere(count) {
