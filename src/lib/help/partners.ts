@@ -3,13 +3,13 @@ import "server-only";
 import { assertShowUpEnabled, isShowUpEnabled } from "./config";
 import { requireHelpStaff } from "./permissions";
 import type { PartnerAssignmentInput } from "./types";
-import { createSupabasePublicClient } from "@/lib/supabase/public";
+import { createPublicDatabaseClient } from "@/lib/neon/public";
 
 const PUBLIC_PARTNER_COLUMNS = "id,name,slug,partner_type,city,state,country,public_contact_name,public_website,can_verify_needs,can_receive_deliveries,can_fulfill_needs";
 
 export async function listPublicHelpPartners() {
   if (!isShowUpEnabled()) return [];
-  const { data, error } = await createSupabasePublicClient().from("help_partners_public").select(PUBLIC_PARTNER_COLUMNS).order("name").limit(100);
+  const { data, error } = await createPublicDatabaseClient().from("help_partners_public").select(PUBLIC_PARTNER_COLUMNS).order("name").limit(100);
   if (error) throw new Error(`Public help partner query failed: ${error.code}`);
   return data ?? [];
 }

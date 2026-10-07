@@ -22,7 +22,7 @@ export type GlobeMockStory = {
 /**
  * Fictional first-person fixtures for interaction and art-direction testing.
  * They simulate what someone might choose to post after signing in, but do not
- * represent actual people or accounts and never enter Supabase.
+ * represent actual people or accounts and never enter Neon.
  */
 export const GLOBE_MOCK_STORIES: GlobeMockStory[] = [
   {

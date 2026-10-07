@@ -19,7 +19,7 @@ async function LoginContent({ searchParams }: { searchParams: Promise<Record<str
   const sent = query.sent === "1";
   const error = typeof query.error === "string" ? AUTH_ERRORS[query.error] : undefined;
   const providers = await getAuthProviderAvailability();
-  const hasSignInMethod = providers.email || providers.google || providers.apple;
+  const hasSignInMethod = providers.email || providers.google;
   return (
     <main className="member-shell auth-page">
       <div className="member-atmosphere" aria-hidden="true"><i /><i /><i /></div>
@@ -47,7 +47,6 @@ async function LoginContent({ searchParams }: { searchParams: Promise<Record<str
           ) : (
             <div className="auth-methods">
               {providers.google && <form action={signInWithOAuth}><input type="hidden" name="provider" value="google" /><input type="hidden" name="next" value={next} /><button><span>Continue with Google</span><b aria-hidden="true">→</b></button></form>}
-              {providers.apple && <form action={signInWithOAuth}><input type="hidden" name="provider" value="apple" /><input type="hidden" name="next" value={next} /><button><span>Continue with Apple</span><b aria-hidden="true">→</b></button></form>}
               {providers.email && <form action={signInWithMagicLink} className="auth-email"><label htmlFor="login-email">Email address</label><input id="login-email" name="email" type="email" autoComplete="email" required placeholder="you@example.com" /><input type="hidden" name="next" value={next} /><button>Send a private link <span aria-hidden="true">→</span></button></form>}
               {!hasSignInMethod && <p className="auth-notice" role="status">Account access is temporarily unavailable. You can still explore every public Human story.</p>}
             </div>
@@ -55,7 +54,7 @@ async function LoginContent({ searchParams }: { searchParams: Promise<Record<str
           <footer><span>No password required.</span><span>Nothing publishes automatically.</span></footer>
         </section>
       </section>
-      <footer className="member-footer"><span><i aria-hidden="true" /> People need people.</span><small>Browsing never requires an account.</small></footer>
+      <footer className="member-footer"><span><i aria-hidden="true" /> People need people.</span><small><Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link></small></footer>
     </main>
   );
 }

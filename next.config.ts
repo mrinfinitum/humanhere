@@ -5,12 +5,12 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   reactCompiler: true,
   experimental: {
-    turbopackRustReactCompiler: true,
+    turbopackRustReactCompiler: Boolean(process.env.TURBOPACK),
   },
   images: {
     formats: ["image/avif", "image/webp"],
-    remotePatterns: process.env.NEXT_PUBLIC_SUPABASE_URL
-      ? [{ protocol: "https", hostname: new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname, pathname: "/storage/v1/object/public/published-media/**" }]
+    remotePatterns: process.env.NEXT_PUBLIC_MEDIA_BASE_URL
+      ? [{ protocol: "https", hostname: new URL(process.env.NEXT_PUBLIC_MEDIA_BASE_URL).hostname, pathname: `${new URL(process.env.NEXT_PUBLIC_MEDIA_BASE_URL).pathname.replace(/\/$/, "")}/**` }]
       : [],
   },
   async redirects() {

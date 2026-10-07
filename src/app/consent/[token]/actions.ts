@@ -1,14 +1,14 @@
 "use server";
 
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { createPublicDatabaseClient } from "@/lib/neon/public";
 import { redirect } from "next/navigation";
 
 export async function recordCreatorConsent(token: string, formData: FormData) {
   if (!/^[0-9a-f]{64}$/.test(token)) return;
-  const admin = createSupabaseAdminClient();
+  const database = createPublicDatabaseClient();
   const creatorEmail = String(formData.get("email") ?? "").trim().toLowerCase();
   if (!/^\S+@\S+\.\S+$/.test(creatorEmail)) return;
-  const { error } = await admin.rpc("accept_social_creator_consent", {
+  const { error } = await database.rpc("accept_social_creator_consent", {
     p_token: token,
     p_creator_name: String(formData.get("name") ?? "").trim().slice(0, 160),
     p_creator_email: creatorEmail,

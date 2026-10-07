@@ -4,7 +4,7 @@ import { toGlobeHumans } from "../src/lib/archive/globe-dto.ts";
 import { toHumanEntry } from "../src/lib/archive/public-dto.ts";
 
 const migration = await readFile(
-  new URL("../supabase/migrations/202608310006_public_globe_locations.sql", import.meta.url),
+  new URL("../db/migrations/202608310006_public_globe_locations.sql", import.meta.url),
   "utf8",
 );
 const repository = await readFile(new URL("../src/lib/archive/repository.ts", import.meta.url), "utf8");

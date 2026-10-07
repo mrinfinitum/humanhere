@@ -12,20 +12,27 @@
     "test:auth": "node --no-warnings scripts/verify-auth-launch.mjs",
     "test:location": "node --no-warnings scripts/verify-public-globe-location.mjs",
     "test:help": "node --no-warnings scripts/verify-help-foundation.mjs",
-    "test:help:remote": "node --no-warnings --env-file=.env.local scripts/verify-help-foundation-remote.mjs",
     "test:scale": "node scripts/scale-archive.mjs",
-    "test:rls": "supabase test db"
+    "test:rls": "node scripts/verify-neon-database.mjs",
+    "db:migrate": "node --env-file=.env.local scripts/migrate-neon.mjs",
+    "storage:setup": "node --env-file=.env.local scripts/setup-neon-storage.mjs",
+    "test:storage": "node --no-warnings scripts/verify-storage.mjs",
+    "storage:clean": "node --env-file=.env.local scripts/clean-orphaned-media.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1142.0",
+    "@aws-sdk/s3-request-presigner": "^3.1142.0",
+    "@neondatabase/auth": "^0.5.0-beta",
+    "@neondatabase/postgrest-js": "^0.2.0-beta",
+    "@neondatabase/serverless": "^1.1.0",
     "@react-three/fiber": "^9.7.0",
-    "@supabase/ssr": "^0.12.4",
-    "@supabase/supabase-js": "^2.112.3",
-    "next": "16.3.2",
+    "next": "16.3.8",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "three": "^0.185.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -33,8 +40,8 @@
     "@types/three": "^0.185.4",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
-    "eslint-config-next": "16.3.2",
-    "supabase": "^2.115.0",
+    "eslint-config-next": "16.3.8",
+    "pg": "^8.23.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

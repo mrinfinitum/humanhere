@@ -1,7 +1,7 @@
 import "server-only";
 
 import { requireStaff } from "@/lib/auth/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createDatabaseClient } from "@/lib/neon/server";
 import type { AdminQueueRow } from "@/components/admin/AdminQueue";
 
 type Cursor = { createdAt: string; id: string };
@@ -14,7 +14,7 @@ const decode = (value?: string): Cursor | undefined => {
 export async function getSubmissionQueue(cursorValue?: string) {
   await requireStaff();
   const cursor = decode(cursorValue);
-  let query = (await createSupabaseServerClient()).from("submissions").select("id,status,public_name,headline,created_at").neq("status", "draft").order("created_at").order("id").limit(41);
+  let query = (await createDatabaseClient()).from("submissions").select("id,status,public_name,headline,created_at").neq("status", "draft").order("created_at").order("id").limit(41);
   if (cursor) query = query.or(`created_at.gt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.gt.${cursor.id})`);
   const { data, error } = await query;
   if (error) throw new Error(`Submission queue failed: ${error.code}`);
@@ -26,7 +26,7 @@ export async function getSubmissionQueue(cursorValue?: string) {
 export async function getSocialQueue(cursorValue?: string) {
   await requireStaff();
   const cursor = decode(cursorValue);
-  let query = (await createSupabaseServerClient()).from("social_discovery_posts").select("id,platform,source_url,author_username,moderation_status,created_at").order("created_at").order("id").limit(41);
+  let query = (await createDatabaseClient()).from("social_discovery_posts").select("id,platform,source_url,author_username,moderation_status,created_at").order("created_at").order("id").limit(41);
   if (cursor) query = query.or(`created_at.gt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.gt.${cursor.id})`);
   const { data, error } = await query;
   if (error) throw new Error(`Social queue failed: ${error.code}`);
@@ -39,7 +39,7 @@ export async function getSocialQueue(cursorValue?: string) {
 export async function getConsentQueue(cursorValue?: string) {
   await requireStaff();
   const cursor = decode(cursorValue);
-  let query = (await createSupabaseServerClient()).from("consent_records").select("id,submission_id,verified_at,revoked_at,created_at").order("created_at").order("id").limit(41);
+  let query = (await createDatabaseClient()).from("consent_records").select("id,submission_id,verified_at,revoked_at,created_at").order("created_at").order("id").limit(41);
   if (cursor) query = query.or(`created_at.gt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.gt.${cursor.id})`);
   const { data, error } = await query;
   if (error) throw new Error(`Consent queue failed: ${error.code}`);
@@ -52,7 +52,7 @@ export async function getConsentQueue(cursorValue?: string) {
 export async function getRemovalQueue(cursorValue?: string) {
   await requireStaff();
   const cursor = decode(cursorValue);
-  let query = (await createSupabaseServerClient()).from("removal_requests").select("id,status,requester_name,requester_email,created_at").order("created_at").order("id").limit(41);
+  let query = (await createDatabaseClient()).from("removal_requests").select("id,status,requester_name,requester_email,created_at").order("created_at").order("id").limit(41);
   if (cursor) query = query.or(`created_at.gt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.gt.${cursor.id})`);
   const { data, error } = await query;
   if (error) throw new Error(`Removal queue failed: ${error.code}`);

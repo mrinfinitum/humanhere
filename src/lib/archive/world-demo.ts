@@ -7,7 +7,7 @@ import { GLOBE_MOCK_ENTRIES } from "./globe-mocks";
  *
  * The demonstration is intentionally on during this product-preview phase.
  * Setting the flag to "false" restores the real-data-only path without a code
- * change. The fixtures remain code-only and are never written to Supabase.
+ * change. The fixtures remain code-only and are never written to Neon.
  */
 export function worldDemoEnabled() {
   return process.env.WORLD_DEMO_ENABLED !== "false";

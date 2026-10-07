@@ -4,13 +4,13 @@ import { assertShowUpEnabled, isShowUpEnabled } from "./config";
 import { requireHelpStaff, requireHelpUser } from "./permissions";
 import { toPublicHumanNeed } from "./public-dto";
 import type { HelpNeedReviewInput, HumanNeedDraftInput, PublicHumanNeedRow } from "./types";
-import { createSupabasePublicClient } from "@/lib/supabase/public";
+import { createPublicDatabaseClient } from "@/lib/neon/public";
 
 const PUBLIC_NEED_COLUMNS = "id,human_entry_id,need_type,public_title,public_description,quantity_needed,quantity_fulfilled,public_status,created_at,updated_at,fulfilled_at";
 
 export async function listPublicNeedsForHuman(humanEntryId: string) {
   if (!isShowUpEnabled()) return [];
-  const { data, error } = await createSupabasePublicClient()
+  const { data, error } = await createPublicDatabaseClient()
     .from("human_needs_public")
     .select(PUBLIC_NEED_COLUMNS)
     .eq("human_entry_id", humanEntryId)

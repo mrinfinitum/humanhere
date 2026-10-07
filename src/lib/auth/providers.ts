@@ -1,46 +1,12 @@
 import "server-only";
 
-import { getSupabasePublicEnvironment, hasSupabasePublicEnvironment } from "@/lib/supabase/env";
+import { hasNeonAuthEnvironment } from "@/lib/neon/env";
 
-export type AuthProviderAvailability = {
-  email: boolean;
-  google: boolean;
-  apple: boolean;
-};
-
-const UNAVAILABLE: AuthProviderAvailability = {
-  email: false,
-  google: false,
-  apple: false,
-};
-
-export function parseAuthProviderAvailability(value: unknown): AuthProviderAvailability {
-  const external = value && typeof value === "object" && "external" in value
-    ? (value as { external?: unknown }).external
-    : null;
-  const settings = external && typeof external === "object"
-    ? external as Record<string, unknown>
-    : {};
-
+/** Keep these flags in sync with the methods enabled in Neon Auth. */
+export async function getAuthProviderAvailability() {
+  const configured = hasNeonAuthEnvironment();
   return {
-    email: settings.email === true,
-    google: settings.google === true,
-    apple: settings.apple === true,
+    email: configured && process.env.NEON_AUTH_MAGIC_LINK_ENABLED === "true",
+    google: configured && process.env.NEON_AUTH_GOOGLE_ENABLED === "true",
   };
-}
-
-export async function getAuthProviderAvailability(): Promise<AuthProviderAvailability> {
-  if (!hasSupabasePublicEnvironment()) return UNAVAILABLE;
-  const { url, publishableKey } = getSupabasePublicEnvironment();
-
-  try {
-    const response = await fetch(`${url}/auth/v1/settings`, {
-      headers: { apikey: publishableKey },
-      cache: "no-store",
-    });
-    if (!response.ok) return UNAVAILABLE;
-    return parseAuthProviderAvailability(await response.json());
-  } catch {
-    return UNAVAILABLE;
-  }
 }

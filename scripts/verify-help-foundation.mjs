@@ -38,7 +38,7 @@ for (const file of ["config.ts", "permissions.ts", "needs.ts", "recipient-profil
   assert.match(source, /^import "server-only";/, `${file} must remain server-only`);
 }
 
-const migration = await readFile(new URL("../supabase/migrations/202608260005_help_foundation.sql", import.meta.url), "utf8");
+const migration = await readFile(new URL("../db/migrations/202608260005_help_foundation.sql", import.meta.url), "utf8");
 for (const table of ["fulfillment_profiles", "human_needs", "help_partners", "human_need_partner_assignments", "fulfillment_orders", "sensitive_access_events"]) {
   assert.match(migration, new RegExp(`alter table public\\.${table} enable row level security;`), `${table} must have RLS`);
 }
@@ -60,7 +60,7 @@ const srcRoot = new URL("../src/", import.meta.url).pathname;
 for (const file of await sourceFiles(srcRoot)) {
   const source = await readFile(file, "utf8");
   if (source.includes('"use client"') || source.includes("'use client'")) {
-    assert.doesNotMatch(source, /SUPABASE_SERVICE_ROLE_KEY|supabase\/admin/, `client module imports privileged Supabase access: ${file}`);
+    assert.doesNotMatch(source, /DATABASE_URL|AWS_SECRET_ACCESS_KEY|neon\/admin/, `client module imports privileged Neon access: ${file}`);
   }
 }
 

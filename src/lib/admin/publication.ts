@@ -1,11 +1,12 @@
 import "server-only";
 
-import type { Json } from "@/lib/supabase/database.types";
+import type { Json } from "@/lib/neon/database.types";
 import type { MediaAsset } from "@/lib/archive/types";
 import { requireStaff } from "@/lib/auth/server";
 import { revalidatePublishedHuman } from "@/lib/archive/cache";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { adminSql } from "@/lib/neon/admin";
+import { publishObject, removeObjects, PUBLIC_BUCKET } from "@/lib/storage/server";
+import { createDatabaseClient } from "@/lib/neon/server";
 
 type PrivateMediaRow = { id: string; storage_path: string; mime_type: string; width: number | null; height: number | null; duration_seconds: number | null; blur_data_url: string | null; caption: string | null; media_type: string };
 
@@ -21,19 +22,17 @@ export async function publishApprovedSubmission(
   publicLocation?: ApprovedPublicLocation,
 ) {
   await requireStaff(["editor", "admin"]);
-  const admin = createSupabaseAdminClient();
-  const [{ data: submission, error: submissionError }, { data: consent, error: consentError }] = await Promise.all([
-    admin.from("submissions").select("status,media_withheld").eq("id", submissionId).maybeSingle(),
-    admin.from("consent_records").select("publish_story,publish_media,verified_at,verified_by,revoked_at").eq("submission_id", submissionId).order("created_at", { ascending: false }).order("id", { ascending: false }).limit(1).maybeSingle(),
+  const sql = adminSql();
+  const [submissions, consents] = await Promise.all([
+    sql`select status, media_withheld from public.submissions where id = ${submissionId}::uuid`,
+    sql`select publish_story, publish_media, verified_at, verified_by, revoked_at from public.consent_records where submission_id = ${submissionId}::uuid order by created_at desc, id desc limit 1`,
   ]);
-  if (submissionError || consentError) throw new Error(`Publication preflight failed: ${submissionError?.code ?? consentError?.code}`);
-  const publishableSubmission = submission as { status: string; media_withheld: boolean } | null;
-  const latestConsent = consent as { publish_story: boolean; publish_media: boolean; verified_at: string | null; verified_by: string | null; revoked_at: string | null } | null;
+  const publishableSubmission = submissions[0];
+  const latestConsent = consents[0];
   if (publishableSubmission?.status !== "approved" || !latestConsent?.publish_story || !latestConsent.verified_at || !latestConsent.verified_by || latestConsent.revoked_at) {
     throw new Error("Publication preflight failed: verified current consent is required");
   }
-  const { data: mediaRows, error: mediaError } = await admin.from("submission_media").select("id,storage_path,mime_type,width,height,duration_seconds,blur_data_url,caption,media_type").eq("submission_id", submissionId).order("sort_order");
-  if (mediaError) throw new Error(`Publication media query failed: ${mediaError.code}`);
+  const mediaRows = await sql`select id, storage_path, mime_type, width, height, duration_seconds, blur_data_url, caption, media_type from public.submission_media where submission_id = ${submissionId}::uuid order by sort_order`;
   if ((mediaRows?.length ?? 0) > 0 && (!latestConsent.publish_media || publishableSubmission.media_withheld)) {
     throw new Error("Publication preflight failed: media cannot be published");
   }
@@ -42,14 +41,15 @@ export async function publishApprovedSubmission(
   const assets: MediaAsset[] = [];
   try {
     for (const row of (mediaRows ?? []) as unknown as PrivateMediaRow[]) {
-      const filename = row.storage_path.split("/").at(-1) ?? row.id;
-      const destination = `${submissionId}/${row.id}-${filename}`;
-      const { error } = await admin.storage.from("submission-private").copy(row.storage_path, destination, { destinationBucket: "published-media" });
-      if (error) throw error;
+      // A fresh key per attempt keeps a failed or duplicate publication from
+      // deleting objects that another, successful attempt already made live.
+      const extension = row.storage_path.split(".").at(-1);
+      const destination = `${submissionId}/${crypto.randomUUID()}.${extension}`;
+      const { contentType } = await publishObject(row.storage_path, destination);
       copied.push(destination);
       assets.push({
-        id: row.id, provider: "supabase", path: destination, alt: row.caption ?? "HUMAN:HERE story media",
-        mimeType: row.mime_type, width: row.width ?? undefined, height: row.height ?? undefined,
+        id: row.id, provider: "neon", path: destination, alt: row.caption ?? "HUMAN:HERE story media",
+        mimeType: contentType ?? row.mime_type, width: row.width ?? undefined, height: row.height ?? undefined,
         duration: row.duration_seconds ? String(row.duration_seconds) : undefined,
         kind: row.media_type === "image" ? "image" : row.media_type === "video" ? "video" : row.media_type === "audio" ? "audio" : "text",
         caption: row.caption ?? undefined, blurDataUrl: row.blur_data_url ?? undefined,
@@ -57,7 +57,7 @@ export async function publishApprovedSubmission(
     }
 
     const thumbnail = assets.find(asset => asset.kind === "image") ?? null;
-    const supabase = await createSupabaseServerClient();
+    const database = await createDatabaseClient();
     const publicationArgs = {
       p_submission_id: submissionId,
       p_slug: slug,
@@ -68,17 +68,29 @@ export async function publishApprovedSubmission(
       p_sensitive_story: false,
     };
     const { error } = publicLocation
-      ? await supabase.rpc("publish_submission_with_location", {
+      ? await database.rpc("publish_submission_with_location", {
           ...publicationArgs,
           p_public_latitude: publicLocation.latitude,
           p_public_longitude: publicLocation.longitude,
           p_public_location_precision: publicLocation.precision,
         })
-      : await supabase.rpc("publish_submission", publicationArgs);
+      : await database.rpc("publish_submission", publicationArgs);
     if (error) throw new Error(`Publication transaction failed: ${error.code}`);
-    revalidatePublishedHuman(slug);
   } catch (error) {
-    if (copied.length) await admin.storage.from("published-media").remove(copied);
+    if (copied.length) await removeUnreferencedPublicCopies(submissionId, copied);
     throw error;
   }
+  revalidatePublishedHuman(slug);
+}
+
+// The transaction may have committed even when its response was lost, so only
+// remove copies that the submission's public entry does not reference.
+async function removeUnreferencedPublicCopies(submissionId: string, copied: string[]) {
+  const entries = await adminSql()`select thumbnail, media from public.human_entries where submission_id = ${submissionId}::uuid`;
+  const referenced = new Set(entries.flatMap(entry => {
+    const record = entry as { thumbnail?: MediaAsset | null; media?: MediaAsset[] | null };
+    return [record.thumbnail, ...(record.media ?? [])].map(asset => asset?.path);
+  }));
+  const orphaned = copied.filter(path => !referenced.has(path));
+  if (orphaned.length) await removeObjects(PUBLIC_BUCKET, orphaned);
 }

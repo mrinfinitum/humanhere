@@ -10,11 +10,11 @@ export type MediaVariant = "thumbnail" | "display" | "original" | "poster";
 export function resolveMediaUrl(asset: MediaAsset, variant: MediaVariant = "display") {
   if (asset.provider === "local") return asset.path;
 
-  if (asset.provider === "supabase") {
-    const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    if (!base) throw new Error("Supabase media delivery is not configured.");
+  if (asset.provider === "neon") {
+    const base = process.env.NEXT_PUBLIC_MEDIA_BASE_URL;
+    if (!base) throw new Error("Neon media delivery is not configured.");
     const normalizedPath = asset.path.replace(/^\/+/, "");
-    return `${base}/storage/v1/object/public/published-media/${normalizedPath}`;
+    return `${base.replace(/\/$/, "")}/${normalizedPath.split("/").map(encodeURIComponent).join("/")}`;
   }
 
   // Provider records may store a ready playback/delivery identifier during the

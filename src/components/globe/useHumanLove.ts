@@ -23,7 +23,7 @@ function fixtureLoveKey(humanId: string) {
 
 /**
  * One Love controller shared by the globe callout and story drawer.
- * Published Humans use Supabase; marked fixtures use session-only demo state.
+ * Published Humans use Neon; marked fixtures use session-only demo state.
  */
 export function useHumanLove({ humanId, slug, initialCount, fixture }: HumanLoveOptions) {
   const router = useRouter();

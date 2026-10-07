@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import type { SubmissionDraft } from "@/lib/submissions/types";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const TOTAL_STEPS = 6;
 const intents = [
@@ -107,19 +106,21 @@ export function ShareFlow({ initial }: { initial: SubmissionDraft }) {
   async function upload(file?: File) {
     if (!file) return;
     const allowed = ["image/jpeg", "image/png", "image/webp", "audio/mpeg", "audio/mp4", "audio/wav", "video/mp4", "video/quicktime", "application/pdf"];
-    if (!allowed.includes(file.type) || file.size > 50 * 1024 * 1024) { setUploadState("Choose an approved file under 50 MB."); return; }
+    // Safari and iOS voice memos often report legacy audio types.
+    const aliases: Record<string, string> = { "audio/x-m4a": "audio/mp4", "audio/m4a": "audio/mp4", "audio/x-wav": "audio/wav", "audio/wave": "audio/wav", "audio/mp3": "audio/mpeg" };
+    const contentType = aliases[file.type] ?? file.type;
+    if (!allowed.includes(contentType) || file.size > 50 * 1024 * 1024) { setUploadState("Choose an approved file under 50 MB."); return; }
     setUploadState("Uploading privately…");
     try {
-      const supabase = createSupabaseBrowserClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error();
-      const extension = file.name.split(".").pop()?.replace(/[^a-z0-9]/gi, "").toLowerCase() || "bin";
-      const path = `${user.id}/${draft.id}/${crypto.randomUUID()}.${extension}`;
-      const { error: uploadError } = await supabase.storage.from("submission-private").upload(path, file, { contentType: file.type, upsert: false });
-      if (uploadError) throw uploadError;
-      const mediaType = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : file.type.startsWith("audio/") ? "audio" : "document";
-      const { error: rowError } = await supabase.from("submission_media").insert({ submission_id: draft.id, media_type: mediaType, storage_path: path, mime_type: file.type, byte_size: file.size });
-      if (rowError) { await supabase.storage.from("submission-private").remove([path]); throw rowError; }
+      const endpoint = `/api/submissions/${draft.id}/media`;
+      const metadata = { contentType, size: file.size };
+      const prepared = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "prepare", ...metadata }) });
+      if (!prepared.ok) throw new Error();
+      const { key, url } = await prepared.json() as { key: string; url: string };
+      const uploaded = await fetch(url, { method: "PUT", headers: { "Content-Type": contentType }, body: file });
+      if (!uploaded.ok) throw new Error();
+      const completed = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "complete", key, ...metadata }) });
+      if (!completed.ok) throw new Error();
       setUploadState("Uploaded privately. Nothing is public.");
     } catch { setUploadState("Upload failed. Your draft text is still safe."); }
   }

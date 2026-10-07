@@ -1,32 +1,100 @@
 "use server";
 
+import { refresh } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/server";
 import { expirePublishedHumanImmediately } from "@/lib/archive/cache";
 import type { MediaAsset } from "@/lib/archive/types";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { adminSql } from "@/lib/neon/admin";
+import { removeObjects, PRIVATE_BUCKET, PUBLIC_BUCKET } from "@/lib/storage/server";
+import { createDatabaseClient } from "@/lib/neon/server";
+
+// Approved derivatives are removed from the public bucket so previously
+// copied URLs stop resolving once a story is no longer public.
+async function removePublicMedia(assets: Array<MediaAsset | null | undefined>) {
+  const paths = assets
+    .filter((asset): asset is MediaAsset => asset?.provider === "neon" && Boolean(asset.path))
+    .map(asset => asset.path);
+  if (paths.length) await removeObjects(PUBLIC_BUCKET, [...new Set(paths)]);
+}
+
+async function ownedPublicMedia(submissionId: string, userId: string) {
+  const entries = await adminSql()`select h.thumbnail, h.media from public.human_entries h
+    join public.submissions s on s.id = h.submission_id
+    where h.submission_id = ${submissionId}::uuid and s.user_id = ${userId}::uuid`;
+  return entries.flatMap(entry => {
+    const record = entry as { thumbnail?: MediaAsset | null; media?: MediaAsset[] | null };
+    return [record.thumbnail, ...(record.media ?? [])];
+  });
+}
+
+function submissionIdFrom(formData: FormData) {
+  const submissionId = String(formData.get("submissionId") ?? "");
+  return /^[0-9a-f-]{36}$/i.test(submissionId) ? submissionId : null;
+}
 
 export async function revokeConsent(formData: FormData) {
-  await requireUser("/account");
-  const submissionId = String(formData.get("submissionId") ?? "");
-  if (!/^[0-9a-f-]{36}$/i.test(submissionId)) return;
-  const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.rpc("revoke_owned_submission_consent", { p_submission_id: submissionId });
+  const user = await requireUser("/account");
+  const submissionId = submissionIdFrom(formData);
+  if (!submissionId) return;
+  const database = await createDatabaseClient();
+  const { data, error } = await database.rpc("revoke_owned_submission_consent", { p_submission_id: submissionId });
   if (error) throw new Error(`Consent revocation failed: ${error.code}`);
+  // Revocation closes the public record first; files are removed after.
   for (const slug of data ?? []) expirePublishedHumanImmediately(slug);
+  await removePublicMedia(await ownedPublicMedia(submissionId, user.id));
+}
 
-  // Revocation closes the public record first. Approved derivatives are then
-  // removed from the public bucket so previously copied URLs stop resolving.
-  const admin = createSupabaseAdminClient();
-  const { data: entries } = await admin.from("human_entries").select("thumbnail,media").eq("submission_id", submissionId);
-  const paths = (entries ?? []).flatMap(entry => {
-    const record = entry as { thumbnail?: MediaAsset | null; media?: MediaAsset[] | null };
-    return [record.thumbnail, ...(record.media ?? [])]
-      .filter((asset): asset is MediaAsset => asset?.provider === "supabase" && Boolean(asset.path))
-      .map(asset => asset.path);
-  });
-  if (paths.length) {
-    const { error: removalError } = await admin.storage.from("published-media").remove([...new Set(paths)]);
-    if (removalError) throw new Error(`Consent was revoked, but published media cleanup needs attention: ${removalError.message}`);
-  }
+/** Returns a story to a private draft, unpublishing it, and opens the editor. */
+export async function editStory(formData: FormData) {
+  const user = await requireUser("/account");
+  const submissionId = submissionIdFrom(formData);
+  if (!submissionId) return;
+  const database = await createDatabaseClient();
+  const { data, error } = await database.rpc("withdraw_owned_submission", { p_submission_id: submissionId });
+  if (error) throw new Error(`Story could not be reopened: ${error.code}`);
+  for (const slug of data ?? []) expirePublishedHumanImmediately(slug);
+  await removePublicMedia(await ownedPublicMedia(submissionId, user.id));
+  redirect(`/share?draft=${submissionId}`);
+}
+
+export async function deleteStory(formData: FormData) {
+  await requireUser("/account");
+  const submissionId = submissionIdFrom(formData);
+  if (!submissionId) return;
+  const database = await createDatabaseClient();
+  const { data, error } = await database.rpc("delete_owned_submission", { p_submission_id: submissionId });
+  // Help that is already being fulfilled keeps its record until staff close it.
+  if (error?.code === "23503") redirect("/account?error=delete-blocked");
+  if (error) throw new Error(`Story could not be deleted: ${error.code}`);
+  const removed = data as { slugs?: string[]; private_paths?: string[]; public_assets?: MediaAsset[] } | null;
+  for (const slug of removed?.slugs ?? []) expirePublishedHumanImmediately(slug);
+  // The rows are gone; a failed file removal is collected by storage:clean.
+  await Promise.allSettled([
+    removePublicMedia(removed?.public_assets ?? []),
+    removed?.private_paths?.length ? removeObjects(PRIVATE_BUCKET, removed.private_paths) : undefined,
+  ]);
+  refresh();
+}
+
+export async function updateDisplayName(formData: FormData) {
+  const user = await requireUser("/account");
+  const displayName = String(formData.get("displayName") ?? "").trim().slice(0, 80);
+  const database = await createDatabaseClient();
+  const { error } = await database.from("profiles").update({ display_name: displayName || null }).eq("id", user.id);
+  if (error) throw new Error(`Name could not be saved: ${error.code}`);
+  refresh();
+}
+
+const NOTE_ACTIONS = { read: "mark_private_note_read", hide: "hide_private_note", report: "report_private_note" } as const;
+
+export async function updateReceivedNote(formData: FormData) {
+  await requireUser("/account?tab=notes");
+  const noteId = String(formData.get("noteId") ?? "");
+  const action = String(formData.get("action") ?? "");
+  if (!/^[0-9a-f-]{36}$/i.test(noteId) || !Object.hasOwn(NOTE_ACTIONS, action)) return;
+  const database = await createDatabaseClient();
+  const { error } = await database.rpc(NOTE_ACTIONS[action as keyof typeof NOTE_ACTIONS], { p_note_id: noteId });
+  if (error) throw new Error(`Note could not be updated: ${error.code}`);
+  refresh();
 }

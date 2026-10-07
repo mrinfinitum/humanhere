@@ -10,7 +10,7 @@ export type BackgroundJob<TPayload = Record<string, unknown>> = {
 };
 
 /** Launch implementations may execute through Vercel Cron, a protected server
- * workflow, or a Supabase Edge Function. Public render paths never call this. */
+ * workflow, or a Neon Function. Public render paths never call this. */
 export interface BackgroundJobDispatcher {
   dispatch<TPayload>(job: BackgroundJob<TPayload>): Promise<void>;
 }

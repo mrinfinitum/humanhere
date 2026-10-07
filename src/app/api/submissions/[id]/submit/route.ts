@@ -1,9 +1,13 @@
-import { requireUser } from "@/lib/auth/server";
+import { getAuthenticatedUser } from "@/lib/auth/server";
 import { submissionRepository } from "@/lib/submissions/repository";
 
-export async function POST(_: Request, { params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser("/share");
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  // These cookie-authenticated mutations must originate from the app.
+  if (request.headers.get("origin") !== new URL(request.url).origin) return Response.json({ error: "invalid_origin" }, { status: 403 });
+  const user = await getAuthenticatedUser();
+  if (!user) return Response.json({ error: "authentication_required" }, { status: 401 });
   const { id } = await params;
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return Response.json({ error: "invalid_submission" }, { status: 400 });
   const draft = await submissionRepository.getOwned(user.id, id);
   if (!draft || !draft.intent) return Response.json({ error: "The draft is incomplete." }, { status: 400 });
   const submitted = await submissionRepository.submitOwnedDraft(user.id, id);

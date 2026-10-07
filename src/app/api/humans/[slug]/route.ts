@@ -10,7 +10,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
 
   // Globe fixtures are code-only, visibly labelled development stories. They
   // must resolve from the same source that placed them on the globe; otherwise
-  // an empty Supabase archive produces clickable Humans that return a 404.
+  // an empty Neon archive produces clickable Humans that return a 404.
   const entry = slug.startsWith("globe-demo-")
     ? getWorldDemoHumanBySlug(slug) ?? getGlobeMockBySlug(slug)
     : await getPublishedHumanBySlug(slug);

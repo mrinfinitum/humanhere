@@ -39,7 +39,7 @@ function mockPortrait(index: number, name: string, portrait: GlobeMockPortrait):
 }
 
 /**
- * Code-only globe fixtures. They never enter Supabase and can be disabled with
+ * Code-only globe fixtures. They never enter Neon and can be disabled with
  * NEXT_PUBLIC_SHOW_GLOBE_MOCKS=false before launch.
  */
 export const GLOBE_MOCK_ENTRIES: HumanEntry[] = GLOBE_MOCK_STORIES.map((human, index) => ({

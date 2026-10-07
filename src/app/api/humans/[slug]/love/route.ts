@@ -1,16 +1,16 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createDatabaseClient, getSessionUser } from "@/lib/neon/server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 async function context(params: Promise<{ slug: string }>) {
   const { slug } = await params;
   if (!UUID.test(slug)) return null;
-  const client = await createSupabaseServerClient();
-  const { data: { user } } = await client.auth.getUser();
+  const client = await createDatabaseClient();
+  const user = await getSessionUser();
   return { client, humanEntryId: slug, user };
 }
 
-async function currentLoveCount(client: Awaited<ReturnType<typeof createSupabaseServerClient>>, humanEntryId: string) {
+async function currentLoveCount(client: Awaited<ReturnType<typeof createDatabaseClient>>, humanEntryId: string) {
   const { data, error } = await client.from("human_entries_public").select("love_count").eq("id", humanEntryId).maybeSingle();
   if (error || !data) return null;
   return Number(data.love_count ?? 0);

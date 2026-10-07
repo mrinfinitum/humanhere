@@ -1,6 +1,6 @@
 import "server-only";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createDatabaseClient, getSessionUser } from "@/lib/neon/server";
 
 export class HelpAuthorizationError extends Error {
   constructor(message = "Not authorized for this help operation.") {
@@ -10,9 +10,9 @@ export class HelpAuthorizationError extends Error {
 }
 
 export async function requireHelpUser() {
-  const client = await createSupabaseServerClient();
-  const { data: { user }, error } = await client.auth.getUser();
-  if (error || !user) throw new HelpAuthorizationError("Authentication required.");
+  const user = await getSessionUser();
+  if (!user) throw new HelpAuthorizationError("Authentication required.");
+  const client = await createDatabaseClient();
   return { client, user };
 }
 

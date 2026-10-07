@@ -1,13 +1,12 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createDatabaseClient, getSessionUser } from "@/lib/neon/server";
+import { TERMS_VERSION } from "@/lib/legal/versions";
 import type { AccountRole, StaffRole } from "@/lib/moderation/types";
 
 export async function getAuthenticatedUser() {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user }, error } = await supabase.auth.getUser();
-  return error ? null : user;
+  return getSessionUser();
 }
 
 export async function requireUser(returnTo = "/account") {
@@ -16,9 +15,19 @@ export async function requireUser(returnTo = "/account") {
   return user;
 }
 
+/** Signed-in members must have agreed to the current terms before using their space. */
+export async function requireMember(returnTo = "/account") {
+  const user = await requireUser(returnTo);
+  const database = await createDatabaseClient();
+  const { data, error } = await database.from("profiles").select("terms_version").eq("id", user.id).maybeSingle();
+  if (error) throw new Error(`Unable to load your account: ${error.code}`);
+  if (data?.terms_version !== TERMS_VERSION) redirect(`/welcome?next=${encodeURIComponent(returnTo)}`);
+  return user;
+}
+
 export async function getAccountRole(userId: string): Promise<AccountRole> {
-  const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.from("profiles").select("role").eq("id", userId).maybeSingle();
+  const database = await createDatabaseClient();
+  const { data } = await database.from("profiles").select("role").eq("id", userId).maybeSingle();
   return (data?.role as AccountRole | undefined) ?? "user";
 }
 

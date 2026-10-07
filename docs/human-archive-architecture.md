@@ -1,3 +1,19 @@
+# HUMAN:HERE — current backend
+
+The application now uses Neon Postgres through Neon Data API. Neon Managed Better Auth handles passwordless email links and optional Google sign-in. Neon Object Storage replaces the old private/public storage buckets. See [Neon setup](neon-setup.md) for configuration and validation.
+
+- `src/lib/neon/public.ts` obtains anonymous tokens without reading request cookies, keeping cached public reads separate from visitor identity.
+- `src/lib/neon/server.ts` uses a verified Neon session and JWT for user-scoped queries. Postgres grants and RLS enforce ownership, consent, staff roles, and help-partner access.
+- `src/lib/neon/admin.ts` provides an owner SQL connection only for explicit server-side privileged workflows. Ordinary reads and mutations never use it.
+- `db/migrations/` holds the fresh Neon schema. `db/tests/` runs in disposable PostgreSQL through `npm run test:rls`.
+- File upload signing and registration require an owned draft. Pending uploads are copied to fresh keys before registration. Private downloads require ownership or staff authorization. Publication and revocation preserve the private/public media boundary.
+- Profiles are application-owned and keyed by the verified Neon Auth UUID. Auth-provider account deletion does not implicitly delete application consent or moderation records.
+- SHOW UP remains disabled by default. Globe mocks and the `/world` demonstration remain code-only.
+
+## Historical audit — superseded setup details
+
+The following audit records the earlier Supabase implementation. Its setup commands, SDK references, and infrastructure status are historical; follow the Neon setup guide above for the current application.
+
 # HUMAN:HERE — Human Archive architecture and audit
 
 ## Phase 1 audit — 2026-08-23

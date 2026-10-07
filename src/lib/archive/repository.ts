@@ -7,8 +7,8 @@ import { decodeHumanCursor, encodeHumanCursor } from "./cursor";
 import { HUMAN_CACHE_TAGS } from "./cache";
 import { toHumanEntry, type PublicHumanRow } from "./public-dto";
 import type { ArchiveBatch, ArchiveQuery, HumanArchiveRepository, HumanEntry } from "./types";
-import { hasSupabasePublicEnvironment } from "@/lib/supabase/env";
-import { createSupabasePublicClient } from "@/lib/supabase/public";
+import { hasNeonEnvironment } from "@/lib/neon/env";
+import { createPublicDatabaseClient } from "@/lib/neon/public";
 
 const PUBLIC_COLUMNS = "id,slug,type,source,first_name,display_location,anonymous,thumbnail,media,headline,quote,story,featured,layout,love_count,allow_private_notes,social_image_allowed,created_at,published_at";
 
@@ -46,11 +46,11 @@ export async function getPublishedHumanBatch(query: ArchiveQuery = {}): Promise<
   cacheLife("hours");
   cacheTag(HUMAN_CACHE_TAGS.list);
 
-  if (!hasSupabasePublicEnvironment()) return developmentFallback(query);
+  if (!hasNeonEnvironment()) return developmentFallback(query);
 
   const limit = boundedLimit(query.limit);
   const cursor = decodeHumanCursor(query.cursor);
-  let request = createSupabasePublicClient()
+  let request = createPublicDatabaseClient()
     .from("human_entries_public")
     .select(PUBLIC_COLUMNS)
     .order("published_at", { ascending: false })
@@ -81,10 +81,10 @@ export async function getPublishedHumanBySlug(slug: string): Promise<HumanEntry 
   cacheLife("hours");
   cacheTag(HUMAN_CACHE_TAGS.entry(slug));
 
-  if (!hasSupabasePublicEnvironment()) {
+  if (!hasNeonEnvironment()) {
     return globeMocksEnabled() ? DEV_FIXTURE_HUMAN_ENTRIES.find(entry => entry.slug === slug) : undefined;
   }
-  const { data, error } = await createSupabasePublicClient().from("human_entries_public").select(PUBLIC_COLUMNS).eq("slug", slug).maybeSingle();
+  const { data, error } = await createPublicDatabaseClient().from("human_entries_public").select(PUBLIC_COLUMNS).eq("slug", slug).maybeSingle();
   if (isPublicArchiveUnavailable(error)) {
     return globeMocksEnabled() ? DEV_FIXTURE_HUMAN_ENTRIES.find(entry => entry.slug === slug) : undefined;
   }
@@ -96,10 +96,10 @@ export async function getFeaturedHumans(limit = 24): Promise<HumanEntry[]> {
   "use cache";
   cacheLife("hours");
   cacheTag(HUMAN_CACHE_TAGS.featured, HUMAN_CACHE_TAGS.homepage);
-  if (!hasSupabasePublicEnvironment()) {
+  if (!hasNeonEnvironment()) {
     return globeMocksEnabled() ? DEV_FIXTURE_HUMAN_ENTRIES.filter(entry => entry.featured).slice(0, boundedLimit(limit)) : [];
   }
-  const { data, error } = await createSupabasePublicClient().from("human_entries_public").select(PUBLIC_COLUMNS).eq("featured", true).order("published_at", { ascending: false }).order("id", { ascending: false }).limit(boundedLimit(limit));
+  const { data, error } = await createPublicDatabaseClient().from("human_entries_public").select(PUBLIC_COLUMNS).eq("featured", true).order("published_at", { ascending: false }).order("id", { ascending: false }).limit(boundedLimit(limit));
   if (isPublicArchiveUnavailable(error)) {
     return globeMocksEnabled() ? DEV_FIXTURE_HUMAN_ENTRIES.filter(entry => entry.featured).slice(0, boundedLimit(limit)) : [];
   }
@@ -113,7 +113,7 @@ export async function getHomepageHumans(limit = 24): Promise<ArchiveBatch> {
   cacheTag(HUMAN_CACHE_TAGS.homepage);
   const bounded = boundedLimit(limit);
   const prototypeLimit = Math.min(Math.max(limit, 1), 96);
-  if (!hasSupabasePublicEnvironment()) return developmentFallback({ limit: prototypeLimit });
+  if (!hasNeonEnvironment()) return developmentFallback({ limit: prototypeLimit });
   const [featured, recent] = await Promise.all([getFeaturedHumans(bounded), getPublishedHumanBatch({ limit: bounded })]);
   const entries = [...featured, ...recent.entries].filter((entry, index, all) => all.findIndex(candidate => candidate.id === entry.id) === index).slice(0, bounded);
   // Development may use visibly labelled fixtures before the first publication.
@@ -132,9 +132,9 @@ export async function getGlobeDiscoveryCandidates(limit = 96): Promise<HumanEntr
   cacheTag(HUMAN_CACHE_TAGS.homepage, HUMAN_CACHE_TAGS.list);
 
   const bounded = Math.min(Math.max(limit, 24), 120);
-  if (!hasSupabasePublicEnvironment()) return developmentFallback({ limit: bounded }).entries;
+  if (!hasNeonEnvironment()) return developmentFallback({ limit: bounded }).entries;
 
-  const client = createSupabasePublicClient();
+  const client = createPublicDatabaseClient();
   const locationResult = await client
     .from("human_entries_public")
     // This is intentionally the public-safe view rather than the base table.
@@ -179,13 +179,13 @@ async function getPublishedAdjacent(slug: string) {
   cacheTag(HUMAN_CACHE_TAGS.entry(slug), HUMAN_CACHE_TAGS.list);
   const current = await getPublishedHumanBySlug(slug);
   if (!current?.publishedAt) return {};
-  if (!hasSupabasePublicEnvironment()) {
+  if (!hasNeonEnvironment()) {
     const entries = DEV_FIXTURE_HUMAN_ENTRIES.filter(entry => entry.type === "story" || entry.type === "portrait");
     const index = entries.findIndex(entry => entry.slug === slug);
     return index < 0 ? {} : { previous: entries[index - 1], next: entries[index + 1] };
   }
 
-  const client = createSupabasePublicClient();
+  const client = createPublicDatabaseClient();
   const newer = client.from("human_entries_public").select(PUBLIC_COLUMNS)
     .or(`published_at.gt.${current.publishedAt},and(published_at.eq.${current.publishedAt},id.gt.${current.id})`)
     .order("published_at", { ascending: true }).order("id", { ascending: true }).limit(1).maybeSingle();

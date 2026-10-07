@@ -1,28 +1,28 @@
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { requireStaff } from "@/lib/auth/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createDatabaseClient } from "@/lib/neon/server";
 import { publishSubmissionAction } from "./actions";
 
 export default async function SubmissionReviewPage({ params }: { params: Promise<{ id: string }> }) {
   await connection();
   await requireStaff();
   const { id } = await params;
-  const supabase = await createSupabaseServerClient();
+  const database = await createDatabaseClient();
   const [{ data: submission }, { data: consent }, { data: media }] = await Promise.all([
-    supabase
+    database
       .from("submissions")
       .select("id,status,public_name,anonymous,location,location_withheld,is_minor,headline,story,what_they_need,need_category,created_at")
       .eq("id", id)
       .maybeSingle(),
-    supabase
+    database
       .from("consent_records")
       .select("publish_story,publish_media,social_reuse,may_contact,partner_referral,verified_at,revoked_at,created_at")
       .eq("submission_id", id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    supabase
+    database
       .from("submission_media")
       .select("id,media_type,mime_type,byte_size,caption,sort_order")
       .eq("submission_id", id)
@@ -53,7 +53,8 @@ export default async function SubmissionReviewPage({ params }: { params: Promise
       <article>{String(submission.story ?? "No written story.")}</article>
       <section>
         <h2>Private media</h2>
-        <p>{media?.length ?? 0} files. Review uses signed URLs in the final connected environment.</p>
+        <p>{media?.length ?? 0} private files.</p>
+        <ul>{media?.map(file => <li key={String(file.id)}><a href={`/api/media/${file.id}`} target="_blank" rel="noreferrer">Open {String(file.caption ?? file.media_type ?? "file")}</a></li>)}</ul>
       </section>
       <section>
         <h2>Consent</h2>

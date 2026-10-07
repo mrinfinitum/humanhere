@@ -3,7 +3,7 @@ import type { GlobeHuman } from "./types";
 const TULSA_LAT = 36.154;
 const TULSA_LNG = -95.993;
 
-/** Temporary single-Human proof record. It never writes to Supabase. */
+/** Temporary single-Human proof record. It never writes to Neon. */
 export function createTulsaTestHuman(humans: GlobeHuman[]): GlobeHuman {
   const source = humans.find(human => human.city?.toLowerCase().includes("tulsa"));
   const routeSource = source ?? humans[0];

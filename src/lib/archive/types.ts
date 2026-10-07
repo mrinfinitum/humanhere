@@ -13,7 +13,7 @@ export type HumanArtifactType = (typeof HUMAN_ARTIFACT_TYPES)[number];
 
 export type MediaAsset = {
   id: string;
-  provider: "local" | "supabase" | "mux" | "cloudflare" | "other";
+  provider: "local" | "neon" | "mux" | "cloudflare" | "other";
   path: string;
   alt: string;
   mimeType: string;

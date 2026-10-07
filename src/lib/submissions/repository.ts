@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { SubmissionDraft, SubmissionRepository, SubmissionStatus } from "./types";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createDatabaseClient } from "@/lib/neon/server";
 
 const OWNED_COLUMNS = "id,user_id,intent,artifact_type,identity_mode,public_name,anonymous,location,headline,story,what_they_need,need_category,status,created_at,updated_at,submitted_at";
 
@@ -23,9 +23,9 @@ function mapSubmission(row: SubmissionRow): SubmissionDraft {
   };
 }
 
-class SupabaseSubmissionRepository implements SubmissionRepository {
+class NeonSubmissionRepository implements SubmissionRepository {
   async createDraft(userId: string, intent?: SubmissionDraft["intent"]) {
-    const client = await createSupabaseServerClient();
+    const client = await createDatabaseClient();
     const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count, error: countError } = await client.from("submissions").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", since);
     if (countError) throw new Error(`Could not verify draft limit: ${countError.code}`);
@@ -39,21 +39,21 @@ class SupabaseSubmissionRepository implements SubmissionRepository {
   }
 
   async listOwned(userId: string) {
-    const client = await createSupabaseServerClient();
+    const client = await createDatabaseClient();
     const { data, error } = await client.from("submissions").select(OWNED_COLUMNS).eq("user_id", userId).order("created_at", { ascending: false }).limit(40);
     if (error) throw new Error(`Could not list submissions: ${error.code}`);
     return (data as unknown as SubmissionRow[]).map(mapSubmission);
   }
 
   async getOwned(userId: string, id: string) {
-    const client = await createSupabaseServerClient();
+    const client = await createDatabaseClient();
     const { data, error } = await client.from("submissions").select(OWNED_COLUMNS).eq("id", id).eq("user_id", userId).maybeSingle();
     if (error) throw new Error(`Could not read submission: ${error.code}`);
     return data ? mapSubmission(data as unknown as SubmissionRow) : undefined;
   }
 
   async updateOwnedDraft(userId: string, id: string, patch: Partial<SubmissionDraft>) {
-    const client = await createSupabaseServerClient();
+    const client = await createDatabaseClient();
     const values = {
       intent: patch.intent, artifact_type: patch.artifactType, identity_mode: patch.identityMode,
       public_name: patch.publicName, anonymous: patch.anonymous, location: patch.location,
@@ -66,11 +66,11 @@ class SupabaseSubmissionRepository implements SubmissionRepository {
   }
 
   async submitOwnedDraft(userId: string, id: string) {
-    const client = await createSupabaseServerClient();
+    const client = await createDatabaseClient();
     const { data, error } = await client.from("submissions").update({ status: "submitted", submitted_at: new Date().toISOString() }).eq("id", id).eq("user_id", userId).eq("status", "draft").select(OWNED_COLUMNS).single();
     if (error) throw new Error(`Could not submit draft: ${error.code}`);
     return mapSubmission(data as unknown as SubmissionRow);
   }
 }
 
-export const submissionRepository: SubmissionRepository = new SupabaseSubmissionRepository();
+export const submissionRepository: SubmissionRepository = new NeonSubmissionRepository();

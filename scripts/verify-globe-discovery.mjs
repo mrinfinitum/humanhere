@@ -36,7 +36,7 @@ const storyDrawerSource = await readFile(new URL("../src/components/globe/HumanS
 const humanLoveSource = await readFile(new URL("../src/components/globe/useHumanLove.ts", import.meta.url), "utf8");
 const archiveFieldSource = await readFile(new URL("../src/components/archive/ArchiveField.tsx", import.meta.url), "utf8");
 assert.match(repositorySource, /function developmentFallback[\s\S]*globeMocksEnabled\(\) \? fixtureBatch\(query\) : emptyBatch\(\)/, "archive fixtures must be gated behind the development-only mock policy");
-assert.doesNotMatch(repositorySource, /if \(!hasSupabasePublicEnvironment\(\)\) return fixtureBatch/, "missing production configuration must never reveal fixture Humans");
+assert.doesNotMatch(repositorySource, /if \(!hasNeonEnvironment\(\)\) return fixtureBatch/, "missing production configuration must never reveal fixture Humans");
 assert.match(mockSource, /return globeMocksEnabled\(\) \? GLOBE_MOCK_ENTRIES\.find/, "fixture story lookup must also fail closed outside development");
 assert.match(worldDemoSource, /process\.env\.WORLD_DEMO_ENABLED !== "false"/, "the temporary World demonstration must retain a server-side real-data-only kill switch");
 assert.match(worldPageSource, /demoMode\s*\? getWorldDemoEntries\(\)/, "the World route must source its removable demonstration from the code-only fixture set");

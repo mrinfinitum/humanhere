@@ -2,8 +2,8 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import { requireStaff } from "@/lib/auth/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getSiteUrl } from "@/lib/supabase/env";
+import { createDatabaseClient } from "@/lib/neon/server";
+import { getSiteUrl } from "@/lib/neon/env";
 
 export function hashCreatorConsentToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
@@ -11,8 +11,8 @@ export function hashCreatorConsentToken(token: string) {
 
 export async function createCreatorConsentLink(socialDiscoveryPostId: string) {
   await requireStaff(["editor", "admin"]);
-  const supabase = await createSupabaseServerClient();
-  const { data: token, error } = await supabase.rpc("issue_social_creator_consent_token", {
+  const database = await createDatabaseClient();
+  const { data: token, error } = await database.rpc("issue_social_creator_consent_token", {
     p_social_discovery_post_id: socialDiscoveryPostId,
     p_expires_in: "14 days",
   });
