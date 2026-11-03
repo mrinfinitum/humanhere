@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { AccountLink } from "@/components/AccountLink";
+import { SiteNav } from "@/components/SiteNav";
 
 const description = "Support HUMAN:HERE and help fund human storytelling, community connections, outreach, technology, and practical ways for people to show up for one another.";
 
@@ -38,7 +38,7 @@ export default function GivePage() {
       <div className="member-atmosphere" aria-hidden="true"><i /><i /><i /></div>
       <header className="member-header">
         <Link className="member-wordmark" href="/" aria-label="HUMAN:HERE home">HUMAN<span>:</span>HERE</Link>
-        <nav aria-label="Main navigation"><Link href="/humans">Humans</Link><Link href="/members">People</Link><Link href="/mission">Mission</Link><Link href="/share">Share</Link><AccountLink /></nav>
+        <SiteNav />
       </header>
 
       <section className="give-hero" aria-labelledby="support-title">
