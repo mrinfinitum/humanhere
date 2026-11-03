@@ -1,0 +1,69 @@
+/* Mission page refinements: same type and palette, calmer scale and rhythm. */
+.mission-page { --mission-display: clamp(40px, 5.4vw, 88px); --mission-pad: clamp(72px, 12vh, 136px); --mission-body: clamp(18px, 1.55vw, 23px); }
+.mission-page .ruled-section, .mission-page .manifesto-hero { width: min(1360px, 100% - 48px); }
+.mission-page h1, .mission-page h2, .mission-page h3 { letter-spacing: -.045em; }
+.mission-page .section-code { color: rgb(8 8 8 / .55); letter-spacing: .14em; }
+.mission-page .section-code::before { display: inline-block; width: 18px; height: 1px; margin: 0 10px 3px 0; background: currentColor; vertical-align: middle; content: ""; }
+.mission-page .faith-section .section-code, .mission-page .image-statement .section-code, .mission-page .manifesto-closing .section-code { color: rgb(250 250 250 / .7); }
+.mission-page .text-arrow { gap: 24px; font-size: 11px; letter-spacing: .14em; }
+.mission-hero { min-height: min(calc(100svh - 72px), 980px); }
+.mission-hero h1 { grid-column: 1 / 8; margin: 6vh 0 4vh; font-size: clamp(64px, 9.4vw, 156px); letter-spacing: -.055em; line-height: .84; }
+.mission-hero h1 span:nth-child(2) { margin-left: 6%; }
+.mission-hero h1 { grid-row: 2; }
+.mission-hero__portrait { position: relative; top: auto; right: auto; grid-column: 9 / 13; grid-row: 1 / 3; width: auto; height: auto; min-height: 360px; margin-top: 24px; }
+.mission-hero .manifesto-hero__copy { grid-column: 9 / 13; grid-row: 3; }
+.mission-hero .manifesto-hero__copy { font-size: var(--mission-body); line-height: 1.4; }
+.mission-hero .manifesto-hero__copy > p:first-child { font-weight: 500; }
+.mission-statement { padding: var(--mission-pad) 0; }
+.mission-statement h2 { grid-column: 4 / 12; font-size: clamp(26px, 2.9vw, 46px); letter-spacing: -.03em; line-height: 1.16; }
+.burden-section, .mission-movements, .labels-section, .partnership-section { padding: var(--mission-pad) 0; }
+.burden-section__heading h2, .mission-page .section-heading h2, .labels-section h2, .partnership-section h2 { margin-top: 24px; font-size: var(--mission-display); line-height: .9; }
+.burden-section li { padding: 14px 0; font-size: clamp(18px, 1.7vw, 26px); }
+.burden-section li span { color: rgb(8 8 8 / .45); }
+.burden-section__close { margin-top: 48px; font-size: clamp(24px, 2.4vw, 36px); line-height: 1.15; }
+.mission-page .section-heading { margin-bottom: clamp(40px, 7vh, 80px); }
+.mission-movements article { padding: 32px 0 40px; }
+.mission-movements h3 { font-size: clamp(28px, 3vw, 48px); line-height: 1; }
+.mission-movements article > p { font-size: var(--mission-body); line-height: 1.4; letter-spacing: -.015em; }
+.image-statement { min-height: min(92svh, 900px); }
+.image-statement figure { min-height: min(92svh, 900px); }
+.image-statement h2 { font-size: clamp(48px, 6vw, 100px); line-height: .9; }
+.image-statement > div > p:last-child { font-size: var(--mission-body); line-height: 1.45; letter-spacing: -.015em; }
+.faith-section { min-height: auto; padding: var(--mission-pad) max(24px, (100% - 1360px) / 2); }
+.faith-section h2 { margin: 48px 0 64px; font-size: clamp(48px, 6.6vw, 112px); line-height: .88; }
+.faith-section > p:not(.section-code) { font-size: var(--mission-body); line-height: 1.45; letter-spacing: -.015em; }
+.labels-section h2 { margin: 40px 0 28px; }
+.labels-section > p:not(.section-code, .labels-section__close) { color: rgb(8 8 8 / .6); }
+.labels-section ul { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 48px 0; }
+.labels-section li { width: auto; padding: 20px 16px 20px 0; font-size: clamp(22px, 2.6vw, 42px); letter-spacing: -.03em; text-decoration-thickness: 2px; }
+.labels-section__close { margin-top: 24px; font-size: clamp(26px, 2.8vw, 44px); line-height: 1.12; }
+.partnership-section h2 { margin-top: 48px; }
+.partnership-section > div { margin-top: 56px; font-size: var(--mission-body); line-height: 1.45; letter-spacing: -.015em; }
+.partnership-section > div > p { margin-bottom: 1em; }
+.mission-page .manifesto-closing { min-height: min(100svh, 920px); padding: 32px max(24px, (100% - 1360px) / 2); }
+.mission-page .manifesto-closing h2 { font-size: clamp(48px, 7.4vw, 124px); letter-spacing: -.05em; line-height: .88; }
+.mission-page .manifesto-closing > p:not(.section-code) { font-size: clamp(24px, 2.8vw, 44px); letter-spacing: -.03em; }
+@media (max-width: 1100px) {
+  .mission-hero h1 { grid-column: 1 / 9; }
+  .mission-statement h2 { grid-column: 3 / 13; }
+}
+@media (max-width: 820px) {
+  .mission-page .ruled-section, .mission-page .manifesto-hero { width: calc(100% - 28px); }
+  .mission-hero h1 { grid-column: 1 / 13; font-size: clamp(56px, 15vw, 112px); }
+  .mission-hero__portrait { grid-column: 5 / 13; grid-row: 3; height: 52svh; margin-top: 0; }
+  .mission-hero .manifesto-hero__copy { grid-column: 1 / 9; grid-row: 4; }
+  .labels-section ul { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .mission-hero .manifesto-hero__index { grid-column: 1 / -1; }
+  .mission-hero h1 { font-size: 15.5vw; }
+  .mission-statement h2 { font-size: 23px; }
+  .burden-section__heading h2, .mission-page .section-heading h2, .labels-section h2, .partnership-section h2 { font-size: 11vw; }
+  .mission-movements h3 { font-size: 30px; }
+  .image-statement h2, .faith-section h2 { font-size: 13vw; }
+  .faith-section { padding-inline: 14px; }
+  .labels-section ul { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .labels-section li { font-size: 24px; }
+  .mission-page .manifesto-closing { padding-inline: 14px; }
+  .mission-page .manifesto-closing h2 { font-size: 12vw; }
+}

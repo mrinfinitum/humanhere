@@ -1,0 +1,6 @@
+/* On phones the links sit on their own scrollable row under the wordmark. */
+@media (max-width: 760px) {
+  .quiet-header { flex-wrap: wrap; min-height: 0; padding: 14px 0 0; row-gap: 10px; }
+  .quiet-header nav { width: 100%; padding-bottom: 12px; overflow-x: auto; gap: 18px; white-space: nowrap; scrollbar-width: none; }
+  .quiet-header nav::-webkit-scrollbar { display: none; }
+}
