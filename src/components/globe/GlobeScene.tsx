@@ -26,23 +26,34 @@ function createSeededRandom(seed = 31051986) {
   };
 }
 
+const DAY_TEXTURE = "/textures/earth/blue-marble-5400.jpg";
+const NIGHT_TEXTURE = "/textures/earth/black-marble-2016.jpg";
+const DAY_TEXTURE_8K = "/textures/earth/blue-marble-8k.jpg";
+const NIGHT_TEXTURE_8K = "/textures/earth/black-marble-8k.jpg";
+// Rendered width in device pixels above which the standard textures look soft.
+const LARGE_SCREEN_PIXELS = 2400;
+
+function prepareTextures(day: THREE.Texture, night: THREE.Texture, anisotropy: number) {
+  day.colorSpace = THREE.SRGBColorSpace;
+  // This texture is sampled as emissive/geographic data. Keeping its source
+  // values linear preserves the low-energy population texture that sRGB
+  // decoding would otherwise crush into black.
+  night.colorSpace = THREE.NoColorSpace;
+  day.anisotropy = anisotropy;
+  night.anisotropy = anisotropy;
+  day.needsUpdate = true;
+  night.needsUpdate = true;
+}
+
 function EarthSurface() {
-  const [dayTexture, nightTexture] = useLoader(THREE.TextureLoader, [
-    "/textures/earth/blue-marble-5400.jpg",
-    "/textures/earth/black-marble-2016.jpg",
-  ]);
+  const [dayTexture, nightTexture] = useLoader(THREE.TextureLoader, [DAY_TEXTURE, NIGHT_TEXTURE]);
+  const gl = useThree(state => state.gl);
+  const renderedWidth = useThree(state => state.size.width * state.viewport.dpr);
+  const anisotropy = Math.min(16, gl.capabilities.getMaxAnisotropy());
 
   useEffect(() => {
-    dayTexture.colorSpace = THREE.SRGBColorSpace;
-    // This texture is sampled as emissive/geographic data. Keeping its source
-    // values linear preserves the low-energy population texture that sRGB
-    // decoding would otherwise crush into black.
-    nightTexture.colorSpace = THREE.NoColorSpace;
-    dayTexture.anisotropy = 8;
-    nightTexture.anisotropy = 8;
-    dayTexture.needsUpdate = true;
-    nightTexture.needsUpdate = true;
-  }, [dayTexture, nightTexture]);
+    prepareTextures(dayTexture, nightTexture, anisotropy);
+  }, [dayTexture, nightTexture, anisotropy]);
 
   const material = useMemo(() => new THREE.ShaderMaterial({
     uniforms: {
@@ -132,9 +143,34 @@ function EarthSurface() {
 
   useEffect(() => () => material.dispose(), [material]);
 
+  // Large, high-density screens swap in 8K textures once the standard ones are
+  // showing, so the globe appears just as fast and sharpens a moment later.
+  const wantsLarge = renderedWidth >= LARGE_SCREEN_PIXELS && gl.capabilities.maxTextureSize >= 8192;
+  useEffect(() => {
+    if (!wantsLarge) return;
+    let cancelled = false;
+    const loaded: THREE.Texture[] = [];
+    const loader = new THREE.TextureLoader();
+    Promise.all([loader.loadAsync(DAY_TEXTURE_8K), loader.loadAsync(NIGHT_TEXTURE_8K)]).then(([day, night]) => {
+      loaded.push(day, night);
+      if (cancelled) return;
+      prepareTextures(day, night, anisotropy);
+      material.uniforms.uDay.value = day;
+      material.uniforms.uNight.value = night;
+    }).catch(() => {
+      // The standard textures stay in place if the large ones cannot load.
+    });
+    return () => {
+      cancelled = true;
+      material.uniforms.uDay.value = dayTexture;
+      material.uniforms.uNight.value = nightTexture;
+      for (const texture of loaded) texture.dispose();
+    };
+  }, [wantsLarge, material, anisotropy, dayTexture, nightTexture]);
+
   return (
     <mesh>
-      <sphereGeometry args={[WORLD_RADIUS, 192, 128]} />
+      <sphereGeometry args={[WORLD_RADIUS, 256, 160]} />
       <primitive object={material} attach="material" />
     </mesh>
   );
