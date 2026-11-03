@@ -52,6 +52,19 @@ export function HumanGlobe({
   const [activeHumanIds, setActiveHumanIds] = useState<string[]>([]);
   const [hovered, setHovered] = useState<GlobeHover>(null);
   const [ready, setReady] = useState(false);
+  // Next keeps a page you leave alive but hidden. Hiding it tears down the
+  // WebGL renderer and loses its context, so a page shown again needs a new
+  // canvas rather than the dead one.
+  const [canvasKey, setCanvasKey] = useState(0);
+  const wasHidden = useRef(false);
+  useEffect(() => {
+    if (wasHidden.current) {
+      wasHidden.current = false;
+      setReady(false);
+      setCanvasKey(key => key + 1);
+    }
+    return () => { wasHidden.current = true; };
+  }, []);
   const [webglAvailable, setWebglAvailable] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
   const selected = selectedHumanId === null
@@ -296,6 +309,7 @@ export function HumanGlobe({
       >
         {webglAvailable ? (
           <Canvas
+            key={canvasKey}
             className={`human-globe-canvas${ready ? " is-ready" : ""}`}
             camera={{ position: [0, 0, 3.42], fov: 38, near: 0.1, far: 40 }}
             dpr={[1, 1.8]}
@@ -342,6 +356,7 @@ export function HumanGlobe({
         <Wordmark />
         <nav aria-label="Primary navigation">
           <Link className="is-active" href="/humans">Humans</Link>
+          <Link href="/members">People</Link>
           <Link href="/mission">Mission</Link>
           <Link href="/share">Share</Link>
           <Link href="/support">Support</Link>
@@ -360,6 +375,13 @@ export function HumanGlobe({
         <h1 id="globe-headline">People<br />need<br />people</h1>
         {!hasPublishedHumans && <small>The first consented stories are being prepared.</small>}
       </section>
+
+      {mode === "world" && !hasPublishedHumans && (
+        <section className="human-world-intro" aria-labelledby="world-intro-title">
+          <h1 id="world-intro-title">The first stories<br />{" "}are on their way.</h1>
+          <p><span aria-hidden="true" /><Link href="/share">Be one of the first to share yours</Link></p>
+        </section>
+      )}
 
       {mode === "world" && hasPublishedHumans && (
         <section className="human-world-intro" aria-labelledby="world-intro-title">

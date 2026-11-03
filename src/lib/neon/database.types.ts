@@ -101,6 +101,7 @@ export type Database = {
       claim_username: { Args: { p_username: string }; Returns: string };
       member_profile: { Args: { p_username: string }; Returns: Array<{ username: string; display_name: string | null; bio: string | null; joined_at: string; followers: number; following: number; viewer_follows: boolean; is_self: boolean; loves: number; notes: number; gifts: number }> };
       follow_member: { Args: { p_username: string }; Returns: boolean };
+      search_members: { Args: { p_query: string; p_limit?: number }; Returns: Array<{ username: string; display_name: string | null; bio: string | null; followers: number }> };
       unfollow_member: { Args: { p_username: string }; Returns: boolean };
       following_feed: { Args: { p_limit?: number; p_before?: string }; Returns: Array<Database["public"]["Views"]["human_entries_public"]["Row"]> };
       report_content: { Args: { p_human_entry_id: string; p_reason: Database["public"]["Enums"]["report_reason"]; p_details?: string }; Returns: string };
