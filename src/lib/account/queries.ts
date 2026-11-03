@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { MediaAsset } from "@/lib/archive/types";
+import { memberLevel, type MemberLevel } from "@/lib/account/levels";
 import { adminSql } from "@/lib/neon/admin";
 import { createDatabaseClient } from "@/lib/neon/server";
 
@@ -17,6 +18,10 @@ export type StoryPermissions = {
 export type AccountActivity = {
   displayName: string | null;
   joinedAt: string | null;
+  level: MemberLevel;
+  username: string | null;
+  bio: string | null;
+  allowSocialReuse: boolean;
   published: Record<string, PublishedStory>;
   permissions: Record<string, StoryPermissions>;
   notes: ReceivedNote[];
@@ -26,8 +31,8 @@ export type AccountActivity = {
 /** Everything the signed-in member's own page shows beyond their submissions. */
 export async function getAccountActivity(userId: string): Promise<AccountActivity> {
   const database = await createDatabaseClient();
-  const [profile, notes, loves, consents, entries] = await Promise.all([
-    database.from("profiles").select("display_name,created_at").eq("id", userId).maybeSingle(),
+  const [profile, notes, loves, consents, entries, experience] = await Promise.all([
+    database.from("profiles").select("display_name,created_at,username,bio,allow_social_reuse").eq("id", userId).maybeSingle(),
     database.rpc("notes_for_me", { p_limit: 40 }),
     database.from("human_entry_loves").select("human_entry_id,created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(60),
     // Staff can read every consent record, so always filter to the owner.
@@ -38,8 +43,11 @@ export async function getAccountActivity(userId: string): Promise<AccountActivit
     adminSql()`select h.submission_id, h.slug, h.love_count from public.human_entries h
       join public.submissions s on s.id = h.submission_id
       where s.user_id = ${userId}::uuid and h.published = true`,
+    database.rpc("my_experience"),
   ]);
-  if (profile.error || notes.error || loves.error || consents.error) throw new Error("Could not load your account activity.");
+  const failed = Object.entries({ profile, notes, loves, consents, experience }).flatMap(([name, result]) => result.error ? [`${name}: ${result.error.code} ${result.error.message}`] : []);
+  if (failed.length) console.error("Account activity failed:", failed.join("; "));
+  if (failed.length) throw new Error("Could not load your account activity.");
 
   const lovedIds = (loves.data ?? []).map(row => String(row.human_entry_id));
   const humans = lovedIds.length
@@ -62,6 +70,10 @@ export async function getAccountActivity(userId: string): Promise<AccountActivit
   return {
     displayName: profile.data?.display_name ?? null,
     joinedAt: profile.data?.created_at ?? null,
+    level: memberLevel(experience.data?.[0] ?? { loves: 0, notes: 0, gifts: 0 }),
+    username: profile.data?.username ?? null,
+    bio: profile.data?.bio ?? null,
+    allowSocialReuse: profile.data?.allow_social_reuse === true,
     published: Object.fromEntries(entries.map(entry => [String(entry.submission_id), { slug: String(entry.slug), loveCount: Number(entry.love_count ?? 0) }])),
     permissions,
     notes: (notes.data ?? []).map(note => ({ id: note.note_id, storySlug: note.story_slug, body: note.body, createdAt: note.created_at, readAt: note.read_at })),

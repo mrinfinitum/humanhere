@@ -2,10 +2,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "@/app/login/actions";
 import { HeartIcon } from "@/components/HeartIcon";
+import { RankBadge } from "@/components/RankBadge";
 import type { AccountActivity } from "@/lib/account/queries";
 import { resolveMediaUrl } from "@/lib/media/resolver";
 import type { SubmissionDraft, SubmissionStatus } from "@/lib/submissions/types";
-import { deleteStory, editStory, revokeConsent, updateDisplayName, updateReceivedNote } from "./actions";
+import { EXPERIENCE_PER } from "@/lib/account/levels";
+import { changeUsername, deleteStory, editStory, revokeConsent, updateProfile, updateSocialSharing, updateReceivedNote } from "./actions";
 
 export const ACCOUNT_TABS = ["stories", "notes", "loved", "privacy"] as const;
 export type AccountTab = (typeof ACCOUNT_TABS)[number];
@@ -34,6 +36,9 @@ function timeAgo(value: string) {
 
 const ERRORS: Record<string, string> = {
   "delete-blocked": "This story has help in progress, so it cannot be deleted yet. Contact us and we will remove it for you.",
+  "username-invalid": "Usernames are 3 to 20 letters, numbers or underscores.",
+  "username-reserved": "That username is reserved. Try another.",
+  "username-taken": "That username is taken. Try another.",
 };
 
 type AccountViewProps = {
@@ -50,6 +55,7 @@ export function AccountView({ email, error, fallbackName, role, tab, submissions
   const isStaff = role !== "user";
   const name = activity.displayName?.trim() || fallbackName.trim() || email.split("@")[0];
   const initial = name.charAt(0).toUpperCase();
+  const { level } = activity;
   const unreadNotes = activity.notes.filter(note => !note.readAt).length;
   const loveReceived = Object.values(activity.published).reduce((total, story) => total + story.loveCount, 0);
   const storiesWithPermissions = submissions.flatMap(story => activity.permissions[story.id] ? [{ story, permissions: activity.permissions[story.id] }] : []);
@@ -65,23 +71,28 @@ export function AccountView({ email, error, fallbackName, role, tab, submissions
       <div className="member-atmosphere" aria-hidden="true"><i /><i /><i /></div>
       <header className="member-header">
         <Link className="member-wordmark" href="/" aria-label="HUMAN:HERE home">HUMAN<span>:</span>HERE</Link>
-        <nav aria-label="Account navigation"><Link href="/humans">Humans</Link>{isStaff && <Link className="member-admin-link" href="/admin">Admin</Link>}<form action={signOut}><button>Sign out</button></form></nav>
+        <nav aria-label="Account navigation"><Link href="/home">Following</Link><Link href="/humans">Humans</Link>{isStaff && <Link className="member-admin-link" href="/admin">Admin</Link>}<form action={signOut}><button>Sign out</button></form></nav>
       </header>
 
       <section className="profile-head" aria-labelledby="profile-name">
         <span className="profile-avatar" aria-hidden="true">{initial}</span>
         <div className="profile-identity">
-          <h1 id="profile-name">{name}</h1>
+          <h1 id="profile-name">{name}<RankBadge rank={level.rank} /></h1>
+          {activity.username && <p className="profile-handle">@{activity.username}</p>}
+          {activity.bio && <p className="profile-bio">{activity.bio}</p>}
           <p>{email}{activity.joinedAt && <> · Joined {new Intl.DateTimeFormat("en", { month: "long", year: "numeric" }).format(new Date(activity.joinedAt))}</>}</p>
-          <span className="profile-badge"><i aria-hidden="true" />{isStaff ? `${role} access` : "Private member"}</span>
+          <span className="profile-badge"><i aria-hidden="true" />{isStaff ? `${role} access` : "Member"}</span>
         </div>
         <div className="profile-actions">
           <Link className="profile-primary" href="/share">Share a story <b aria-hidden="true">+</b></Link>
+          {activity.username && <Link className="profile-secondary" href={`/@${activity.username}`}>View profile</Link>}
           <details className="profile-edit">
-            <summary>Edit name</summary>
-            <form action={updateDisplayName}>
-              <label htmlFor="profile-display-name">Name shown on your page</label>
+            <summary>Edit profile</summary>
+            <form action={updateProfile}>
+              <label htmlFor="profile-display-name">Name</label>
               <input id="profile-display-name" name="displayName" defaultValue={activity.displayName ?? ""} maxLength={80} autoComplete="name" placeholder={name} />
+              <label htmlFor="profile-bio">Bio</label>
+              <textarea id="profile-bio" name="bio" defaultValue={activity.bio ?? ""} maxLength={160} rows={3} placeholder="A line about you" />
               <button>Save</button>
             </form>
           </details>
@@ -92,6 +103,11 @@ export function AccountView({ email, error, fallbackName, role, tab, submissions
           <div><dd>{loveReceived}</dd><dt>Love received</dt></div>
           <div><dd>{activity.notes.length}</dd><dt>Notes</dt></div>
         </dl>
+        <div className="profile-level">
+          <p><RankBadge rank={level.rank} /><b>Level {level.level}</b><span>{level.rank}</span><small>{level.experience} experience</small></p>
+          <progress value={level.progress} max={level.needed} aria-label={`${level.progress} of ${level.needed} experience to level ${level.level + 1}`} />
+          <small>{level.needed - level.progress} to level {level.level + 1}{level.nextRank && <> · {level.nextRank.name} at level {level.nextRank.level}</>}. Earn {EXPERIENCE_PER.loves} for each Human you love, {EXPERIENCE_PER.notes} for each note once it is approved, and {EXPERIENCE_PER.gifts} for each gift.</small>
+        </div>
       </section>
 
       <nav className="profile-tabs" aria-label="Account sections">
@@ -168,7 +184,9 @@ export function AccountView({ email, error, fallbackName, role, tab, submissions
                 <dl>
                   <div><dt>Drafts</dt><dd>Only you</dd></div>
                   <div><dt>Stories you submit</dt><dd>You and our review team</dd></div>
-                  <div><dt>Published stories</dt><dd>Everyone</dd></div>
+                  <div><dt>Published stories</dt><dd>Everyone. Stories you did not post anonymously also appear on your profile</dd></div>
+                  <div><dt>Your profile</dt><dd>Everyone: your @username, name, bio, level, and follower counts</dd></div>
+                  <div><dt>Who you follow</dt><dd>Only a total count is shown</dd></div>
                   <div><dt>Notes sent to you</dt><dd>Only you, once our moderators approve them</dd></div>
                   <div><dt>Humans you love</dt><dd>Only you. Others see a total count, never your name</dd></div>
                   <div><dt>Your email address</dt><dd>Never shown publicly</dd></div>
@@ -177,7 +195,12 @@ export function AccountView({ email, error, fallbackName, role, tab, submissions
 
               <article className="post-card settings-card">
                 <h2>Your permissions</h2>
-                <p>You choose these each time you submit a story. Nothing is published until you say yes and our team has reviewed it.</p>
+                <p>Submitting a story lets us publish it, with the photos, video or audio you added, after our team reviews it. We contact you or connect you with a partner only when you ask for that kind of help.</p>
+                <dl>
+                  <div><dt>Feature my stories on HUMAN:HERE social media</dt><dd>{activity.allowSocialReuse ? "On" : "Off"}</dd></div>
+                </dl>
+                <form className="settings-permissions" action={updateSocialSharing}><input type="hidden" name="allowSocialReuse" value={activity.allowSocialReuse ? "" : "on"} /><button>{activity.allowSocialReuse ? "Turn off" : "Turn on"}</button><small>Applies to stories you submit from now on.</small></form>
+                {storiesWithPermissions.length > 0 && <p>What each story you already submitted allows:</p>}
                 {storiesWithPermissions.length ? storiesWithPermissions.map(({ story, permissions }) => (
                   <section key={story.id}>
                     <header><b>{story.headline ?? "Untitled story"}</b><small>{permissions.revokedAt ? `Turned off ${timeAgo(permissions.revokedAt)}` : STATUS_LABELS[story.status]}</small></header>
@@ -187,7 +210,15 @@ export function AccountView({ email, error, fallbackName, role, tab, submissions
                     })}</ul>
                     {story.status === "published" && <form action={revokeConsent}><input type="hidden" name="submissionId" value={story.id} /><button>Turn off all and unpublish</button><small>Takes effect right away and removes your public photos, video and audio.</small></form>}
                   </section>
-                )) : <p className="settings-empty">You have not given any permissions yet. We will ask when you submit a story.</p>}
+                )) : null}
+              </article>
+
+              <article className="post-card settings-card">
+                <h2>Your account</h2>
+                <form className="settings-inline" action={changeUsername}>
+                  <label htmlFor="settings-username">Username</label>
+                  <div><span aria-hidden="true">@</span><input id="settings-username" name="username" defaultValue={activity.username ?? ""} minLength={3} maxLength={20} pattern="[A-Za-z0-9_]{3,20}" required autoComplete="username" /><button>Save</button></div>
+                </form>
               </article>
 
               <article className="post-card settings-card">

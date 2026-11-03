@@ -4,7 +4,14 @@ import { connection } from "next/server";
 import { signOut } from "@/app/login/actions";
 import { safeNext } from "@/lib/auth/redirect";
 import { requireUser } from "@/lib/auth/server";
+import { createDatabaseClient } from "@/lib/neon/server";
 import { acceptTerms } from "./actions";
+
+const WELCOME_ERRORS: Record<string, string> = {
+  "username-invalid": "Usernames are 3 to 20 letters, numbers or underscores.",
+  "username-reserved": "That username is reserved. Try another.",
+  "username-taken": "That username is taken. Try another.",
+};
 
 type WelcomeSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -12,7 +19,9 @@ async function WelcomeContent({ searchParams }: { searchParams: WelcomeSearchPar
   await connection();
   const query = await searchParams;
   const next = safeNext(query.next);
-  await requireUser(next);
+  const user = await requireUser(next);
+  const { data: profile } = await (await createDatabaseClient()).from("profiles").select("username,display_name,bio").eq("id", user.id).maybeSingle();
+  const suggested = profile?.username ?? (user.email.split("@")[0] ?? "").toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20);
   return (
     <main className="member-shell auth-page">
       <div className="member-atmosphere" aria-hidden="true"><i /><i /><i /></div>
@@ -23,17 +32,29 @@ async function WelcomeContent({ searchParams }: { searchParams: WelcomeSearchPar
       <section className="auth-composition" aria-labelledby="welcome-title">
         <div className="auth-intro">
           <p className="member-kicker"><i aria-hidden="true" /> Before you begin</p>
-          <h1 id="welcome-title">One<br />quick<br />thing.</h1>
-          <p>Agreeing here does not publish anything. We ask separately every time you share a story.</p>
+          <h1 id="welcome-title">Make<br />it<br />yours.</h1>
+          <p>Choose how you appear on HUMAN:HERE. Nothing you share publishes until our team has reviewed it, and you can change all of this later.</p>
         </div>
-        <section className="auth-panel" aria-label="Terms and privacy">
-          <header><span>Terms and privacy</span><small>One time</small></header>
-          {query.error === "required" && <p className="auth-notice auth-error" role="alert">Please tick both boxes to continue.</p>}
+        <section className="auth-panel" aria-label="Your profile">
+          <header><span>Your profile</span><small>One time</small></header>
+          {typeof query.error === "string" && WELCOME_ERRORS[query.error] && <p className="auth-notice auth-error" role="alert">{WELCOME_ERRORS[query.error]}</p>}
           <form action={acceptTerms} className="auth-agree">
             <input type="hidden" name="next" value={next} />
-            <label><input type="checkbox" name="agree" required /><span>I agree to the <Link href="/terms" target="_blank">Terms of Use</Link> and have read the <Link href="/privacy" target="_blank">Privacy Policy</Link>.</span></label>
-            <label><input type="checkbox" name="age" required /><span>I am 18 or older, or I have my parent or guardian&rsquo;s permission to use HUMAN:HERE.</span></label>
-            <button>Agree and continue <span aria-hidden="true">→</span></button>
+            <div className="auth-username">
+              <label htmlFor="welcome-username">Choose your @username</label>
+              <div><span aria-hidden="true">@</span><input id="welcome-username" name="username" defaultValue={suggested} required minLength={3} maxLength={20} pattern="[A-Za-z0-9_]{3,20}" autoComplete="username" /></div>
+              <small>3 to 20 letters, numbers or underscores. You can change it later.</small>
+            </div>
+            <div className="auth-username auth-field">
+              <label htmlFor="welcome-name">Name</label>
+              <input id="welcome-name" name="displayName" defaultValue={profile?.display_name ?? user.name ?? ""} maxLength={80} autoComplete="name" placeholder="How people see you" />
+            </div>
+            <div className="auth-username auth-field">
+              <label htmlFor="welcome-bio">Bio <small>Optional</small></label>
+              <textarea id="welcome-bio" name="bio" defaultValue={profile?.bio ?? ""} maxLength={160} rows={2} placeholder="A line about you" />
+            </div>
+            <p className="auth-consent">By continuing you agree to the <Link href="/terms" target="_blank">Terms of Use</Link> and <Link href="/privacy" target="_blank">Privacy Policy</Link>, and confirm you are 18 or older or have a parent or guardian&rsquo;s permission.</p>
+            <button>Continue <span aria-hidden="true">→</span></button>
           </form>
           <footer><span>Nothing publishes automatically.</span><span>You can leave any time.</span></footer>
         </section>

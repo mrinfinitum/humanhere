@@ -77,12 +77,32 @@ export async function deleteStory(formData: FormData) {
   refresh();
 }
 
-export async function updateDisplayName(formData: FormData) {
+export async function updateProfile(formData: FormData) {
   const user = await requireUser("/account");
   const displayName = String(formData.get("displayName") ?? "").trim().slice(0, 80);
+  const bio = String(formData.get("bio") ?? "").trim().slice(0, 160);
   const database = await createDatabaseClient();
-  const { error } = await database.from("profiles").update({ display_name: displayName || null }).eq("id", user.id);
-  if (error) throw new Error(`Name could not be saved: ${error.code}`);
+  const { error } = await database.from("profiles").update({ display_name: displayName || null, bio: bio || null }).eq("id", user.id);
+  if (error) throw new Error(`Profile could not be saved: ${error.code}`);
+  refresh();
+}
+
+/** Applies to stories submitted from now on; earlier stories keep their own record. */
+export async function updateSocialSharing(formData: FormData) {
+  const user = await requireUser("/account?tab=privacy");
+  const database = await createDatabaseClient();
+  const { error } = await database.from("profiles").update({ allow_social_reuse: formData.get("allowSocialReuse") === "on" }).eq("id", user.id);
+  if (error) throw new Error(`Permissions could not be saved: ${error.code}`);
+  refresh();
+}
+
+const USERNAME_ERRORS: Record<string, string> = { "invalid username": "username-invalid", "username is reserved": "username-reserved", "username is taken": "username-taken" };
+
+export async function changeUsername(formData: FormData) {
+  await requireUser("/account?tab=privacy");
+  const database = await createDatabaseClient();
+  const { error } = await database.rpc("claim_username", { p_username: String(formData.get("username") ?? "") });
+  if (error) redirect(`/account?tab=privacy&error=${USERNAME_ERRORS[error.message] ?? "username-invalid"}`);
   refresh();
 }
 

@@ -14,6 +14,16 @@ export const getSessionUser = cache(async () => {
   return data?.user ?? null;
 });
 
+// Diagnoses a token the database did not accept as a user, without logging it.
+function describeToken(token: string) {
+  try {
+    const claims = JSON.parse(Buffer.from(token.split(".")[1] ?? "", "base64url").toString()) as Record<string, unknown>;
+    return { role: claims.role, hasSubject: Boolean(claims.sub), expiresIn: typeof claims.exp === "number" ? claims.exp - Math.floor(Date.now() / 1000) : null };
+  } catch {
+    return { unreadable: true };
+  }
+}
+
 export const createDatabaseClient = cache(async () => {
   const user = await getSessionUser();
   if (!user) return createPublicDatabaseClient();
@@ -26,7 +36,7 @@ export const createDatabaseClient = cache(async () => {
     options: { global: { fetch, headers: { Authorization: `Bearer ${data.token}` } } },
   });
   const profile = await client.rpc("ensure_profile", { p_display_name: user.name });
-  if (profile.error) console.error("Profile initialization failed:", profile.error.code, profile.error.message);
+  if (profile.error) console.error("Profile initialization failed:", profile.error.code, profile.error.message, describeToken(data.token));
   if (profile.error) throw new Error(`Unable to initialize your account: ${profile.error.code}`);
   return client;
 });

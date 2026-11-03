@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Archivo } from "next/font/google";
 import "./globals.css";
 
-const geist = Geist({
-  variable: "--font-geist-sans",
+// One variable family: normal width for reading, the wide axis for display type.
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
+  axes: ["wdth"],
   display: "swap",
 });
 
@@ -41,7 +43,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={geist.variable}>
+    <html lang="en" className={archivo.variable} suppressHydrationWarning>
       <body>{children}</body>
     </html>
   );

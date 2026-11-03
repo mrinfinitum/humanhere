@@ -2,8 +2,6 @@ import { getAuthenticatedUser } from "@/lib/auth/server";
 import { CONSENT_VERSION } from "@/lib/legal/versions";
 import { createDatabaseClient } from "@/lib/neon/server";
 
-const keys = ["publishStory", "publishMedia", "socialReuse", "mayContact", "partnerReferral"] as const;
-
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   // These cookie-authenticated mutations must originate from the app.
   if (request.headers.get("origin") !== new URL(request.url).origin) return Response.json({ error: "invalid_origin" }, { status: 403 });
@@ -11,10 +9,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!user) return Response.json({ error: "authentication_required" }, { status: 401 });
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return Response.json({ error: "invalid_submission" }, { status: 400 });
-  const body = await request.json().catch(() => null) as Record<string, unknown> | null;
-  if (!body || typeof body !== "object") return Response.json({ error: "invalid_consent" }, { status: 400 });
-  const consent = Object.fromEntries(keys.map(key => [key, body[key] === true])) as Record<(typeof keys)[number], boolean>;
   const database = await createDatabaseClient();
+  // Submitting asks to publish the story and the media added to it. Contact
+  // and partner help follow from what the member said would help; featuring
+  // on our social media is the one choice kept in their settings.
+  const [{ data: story }, { data: settings }] = await Promise.all([
+    database.from("submissions").select("what_they_need").eq("id", id).eq("user_id", user.id).maybeSingle(),
+    database.from("profiles").select("allow_social_reuse").eq("id", user.id).maybeSingle(),
+  ]);
+  if (!story || !settings) return Response.json({ error: "Your story could not be read." }, { status: 400 });
+  const help = story.what_they_need?.[0];
+  const consent = {
+    publishStory: true, publishMedia: true, socialReuse: settings.allow_social_reuse,
+    mayContact: Boolean(help && help !== "share_only"),
+    partnerReferral: help === "practical_help" || help === "resources",
+  };
   const { error } = await database.from("consent_records").insert({
     submission_id: id, user_id: user.id, publish_story: consent.publishStory,
     publish_media: consent.publishMedia, social_reuse: consent.socialReuse,

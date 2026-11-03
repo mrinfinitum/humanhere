@@ -34,7 +34,8 @@ assert.match(providers, /NEON_AUTH_GOOGLE_ENABLED === "true"/, "Google must requ
 const actions = await readFile(new URL("../src/app/login/actions.ts", import.meta.url), "utf8");
 assert.match(actions, /if \(!available\[value\]\)/, "OAuth actions must reject disabled providers server-side");
 assert.match(actions, /if \(!available\.email\)/, "email actions must reject disabled email auth server-side");
-assert.match(actions, /callbackURL: `\$\{getSiteUrl\(\)\}\/auth\/complete\?next=/, "sign-in must pass through the session exchange before returning to public pages");
+assert.match(actions, /return `\$\{getSiteUrl\(\)\}\/auth\/complete\?next=/, "sign-in must pass through the session exchange before returning to public pages");
+assert.doesNotMatch(actions, /callbackURL: (?!completeUrl\(next\))/, "every emailed or OAuth callback must use the session exchange");
 const page = await readFile(new URL("../src/app/login/page.tsx", import.meta.url), "utf8");
 assert.match(page, /providers\.google &&/);
 assert.match(page, /providers\.email &&/);

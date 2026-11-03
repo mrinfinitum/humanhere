@@ -24,6 +24,7 @@ export type PublicHumanRow = {
   public_latitude?: number | null;
   public_longitude?: number | null;
   public_location_precision?: "city" | "region" | "country" | null;
+  author_username?: string | null;
 };
 
 export function toHumanEntry(row: PublicHumanRow): HumanEntry {
@@ -57,6 +58,7 @@ export function toHumanEntry(row: PublicHumanRow): HumanEntry {
     allowPrivateNotes: row.allow_private_notes,
     socialImageAllowed: row.social_image_allowed,
     layout: row.layout ?? undefined,
+    authorUsername: row.anonymous ? undefined : row.author_username ?? undefined,
     createdAt: row.created_at,
     publishedAt: row.published_at,
   };

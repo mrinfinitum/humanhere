@@ -10,7 +10,7 @@ type Table<Row, Insert = Partial<Row>, Update = Partial<Insert>> = {
 export type Database = {
   public: {
     Tables: {
-      profiles: Table<{ id: string; display_name: string | null; role: Database["public"]["Enums"]["account_role"]; notes_suspended_at: string | null; notes_suspension_reason: string | null; notes_suspended_by: string | null; terms_accepted_at: string | null; terms_version: string | null; created_at: string; updated_at: string }>;
+      profiles: Table<{ id: string; display_name: string | null; role: Database["public"]["Enums"]["account_role"]; notes_suspended_at: string | null; notes_suspension_reason: string | null; notes_suspended_by: string | null; terms_accepted_at: string | null; terms_version: string | null; username: string | null; bio: string | null; allow_social_reuse: boolean; created_at: string; updated_at: string }>;
       human_entries: Table<Record<string, Json | undefined>>;
       submissions: Table<{
         id: string; user_id: string; intent: string | null; artifact_type: string | null; identity_mode: string | null;
@@ -40,6 +40,9 @@ export type Database = {
       human_need_partner_assignments: Table<Record<string, Json | undefined>>;
       fulfillment_orders: Table<Record<string, Json | undefined>>;
       sensitive_access_events: Table<Record<string, Json | undefined>>;
+      follows: Table<{ follower_id: string; followee_id: string; created_at: string }>;
+      content_reports: Table<{ id: string; human_entry_id: string; reporter_id: string | null; reason: Database["public"]["Enums"]["report_reason"]; details: string | null; created_at: string; resolved_at: string | null; resolved_by: string | null; resolution: "removed" | "dismissed" | null }>;
+      member_gifts: Table<{ id: string; user_id: string | null; provider: string; provider_reference: string; status: "succeeded" | "refunded"; created_at: string; updated_at: string }>;
     };
     Views: {
       human_entries_public: {
@@ -66,6 +69,7 @@ export type Database = {
           public_latitude: number | null;
           public_longitude: number | null;
           public_location_precision: Database["public"]["Enums"]["human_public_location_precision"] | null;
+          author_username: string | null;
         };
         Relationships: [];
       };
@@ -93,6 +97,13 @@ export type Database = {
     Functions: {
       ensure_profile: { Args: { p_display_name?: string }; Returns: string };
       accept_terms: { Args: { p_version: string }; Returns: string };
+      my_experience: { Args: Record<PropertyKey, never>; Returns: Array<{ loves: number; notes: number; gifts: number }> };
+      claim_username: { Args: { p_username: string }; Returns: string };
+      member_profile: { Args: { p_username: string }; Returns: Array<{ username: string; display_name: string | null; bio: string | null; joined_at: string; followers: number; following: number; viewer_follows: boolean; is_self: boolean; loves: number; notes: number; gifts: number }> };
+      follow_member: { Args: { p_username: string }; Returns: boolean };
+      unfollow_member: { Args: { p_username: string }; Returns: boolean };
+      following_feed: { Args: { p_limit?: number; p_before?: string }; Returns: Array<Database["public"]["Views"]["human_entries_public"]["Row"]> };
+      report_content: { Args: { p_human_entry_id: string; p_reason: Database["public"]["Enums"]["report_reason"]; p_details?: string }; Returns: string };
       current_account_role: { Args: Record<PropertyKey, never>; Returns: Database["public"]["Enums"]["account_role"] };
       is_staff: { Args: { allowed?: Database["public"]["Enums"]["account_role"][] }; Returns: boolean };
       publish_submission: { Args: { p_submission_id: string; p_slug: string; p_thumbnail: Json; p_media?: Json; p_type?: Database["public"]["Enums"]["human_entry_type"]; p_layout?: Json; p_sensitive_story?: boolean }; Returns: string };
@@ -129,6 +140,7 @@ export type Database = {
       human_entry_source: "direct" | "editorial" | "social";
       human_public_location_precision: "city" | "region" | "country";
       help_need_type: "groceries" | "clothing" | "household" | "transportation" | "utilities" | "school" | "baby" | "employment" | "medical_nonclinical" | "housing" | "other";
+      report_reason: "harassment" | "hate" | "private_information" | "sexual_content" | "violence" | "self_harm" | "minor_safety" | "spam" | "impersonation" | "other";
       help_fulfillment_type: "goods" | "grocery" | "voucher" | "partner_service" | "other";
     };
     CompositeTypes: Record<PropertyKey, never>;

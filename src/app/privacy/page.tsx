@@ -13,7 +13,7 @@ export default function PrivacyPage() {
       <article>
         <p className="eyebrow">Privacy Policy</p>
         <h1>Privacy Policy</h1>
-        <p className="legal-updated">Last updated October 6, 2026</p>
+        <p className="legal-updated">Last updated November 2, 2026</p>
 
         <h2>The short version</h2>
         <ul>
@@ -26,20 +26,23 @@ export default function PrivacyPage() {
 
         <h2>1. What we collect</h2>
         <ul>
-          <li><b>Account details:</b> your email address and the name you choose to show.</li>
+          <li><b>Account details:</b> your email address, your @username, and the name and bio you choose to show. If you sign in with Google or Apple, the basic profile details they share with us.</li>
           <li><b>Stories you write:</b> the text, the photos, video or audio you upload, and details you add such as a location or what would help. Stories can include sensitive information about your life; we use it only as you have allowed.</li>
-          <li><b>Your permissions:</b> what you said yes or no to for each story, when, and which wording you saw.</li>
-          <li><b>Activity:</b> the stories you send love to, notes you send, and requests you make to us.</li>
+          <li><b>Your permissions:</b> what each story you submitted allows, when you submitted it, which version of these terms applied, and whether you let us feature your stories on social media.</li>
+          <li><b>Activity:</b> the stories you send love to, notes you send, the members you follow, stories you report, and requests you make to us.</li>
           <li><b>Technical details:</b> when you sign in we record your IP address and browser type to keep your account secure.</li>
         </ul>
 
         <h2>2. Who can see what</h2>
         <ul>
+          <li><b>Your profile:</b> everyone: your @username, name, bio, level and rank, when you joined, your follower and following counts, and your published stories that are not anonymous.</li>
           <li><b>Drafts:</b> only you.</li>
           <li><b>Stories you submit:</b> you and our review team.</li>
           <li><b>Published stories:</b> everyone, including the first name or &ldquo;Anonymous&rdquo;, the general location, and the media you approved.</li>
           <li><b>Notes sent to you:</b> our moderators, then only you. The sender&rsquo;s identity is not shown to you.</li>
           <li><b>Love:</b> everyone sees a total count. Who sent it stays private.</li>
+          <li><b>Who you follow:</b> others see only the counts, never the names.</li>
+          <li><b>Reports:</b> our staff. The author is not told who reported a story.</li>
           <li><b>Your email address:</b> never shown publicly.</li>
         </ul>
 
@@ -50,6 +53,7 @@ export default function PrivacyPage() {
         <p>We do not sell personal information. We share it only with:</p>
         <ul>
           <li><b>Service providers</b> that host the site, store data and files, handle sign-in, and deliver email on our behalf. Our database, sign-in and file storage are provided by Neon and hosted in the United States.</li>
+          <li><b>Google or Apple,</b> only if you choose to sign in with them.</li>
           <li><b>Partner organizations,</b> only when you asked to be connected for a specific story.</li>
           <li><b>Authorities,</b> when the law requires it or to protect someone from serious harm.</li>
         </ul>
@@ -65,7 +69,7 @@ export default function PrivacyPage() {
         </ul>
 
         <h2>7. Your choices and rights</h2>
-        <p>From your account you can edit, unpublish and delete your stories, and change the name you show. You can also ask us for a copy of your information, to correct it, to delete your account, or to stop using it in a particular way. Depending on where you live, the law may give you further rights. Write to <a href="mailto:hello@humanhere.co">hello@humanhere.co</a> and we will respond.</p>
+        <p>From your account you can edit, unpublish and delete your stories, and change your name, bio and @username. You can also ask us for a copy of your information, to correct it, to delete your account, or to stop using it in a particular way. Depending on where you live, the law may give you further rights. Write to <a href="mailto:hello@humanhere.co">hello@humanhere.co</a> and we will respond.</p>
 
         <h2>8. Children</h2>
         <p>HUMAN:HERE is not directed at children under 13. People under 18 need a parent or guardian&rsquo;s permission to use an account, and a story about a child is published only with a parent or guardian&rsquo;s verified consent.</p>

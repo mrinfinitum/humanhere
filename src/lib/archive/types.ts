@@ -67,6 +67,8 @@ export type HumanEntry = {
   published: boolean;
   featured?: boolean;
   loveCount: number;
+  /** The author's @username; never set for anonymous posts. */
+  authorUsername?: string;
   allowPrivateNotes: boolean;
   socialImageAllowed: boolean;
   layout?: {

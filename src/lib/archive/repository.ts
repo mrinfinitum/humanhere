@@ -10,7 +10,7 @@ import type { ArchiveBatch, ArchiveQuery, HumanArchiveRepository, HumanEntry } f
 import { hasNeonEnvironment } from "@/lib/neon/env";
 import { createPublicDatabaseClient } from "@/lib/neon/public";
 
-const PUBLIC_COLUMNS = "id,slug,type,source,first_name,display_location,anonymous,thumbnail,media,headline,quote,story,featured,layout,love_count,allow_private_notes,social_image_allowed,created_at,published_at";
+const PUBLIC_COLUMNS = "id,slug,type,source,first_name,display_location,anonymous,thumbnail,media,headline,quote,story,featured,layout,love_count,allow_private_notes,social_image_allowed,created_at,published_at,author_username";
 
 function boundedLimit(limit?: number) {
   return Math.min(Math.max(limit ?? 24, 1), 40);

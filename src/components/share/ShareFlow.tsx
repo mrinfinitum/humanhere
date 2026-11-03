@@ -4,26 +4,18 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKe
 import { useRouter } from "next/navigation";
 import type { SubmissionDraft } from "@/lib/submissions/types";
 
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 5;
 const intents = [
   ["share_story", "I want to share my story"], ["need_help", "I need help"],
   ["help_someone", "I want to help someone"], ["explore", "I just want to explore"],
 ] as const;
 const artifacts = [["portrait", "Portrait"], ["note", "Written note"], ["video", "Video"], ["audio", "Voice"], ["story", "Story without a photo"]] as const;
 const helpOptions = [["share_only", "I just want to be seen"], ["prayer", "I need prayer"], ["practical_help", "I need practical help"], ["resources", "I need help finding resources"], ["contact_me", "I want someone to contact me"], ["help_someone", "I want to help someone else"]] as const;
-const consentOptions = [
-  ["publishStory", "HUMAN:HERE may publish my story."], ["publishMedia", "HUMAN:HERE may publish my photo or video."],
-  ["socialReuse", "HUMAN:HERE may share my story on social media."], ["mayContact", "HUMAN:HERE may contact me."],
-  ["partnerReferral", "HUMAN:HERE may connect me with a partner organization."],
-] as const;
-
-type Consent = Record<(typeof consentOptions)[number][0], boolean>;
 
 export function ShareFlow({ initial }: { initial: SubmissionDraft }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [draft, setDraft] = useState(initial);
-  const [consent, setConsent] = useState<Consent>({ publishStory: false, publishMedia: false, socialReuse: false, mayContact: false, partnerReferral: false });
   const [saveState, setSaveState] = useState<"saved" | "saving" | "offline" | "error">("saved");
   const [uploadState, setUploadState] = useState("");
   const [complete, setComplete] = useState(false);
@@ -130,7 +122,7 @@ export function ShareFlow({ initial }: { initial: SubmissionDraft }) {
     setSubmitting(true);
     const saved = await save(draft);
     if (!saved) { setSubmitting(false); return; }
-    const consentResponse = await fetch(`/api/submissions/${draft.id}/consent`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(consent) });
+    const consentResponse = await fetch(`/api/submissions/${draft.id}/consent`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
     if (!consentResponse.ok) { setSaveState("error"); setSubmitting(false); return; }
     const response = await fetch(`/api/submissions/${draft.id}/submit`, { method: "POST" });
     if (!response.ok) { setSaveState("error"); setSubmitting(false); return; }
@@ -157,13 +149,12 @@ export function ShareFlow({ initial }: { initial: SubmissionDraft }) {
 
       {step === 4 && <fieldset ref={questionRef} tabIndex={-1}><legend id="share-step-title">What are you carrying?</legend><p>What happened? What gives you hope? What do you wish someone understood?</p><textarea rows={8} value={draft.story ?? ""} onChange={event => patch({ story: event.target.value })} placeholder="There is no perfect way to tell it…" /></fieldset>}
 
-      {step === 5 && <fieldset ref={questionRef} tabIndex={-1}><legend id="share-step-title">What would help right now?</legend><p>This does not promise publication or assistance. It helps a real person understand what you are asking for.</p><div className="share-choices">{helpOptions.map(([value, label], index) => <Choice key={value} index={index} label={label} selected={draft.whatWouldHelp === value} onClick={() => { patch({ whatWouldHelp: value }); scheduleAdvance(6); }} />)}</div></fieldset>}
+      {step === 5 && <fieldset ref={questionRef} tabIndex={-1}><legend id="share-step-title">What would help right now?</legend><p>This does not promise publication or assistance. It helps a real person understand what you are asking for.</p><div className="share-choices">{helpOptions.map(([value, label], index) => <Choice key={value} index={index} label={label} selected={draft.whatWouldHelp === value} onClick={() => patch({ whatWouldHelp: value })} />)}</div><p className="share-agreement">When you submit, HUMAN:HERE may publish your story, with any photo, video or audio you added, once our team has reviewed it. {draft.whatWouldHelp && draft.whatWouldHelp !== "share_only" ? "We may contact you about what would help. " : ""}Featuring it on our social media follows <a href="/account?tab=privacy">your settings</a>. You can unpublish or delete it any time.</p></fieldset>}
 
-      {step === 6 && <fieldset ref={questionRef} tabIndex={-1}><legend id="share-step-title">You choose what happens next.</legend><p>Each permission is separate. Anything left unchecked remains unapproved.</p><div className="share-consent-list">{consentOptions.map(([key, label], index) => <label className="consent-control" key={key}><input type="checkbox" checked={consent[key]} onChange={event => setConsent(current => ({ ...current, [key]: event.target.checked }))} /><b>{String(index + 1).padStart(2, "0")}</b><span>{label}</span></label>)}</div></fieldset>}
 
       <footer>
         <button className="share-back" type="button" onClick={() => goToStep(step - 1)} disabled={step === 1}>← Back</button>
-        <div>{step < TOTAL_STEPS ? <button className="share-next" type="button" onClick={() => goToStep(step + 1)} disabled={!canContinue}><span>Continue</span><b>→</b></button> : <button className="share-next" type="button" onClick={() => void submit()} disabled={submitting}><span>{submitting ? "Submitting…" : "Submit for human review"}</span><b>→</b></button>}<small>{step < TOTAL_STEPS ? "Press Enter ↵" : "Nothing publishes automatically"}</small></div>
+        <div>{step < TOTAL_STEPS ? <button className="share-next" type="button" onClick={() => goToStep(step + 1)} disabled={!canContinue}><span>Continue</span><b>→</b></button> : <button className="share-next" type="button" onClick={() => void submit()} disabled={submitting || !canContinue}><span>{submitting ? "Submitting…" : "Submit for human review"}</span><b>→</b></button>}<small>{step < TOTAL_STEPS ? "Press Enter ↵" : "Nothing publishes automatically"}</small></div>
       </footer>
     </section>
   );

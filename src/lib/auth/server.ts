@@ -15,13 +15,13 @@ export async function requireUser(returnTo = "/account") {
   return user;
 }
 
-/** Signed-in members must have agreed to the current terms before using their space. */
+/** Signed-in members must have agreed to the current terms and chosen a username. */
 export async function requireMember(returnTo = "/account") {
   const user = await requireUser(returnTo);
   const database = await createDatabaseClient();
-  const { data, error } = await database.from("profiles").select("terms_version").eq("id", user.id).maybeSingle();
+  const { data, error } = await database.from("profiles").select("terms_version,username").eq("id", user.id).maybeSingle();
   if (error) throw new Error(`Unable to load your account: ${error.code}`);
-  if (data?.terms_version !== TERMS_VERSION) redirect(`/welcome?next=${encodeURIComponent(returnTo)}`);
+  if (data?.terms_version !== TERMS_VERSION || !data.username) redirect(`/welcome?next=${encodeURIComponent(returnTo)}`);
   return user;
 }
 
