@@ -16,6 +16,12 @@ export function StartShare() {
         router.push("/login?next=%2Fshare");
         return;
       }
+      if (response.status === 429) {
+        const body = await response.json().catch(() => ({})) as { error?: string };
+        setError(body.error ?? "You have started a lot of drafts recently. Please continue an existing draft.");
+        setStarting(false);
+        return;
+      }
       if (!response.ok || !response.headers.get("content-type")?.includes("application/json")) throw new Error();
       const draft = await response.json() as { id?: unknown };
       if (typeof draft.id !== "string" || !/^[0-9a-f-]{36}$/i.test(draft.id)) throw new Error();

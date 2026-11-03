@@ -25,6 +25,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     p_human_entry_id: slug,
     p_body: body,
   });
+  if (error?.message === "note limit reached") return Response.json({ error: "You have sent a lot of notes recently. Please try again later." }, { status: 429 });
   if (error) return Response.json({ error: "This note could not be submitted." }, { status: 422 });
   return Response.json({ noteId: data, status: "pending" }, { status: 201 });
 }

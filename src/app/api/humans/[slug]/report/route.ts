@@ -1,4 +1,6 @@
+import { after } from "next/server";
 import type { Database } from "@/lib/neon/database.types";
+import { alertStaff } from "@/lib/notify/staff-alerts";
 import { createDatabaseClient, getSessionUser } from "@/lib/neon/server";
 
 type ReportReason = Database["public"]["Enums"]["report_reason"];
@@ -18,5 +20,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   const { error } = await (await createDatabaseClient()).rpc("report_content", { p_human_entry_id: entryId, p_reason: reason, p_details: details });
   if (error?.message === "report limit reached") return Response.json({ error: "You have sent a lot of reports. Please try again later." }, { status: 429 });
   if (error) return Response.json({ error: "This story could not be reported." }, { status: 422 });
+  after(() => alertStaff({
+    subject: "A story was reported",
+    lines: [`Reason: ${reason.replaceAll("_", " ")}.`, ...(details ? [`Details: ${details.slice(0, 300)}`] : []), "Take it down or dismiss the report from the admin reports page."],
+    path: "/admin/reports",
+  }));
   return Response.json({ reported: true }, { status: 201 });
 }

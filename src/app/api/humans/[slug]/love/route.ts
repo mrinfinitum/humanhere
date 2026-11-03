@@ -50,6 +50,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ sl
     human_entry_id: value.humanEntryId,
     user_id: value.user.id,
   });
+  if (error?.message === "love limit reached") return Response.json({ error: "You have sent a lot of love this hour. Please try again a little later." }, { status: 429 });
   if (error && error.code !== "23505") return Response.json({ error: "Love could not be sent." }, { status: 422 });
   return Response.json({ loved: true, loveCount: await currentLoveCount(value.client, value.humanEntryId) ?? 0 });
 }

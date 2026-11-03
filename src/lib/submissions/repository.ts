@@ -3,6 +3,9 @@ import "server-only";
 import type { SubmissionDraft, SubmissionRepository, SubmissionStatus } from "./types";
 import { createDatabaseClient } from "@/lib/neon/server";
 
+/** A member hit one of the posting limits; the message is safe to show them. */
+export class LimitError extends Error {}
+
 const OWNED_COLUMNS = "id,user_id,intent,artifact_type,identity_mode,public_name,anonymous,location,headline,story,what_they_need,need_category,status,created_at,updated_at,submitted_at";
 
 type SubmissionRow = {
@@ -29,11 +32,12 @@ class NeonSubmissionRepository implements SubmissionRepository {
     const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count, error: countError } = await client.from("submissions").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", since);
     if (countError) throw new Error(`Could not verify draft limit: ${countError.code}`);
-    if ((count ?? 0) >= 10) throw new Error("Draft creation limit reached. Please continue an existing draft.");
+    if ((count ?? 0) >= 10) throw new LimitError("You have started a lot of drafts recently. Please continue an existing draft.");
     // `status` is intentionally omitted. Authenticated users are not granted
     // direct INSERT access to that workflow column; the database default and
     // RLS policy establish every new submission as a draft.
     const { data, error } = await client.from("submissions").insert({ user_id: userId, intent: intent ?? null }).select(OWNED_COLUMNS).single();
+    if (error?.message === "draft limit reached") throw new LimitError("You have started a lot of drafts recently. Please continue an existing draft.");
     if (error) throw new Error(`Could not create draft: ${error.code}`);
     return mapSubmission(data as unknown as SubmissionRow);
   }
@@ -68,6 +72,7 @@ class NeonSubmissionRepository implements SubmissionRepository {
   async submitOwnedDraft(userId: string, id: string) {
     const client = await createDatabaseClient();
     const { data, error } = await client.from("submissions").update({ status: "submitted", submitted_at: new Date().toISOString() }).eq("id", id).eq("user_id", userId).eq("status", "draft").select(OWNED_COLUMNS).single();
+    if (error?.message === "post limit reached") throw new LimitError("You have shared a lot of stories recently. Please try again in a little while.");
     if (error) throw new Error(`Could not submit draft: ${error.code}`);
     return mapSubmission(data as unknown as SubmissionRow);
   }

@@ -20,6 +20,7 @@ export function ShareFlow({ initial }: { initial: SubmissionDraft }) {
   const [uploadState, setUploadState] = useState("");
   const [complete, setComplete] = useState<{ status: "published"; slug: string } | { status: "held"; reason: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
   const firstRender = useRef(true);
   const questionRef = useRef<HTMLFieldSetElement | null>(null);
   const advanceTimer = useRef<number | null>(null);
@@ -125,6 +126,12 @@ export function ShareFlow({ initial }: { initial: SubmissionDraft }) {
     const consentResponse = await fetch(`/api/submissions/${draft.id}/consent`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
     if (!consentResponse.ok) { setSaveState("error"); setSubmitting(false); return; }
     const response = await fetch(`/api/submissions/${draft.id}/submit`, { method: "POST" });
+    if (response.status === 429) {
+      const body = await response.json().catch(() => ({})) as { error?: string };
+      setSubmitError(body.error ?? "You have shared a lot of stories recently. Please try again in a little while.");
+      setSubmitting(false);
+      return;
+    }
     if (!response.ok) { setSaveState("error"); setSubmitting(false); return; }
     setComplete(await response.json() as NonNullable<typeof complete>);
     router.refresh();
@@ -153,6 +160,7 @@ export function ShareFlow({ initial }: { initial: SubmissionDraft }) {
       {step === 5 && <fieldset ref={questionRef} tabIndex={-1}><legend id="share-step-title">What would help right now?</legend><p>This does not promise assistance. It helps a real person understand what you are asking for.</p><div className="share-choices">{helpOptions.map(([value, label], index) => <Choice key={value} index={index} label={label} selected={draft.whatWouldHelp === value} onClick={() => patch({ whatWouldHelp: value })} />)}</div><p className="share-agreement">When you share, your story posts straight away, with any photo, video or audio you added. If it looks like it includes a phone number, email or street address, our team checks it first. {draft.whatWouldHelp && draft.whatWouldHelp !== "share_only" ? "We may contact you about what would help. " : ""}Featuring it on our social media follows <a href="/account/settings/privacy">your settings</a>. You can unpublish or delete it any time.</p></fieldset>}
 
 
+      {submitError && <p className="share-error" role="alert">{submitError}</p>}
       <footer>
         <button className="share-back" type="button" onClick={() => goToStep(step - 1)} disabled={step === 1}>← Back</button>
         <div>{step < TOTAL_STEPS ? <button className="share-next" type="button" onClick={() => goToStep(step + 1)} disabled={!canContinue}><span>Continue</span><b>→</b></button> : <button className="share-next" type="button" onClick={() => void submit()} disabled={submitting || !canContinue}><span>{submitting ? "Sharing…" : "Share my story"}</span><b>→</b></button>}<small>{step < TOTAL_STEPS ? "Press Enter ↵" : "Posts right away"}</small></div>

@@ -10,7 +10,7 @@ async function ShareContent({ draftId }: { draftId?: string }) {
   await connection();
   const user = await requireMember(draftId ? `/share?draft=${draftId}` : "/share");
   const draft = draftId ? await submissionRepository.getOwned(user.id, draftId) : undefined;
-  return draft ? <ShareFlow initial={draft} /> : <section className="share-opening"><p className="eyebrow">Be seen</p><h1>This begins privately.</h1><p>You can tell a story, ask for help, offer help, or remain anonymous. Nothing publishes automatically, and receiving help never requires public exposure.</p><StartShare /></section>;
+  return draft ? <ShareFlow initial={draft} /> : <section className="share-opening"><p className="eyebrow">Be seen</p><h1>This begins privately.</h1><p>You can tell a story, ask for help, offer help, or remain anonymous. Your draft stays private until you share it, then it posts right away. Receiving help never requires public exposure.</p><StartShare /></section>;
 }
 
 async function ShareRouteContent({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
