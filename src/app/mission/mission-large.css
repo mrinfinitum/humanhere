@@ -1,0 +1,33 @@
+/* Mission page on large displays: wider measure, larger type, same proportions. */
+@media (min-width: 1800px) {
+  .mission-page .give-hero,
+  .mission-page .give-section,
+  .mission-page .give-photo,
+  .mission-page .give-closing { width: min(1560px, 100% - 120px); }
+  .mission-page .give-hero { gap: 40px 96px; }
+  .mission-page .give-hero h1 { font-size: clamp(112px, 6vw, 150px); }
+  .mission-page .give-hero__copy p { font-size: 21px; }
+  .mission-page .mission-lede { font-size: clamp(28px, 1.5vw, 34px) !important; }
+  .mission-page .member-kicker,
+  .mission-page .give-code { font-size: 13px; }
+  .mission-page .give-button { min-height: 56px; padding: 0 28px; font-size: 13px; }
+  .mission-page .give-heading { max-width: 960px; margin-bottom: 48px; }
+  .mission-page .give-heading h2,
+  .mission-page .give-pair h2 { font-size: clamp(56px, 3vw, 72px); }
+  .mission-page .give-heading > p:last-child:not(.give-code),
+  .mission-page .give-pair p:not(.give-code),
+  .mission-page .give-card p,
+  .mission-page .mission-faith p { font-size: 20px; }
+  .mission-page .give-card { padding: 34px; }
+  .mission-page .give-card h3 { font-size: 28px; }
+  .mission-page .give-cards--three .give-card { min-height: 280px; }
+  .mission-page .mission-big { max-width: 1240px; font-size: clamp(40px, 2.2vw, 54px); }
+  .mission-page .mission-burdens li { padding: 10px 18px; font-size: 18px; }
+  .mission-page .mission-labels li { font-size: clamp(26px, 1.5vw, 32px); }
+  .mission-page .mission-close { font-size: clamp(30px, 1.7vw, 38px); }
+  .mission-page .mission-photo { height: clamp(560px, 32vw, 760px); }
+  .mission-page .mission-split .give-photo { height: clamp(520px, 30vw, 700px); }
+  .mission-page .give-photo figcaption { max-width: 760px; font-size: clamp(36px, 2vw, 46px); }
+  .mission-page .give-closing h2 { font-size: clamp(72px, 4.2vw, 108px); }
+  .mission-page .give-closing > p { font-size: 22px; }
+}

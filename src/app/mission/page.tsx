@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { SiteNav } from "@/components/SiteNav";
+import "./mission-large.css";
 
 const description = "HUMAN:HERE helps people see one another, share real stories, connect real needs, and show up for one another with dignity, compassion, and love.";
 
