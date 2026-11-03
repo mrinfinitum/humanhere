@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { QuietHeader } from "@/components/QuietHeader";
+import { AccountLink } from "@/components/AccountLink";
 
 const description = "Support HUMAN:HERE and help fund human storytelling, community connections, outreach, technology, and practical ways for people to show up for one another.";
 
@@ -25,41 +25,84 @@ const fundingAreas = [
 ];
 const beyondMoney = [["Share a story", "/share"], ["Volunteer", "/contact?reason=volunteer"], ["Pray", "/contact?reason=pray"], ["Introduce a partner", "/contact?reason=partner"], ["Host HUMAN:HERE", "/contact?reason=host"], ["Wear the message", "/contact?reason=merch"], ["Put up a decal", "/contact?reason=decal"], ["Tell someone they matter", "/humans"]];
 
+const promises = ["No display advertising around human stories.", "No selling personal data.", "No charging someone to ask for help.", "No paying to be featured.", "No turning trauma into engagement bait."];
+const organizationTypes = ["Community Partner", "Story Project Partner", "City Partner", "Initiative Partner", "Founding Partner"];
+
+function Arrow() {
+  return <span aria-hidden="true">→</span>;
+}
+
 export default function SupportPage() {
   return (
-    <main className="manifesto-page support-page">
-      <QuietHeader />
-      <section className="manifesto-hero support-hero" aria-labelledby="support-title">
-        <div className="manifesto-hero__index" aria-hidden="true">01 / SUPPORT</div><h1 id="support-title">Support the work.<br />Not the algorithm.</h1>
-        <div className="manifesto-hero__copy"><p>HUMAN:HERE exists to reach people, tell real stories, connect real needs, and help people show up for one another.</p><p>We do not run advertising around people’s stories. We rely on people, churches, businesses, foundations, and partners who believe this work should exist.</p><div className="hero-actions"><Link href="/contact?reason=give">Support HUMAN:HERE <span aria-hidden="true">→</span></Link><Link href="/contact?reason=monthly-support">Become a monthly supporter <span aria-hidden="true">→</span></Link></div><small>Online donation processing is not yet connected. These links start a conversation and do not collect payment.</small></div>
+    <main className="member-shell give-page">
+      <div className="member-atmosphere" aria-hidden="true"><i /><i /><i /></div>
+      <header className="member-header">
+        <Link className="member-wordmark" href="/" aria-label="HUMAN:HERE home">HUMAN<span>:</span>HERE</Link>
+        <nav aria-label="Main navigation"><Link href="/humans">Humans</Link><Link href="/members">People</Link><Link href="/mission">Mission</Link><Link href="/share">Share</Link><AccountLink /></nav>
+      </header>
+
+      <section className="give-hero" aria-labelledby="support-title">
+        <p className="member-kicker"><i aria-hidden="true" /> Support HUMAN:HERE</p>
+        <h1 id="support-title">Support the work.<br /><em>Not the algorithm.</em></h1>
+        <div className="give-hero__copy">
+          <p>HUMAN:HERE exists to reach people, tell real stories, connect real needs, and help people show up for one another.</p>
+          <p>We do not run advertising around people’s stories. We rely on people, churches, businesses, foundations, and partners who believe this work should exist.</p>
+          <div className="give-buttons"><Link className="give-button give-button--primary" href="/contact?reason=give">Support HUMAN:HERE <Arrow /></Link><Link className="give-button" href="/contact?reason=monthly-support">Give monthly <Arrow /></Link></div>
+          <small>Online donation processing is not yet connected. These links start a conversation and do not collect payment.</small>
+        </div>
       </section>
 
-      <section className="funding-principle" aria-labelledby="funding-principle-title">
-        <p className="section-code">02 / THE LINE WE HOLD</p><h2 id="funding-principle-title">We will never<br />sell a person’s pain.</h2>
-        <ul><li>No display advertising around human stories.</li><li>No selling personal data.</li><li>No charging someone to ask for help.</li><li>No paying to be featured.</li><li>No turning trauma into engagement bait.</li></ul>
-        <p>We don’t monetize people’s pain.<br /><strong>We fund the work around it.</strong></p>
+      <section className="give-section give-promise" aria-labelledby="funding-principle-title">
+        <div className="give-heading"><p className="give-code">The line we hold</p><h2 id="funding-principle-title">We will never sell a person’s pain.</h2><p>We don’t monetize people’s pain. <strong>We fund the work around it.</strong></p></div>
+        <ul className="give-panel">{promises.map(item => <li key={item}><i aria-hidden="true" />{item}</li>)}</ul>
       </section>
 
-      <section className="support-actions ruled-section" aria-labelledby="support-actions-title">
-        <div className="section-heading"><p className="section-code">03 / WAYS TO SUPPORT</p><h2 id="support-actions-title">Put your support<br />where people are.</h2></div>
-        {supportActions.map(([code, title, body, href, link]) => <article key={title}><span aria-hidden="true">{code}</span><h3>{title}</h3><p>{body}</p><Link className="text-arrow" href={href}>{link} <span aria-hidden="true">→</span></Link></article>)}
-        <article><span aria-hidden="true">05</span><h3>Buy / wear / share</h3><p>A HUMAN:HERE shirt is not just merchandise. It’s a message walking through the world. PEOPLE NEED PEOPLE.</p><span className="coming-soon">Shop coming soon</span></article>
+      <section className="give-section" aria-labelledby="support-actions-title">
+        <div className="give-heading"><p className="give-code">Ways to support</p><h2 id="support-actions-title">Put your support where people are.</h2></div>
+        <div className="give-cards">
+          {supportActions.map(([code, title, body, href, link]) => <article key={title} className="give-card"><span aria-hidden="true">{code}</span><h3>{title}</h3><p>{body}</p><Link href={href}>{link} <Arrow /></Link></article>)}
+          <article className="give-card"><span aria-hidden="true">05</span><h3>Buy, wear, share</h3><p>A HUMAN:HERE shirt is not just merchandise. It’s a message walking through the world. People need people.</p><em className="give-soon">Shop coming soon</em></article>
+        </div>
       </section>
 
-      <section className="support-image-break" aria-label="Community connection"><figure><Image src="/images/community-table.jpg" alt="Neighbors gathering and connecting around a shared table" fill sizes="100vw" /></figure><p>People supporting people.<br />Work rooted in real places.</p></section>
+      <figure className="give-photo">
+        <Image src="/images/community-table.jpg" alt="Neighbors gathering and connecting around a shared table" fill sizes="(max-width: 760px) 100vw, 1120px" />
+        <figcaption>People supporting people. Work rooted in real places.</figcaption>
+      </figure>
 
-      <section className="funding-areas ruled-section" aria-labelledby="funding-areas-title">
-        <div className="funding-areas__heading"><p className="section-code">04 / WHERE SUPPORT GOES</p><h2 id="funding-areas-title">Fund the work<br />around the mission.</h2><p>These are examples of work support may fund. They are not audited allocation percentages.</p></div>
-        <dl>{fundingAreas.map(([term, detail], index) => <div key={term}><dt><span>{String(index + 1).padStart(2, "0")}</span>{term}</dt><dd>{detail}</dd></div>)}</dl>
+      <section className="give-section" aria-labelledby="funding-areas-title">
+        <div className="give-heading"><p className="give-code">Where support goes</p><h2 id="funding-areas-title">Fund the work around the mission.</h2><p>These are examples of work support may fund. They are not audited allocation percentages.</p></div>
+        <dl className="give-areas">{fundingAreas.map(([term, detail], index) => <div key={term} className="give-panel"><dt><span>{String(index + 1).padStart(2, "0")}</span>{term}</dt><dd>{detail.split(" / ").map(item => <span key={item}>{item}</span>)}</dd></div>)}</dl>
       </section>
 
-      <section className="support-beyond" aria-labelledby="beyond-title"><p className="section-code">05 / SHOW UP</p><h2 id="beyond-title">Money isn’t<br />the only way<br />to show up.</h2><nav aria-label="Ways to support without giving money">{beyondMoney.map(([label, href]) => <Link key={label} href={href}>{label}<span aria-hidden="true">↗</span></Link>)}</nav></section>
+      <section className="give-section" aria-labelledby="beyond-title">
+        <div className="give-heading"><p className="give-code">Show up</p><h2 id="beyond-title">Money isn’t the only way to show up.</h2></div>
+        <nav className="give-chips" aria-label="Ways to support without giving money">{beyondMoney.map(([label, href]) => <Link key={label} href={href}>{label}<span aria-hidden="true">↗</span></Link>)}</nav>
+      </section>
 
-      <section className="organization-section ruled-section" aria-labelledby="organizations-title"><p className="section-code">06 / ORGANIZATIONS</p><h2 id="organizations-title">Show up together.</h2><div className="organization-section__copy"><p>HUMAN:HERE welcomes businesses, churches, foundations, and community organizations that want to help people without turning human stories into advertising.</p><Link className="text-arrow" href="/contact?reason=partner">Let’s talk <span aria-hidden="true">→</span></Link></div><ul aria-label="Potential partnership types"><li>Community Partner</li><li>Story Project Partner</li><li>City Partner</li><li>Initiative Partner</li><li>Founding Partner</li></ul></section>
+      <section className="give-section give-pair" aria-label="Organizations and foundations">
+        <article className="give-panel" aria-labelledby="organizations-title">
+          <p className="give-code">Organizations</p><h2 id="organizations-title">Show up together.</h2>
+          <p>HUMAN:HERE welcomes businesses, churches, foundations, and community organizations that want to help people without turning human stories into advertising.</p>
+          <ul className="give-tags" aria-label="Potential partnership types">{organizationTypes.map(type => <li key={type}>{type}</li>)}</ul>
+          <Link className="give-button" href="/contact?reason=partner">Let’s talk <Arrow /></Link>
+        </article>
+        <article className="give-panel" aria-labelledby="grants-title">
+          <p className="give-code">Foundations and grants</p><h2 id="grants-title">A model built to connect.</h2>
+          <p>HUMAN:HERE is developing a scalable model around human storytelling, community connection, volunteerism, social isolation, poverty, housing instability, family crisis, faith-based service, and local collaboration.</p>
+          <p className="give-note">We make no unsupported claim about current grant eligibility.</p>
+          <Link className="give-button" href="/contact?reason=foundation">Contact HUMAN:HERE <Arrow /></Link>
+        </article>
+      </section>
 
-      <section className="grants-section ruled-section" aria-labelledby="grants-title"><p className="section-code">07 / FOUNDATIONS + GRANTS</p><h2 id="grants-title">A model built<br />to connect.</h2><div><p>HUMAN:HERE is developing a scalable model around human storytelling, community connection, volunteerism, social isolation, poverty, housing instability, family crisis, faith-based service, and local collaboration.</p><p>We make no unsupported claim about current grant eligibility.</p><Link className="text-arrow" href="/contact?reason=foundation">Contact HUMAN:HERE <span aria-hidden="true">→</span></Link></div></section>
+      <section className="give-closing" aria-labelledby="support-closing-title">
+        <p className="member-kicker"><i aria-hidden="true" /> People need people</p>
+        <h2 id="support-closing-title">You don’t have to fix everything.</h2>
+        <p>Show up for someone.</p>
+        <nav className="give-buttons" aria-label="Support HUMAN:HERE"><Link className="give-button give-button--primary" href="/contact?reason=give">Give <Arrow /></Link><Link className="give-button" href="/contact?reason=partner">Partner <Arrow /></Link><Link className="give-button" href="/contact?reason=volunteer">Volunteer <Arrow /></Link><Link className="give-button" href="/contact?reason=pray">Pray <Arrow /></Link></nav>
+      </section>
 
-      <section className="manifesto-closing support-closing" aria-labelledby="support-closing-title"><p className="section-code">08 / PEOPLE NEED PEOPLE</p><h2 id="support-closing-title">You don’t have<br />to fix everything.</h2><p>Show up for someone.</p><small>People need people.</small><nav aria-label="Support HUMAN:HERE"><Link href="/contact?reason=give">Give <span aria-hidden="true">→</span></Link><Link href="/contact?reason=partner">Partner <span aria-hidden="true">→</span></Link><Link href="/contact?reason=volunteer">Volunteer <span aria-hidden="true">→</span></Link><Link href="/contact?reason=pray">Pray <span aria-hidden="true">→</span></Link></nav></section>
+      <footer className="member-footer"><span><i aria-hidden="true" /> People need people.</span><small><Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link></small></footer>
     </main>
   );
 }
