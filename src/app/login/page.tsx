@@ -91,7 +91,7 @@ async function LoginContent({ searchParams }: { searchParams: Promise<Query> }) 
       <section className="auth-composition" aria-labelledby="login-title">
         <div className="auth-intro">
           <p className="member-kicker"><i aria-hidden="true" /> My HUMAN:HERE</p>
-          <h1 id="login-title">Come<br />as you<br />are.</h1>
+          <h1 id="login-title">You<br />belong<br />here.</h1>
           <p>Your private place to hold a draft, manage consent, and follow your story.</p>
         </div>
         <section className="auth-panel" aria-label="Account access">

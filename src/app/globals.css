@@ -791,3 +791,7 @@ button.profile-primary { cursor: pointer; }
 .people-results span:last-child { display: grid; min-width: 0; gap: 3px; }.people-results b { font-weight: 520; }.people-results small { color: #8fa4ff; font-size: 13px; }.people-results em { color: rgb(226 232 245 / .7); font-size: 14px; font-style: normal; overflow-wrap: anywhere; }
 .people-hint { margin: 0; color: rgb(226 232 245 / .55); font-size: 14px; }.people-hint a { color: #8fa4ff; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* The sign-in and setup headlines shrink to fit their column at any width. */
+.auth-intro { container-type: inline-size; }
+.auth-intro h1 { font-size: min(clamp(52.8px, 6.72vw, 108.8px), 15cqw); }
+@media (max-width: 760px) { .auth-intro h1 { font-size: min(clamp(46.4px, 15.2vw, 68.8px), 15cqw); } }
