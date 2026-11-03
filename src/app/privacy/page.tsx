@@ -26,7 +26,7 @@ export default function PrivacyPage() {
 
         <h2>1. What we collect</h2>
         <ul>
-          <li><b>Account details:</b> your email address, your @username, and the name and bio you choose to show. If you sign in with Google or Apple, the basic profile details they share with us.</li>
+          <li><b>Account details:</b> your email address, your @username, and the name, bio and profile photo you choose to show. If you sign in with Google or Apple, the basic profile details they share with us.</li>
           <li><b>Stories you write:</b> the text, the photos, video or audio you upload, and details you add such as a location or what would help. Stories can include sensitive information about your life; we use it only as you have allowed.</li>
           <li><b>Your permissions:</b> what each story you submitted allows, when you submitted it, which version of these terms applied, and whether you let us feature your stories on social media.</li>
           <li><b>Activity:</b> the stories you send love to, notes you send, the members you follow, stories you report, and requests you make to us.</li>
@@ -35,13 +35,13 @@ export default function PrivacyPage() {
 
         <h2>2. Who can see what</h2>
         <ul>
-          <li><b>Your profile:</b> everyone: your @username, name, bio, level and rank, when you joined, your follower and following counts, and your published stories that are not anonymous.</li>
+          <li><b>Your profile:</b> everyone: your profile photo, @username, name, bio, level and rank, when you joined, your follower and following counts, and your published stories that are not anonymous.</li>
           <li><b>Drafts:</b> only you.</li>
           <li><b>Stories you submit:</b> you and our review team.</li>
           <li><b>Published stories:</b> everyone, including the first name or &ldquo;Anonymous&rdquo;, the general location, and the media you approved.</li>
           <li><b>Notes sent to you:</b> our moderators, then only you. The sender&rsquo;s identity is not shown to you.</li>
           <li><b>Love:</b> everyone sees a total count. Who sent it stays private.</li>
-          <li><b>Who you follow:</b> others see only the counts, never the names.</li>
+          <li><b>Who you follow and who follows you:</b> signed-in members can see these lists on your profile. Visitors who are not signed in see only the counts.</li>
           <li><b>Reports:</b> our staff. The author is not told who reported a story.</li>
           <li><b>Your email address:</b> never shown publicly.</li>
         </ul>
@@ -69,7 +69,7 @@ export default function PrivacyPage() {
         </ul>
 
         <h2>7. Your choices and rights</h2>
-        <p>From your account you can edit, unpublish and delete your stories, and change your name, bio and @username. You can also ask us for a copy of your information, to correct it, to delete your account, or to stop using it in a particular way. Depending on where you live, the law may give you further rights. Write to <a href="mailto:hello@humanhere.co">hello@humanhere.co</a> and we will respond.</p>
+        <p>From your account you can edit, unpublish and delete your stories; change your photo, name, bio, @username and password; and delete your account yourself in Settings. You can also ask us for a copy of your information, to correct it, or to stop using it in a particular way. Depending on where you live, the law may give you further rights. Write to <a href="mailto:hello@humanhere.co">hello@humanhere.co</a> and we will respond.</p>
 
         <h2>8. Children</h2>
         <p>HUMAN:HERE is not directed at children under 13. People under 18 need a parent or guardian&rsquo;s permission to use an account, and a story about a child is published only with a parent or guardian&rsquo;s verified consent.</p>

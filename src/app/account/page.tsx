@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { getAccountActivity } from "@/lib/account/queries";
 import { getAccountRole, requireMember } from "@/lib/auth/server";
@@ -11,6 +12,8 @@ async function AccountContent({ searchParams }: { searchParams: AccountSearchPar
   await connection();
   const user = await requireMember("/account");
   const { tab: requestedTab, error } = await searchParams;
+  // Privacy moved to its own settings page; keep old links working.
+  if (requestedTab === "privacy") redirect("/account/settings/privacy");
   const tab = ACCOUNT_TABS.find(item => item === requestedTab) ?? "stories" satisfies AccountTab;
   const [submissions, role, activity] = await Promise.all([
     submissionRepository.listOwned(user.id),

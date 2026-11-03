@@ -14,7 +14,10 @@ const nextConfig: NextConfig = {
       : [],
   },
   async rewrites() {
-    return [{ source: "/@:username", destination: "/u/:username" }];
+    return [
+      { source: "/@:username", destination: "/u/:username" },
+      { source: "/@:username/:list(followers|following)", destination: "/u/:username/:list" },
+    ];
   },
   async redirects() {
     return [

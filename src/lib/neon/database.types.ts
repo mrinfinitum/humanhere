@@ -10,7 +10,7 @@ type Table<Row, Insert = Partial<Row>, Update = Partial<Insert>> = {
 export type Database = {
   public: {
     Tables: {
-      profiles: Table<{ id: string; display_name: string | null; role: Database["public"]["Enums"]["account_role"]; notes_suspended_at: string | null; notes_suspension_reason: string | null; notes_suspended_by: string | null; terms_accepted_at: string | null; terms_version: string | null; username: string | null; bio: string | null; allow_social_reuse: boolean; created_at: string; updated_at: string }>;
+      profiles: Table<{ id: string; display_name: string | null; role: Database["public"]["Enums"]["account_role"]; notes_suspended_at: string | null; notes_suspension_reason: string | null; notes_suspended_by: string | null; terms_accepted_at: string | null; terms_version: string | null; username: string | null; bio: string | null; allow_social_reuse: boolean; avatar_path: string | null; created_at: string; updated_at: string }>;
       human_entries: Table<Record<string, Json | undefined>>;
       submissions: Table<{
         id: string; user_id: string; intent: string | null; artifact_type: string | null; identity_mode: string | null;
@@ -99,9 +99,10 @@ export type Database = {
       accept_terms: { Args: { p_version: string }; Returns: string };
       my_experience: { Args: Record<PropertyKey, never>; Returns: Array<{ loves: number; notes: number; gifts: number }> };
       claim_username: { Args: { p_username: string }; Returns: string };
-      member_profile: { Args: { p_username: string }; Returns: Array<{ username: string; display_name: string | null; bio: string | null; joined_at: string; followers: number; following: number; viewer_follows: boolean; is_self: boolean; loves: number; notes: number; gifts: number }> };
+      member_profile: { Args: { p_username: string }; Returns: Array<{ username: string; display_name: string | null; bio: string | null; joined_at: string; followers: number; following: number; viewer_follows: boolean; is_self: boolean; loves: number; notes: number; gifts: number; avatar_path: string | null }> };
+      member_follow_list: { Args: { p_username: string; p_direction: "followers" | "following"; p_limit?: number; p_before?: string }; Returns: Array<{ username: string; display_name: string | null; avatar_path: string | null; followed_at: string; viewer_follows: boolean; is_self: boolean }> };
       follow_member: { Args: { p_username: string }; Returns: boolean };
-      search_members: { Args: { p_query: string; p_limit?: number }; Returns: Array<{ username: string; display_name: string | null; bio: string | null; followers: number }> };
+      search_members: { Args: { p_query: string; p_limit?: number }; Returns: Array<{ username: string; display_name: string | null; bio: string | null; followers: number; avatar_path: string | null }> };
       unfollow_member: { Args: { p_username: string }; Returns: boolean };
       following_feed: { Args: { p_limit?: number; p_before?: string }; Returns: Array<Database["public"]["Views"]["human_entries_public"]["Row"]> };
       report_content: { Args: { p_human_entry_id: string; p_reason: Database["public"]["Enums"]["report_reason"]; p_details?: string }; Returns: string };

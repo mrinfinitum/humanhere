@@ -8,6 +8,7 @@ import type { MediaAsset } from "@/lib/archive/types";
 import { requireMember } from "@/lib/auth/server";
 import { resolveMediaUrl } from "@/lib/media/resolver";
 import { createDatabaseClient } from "@/lib/neon/server";
+import { SiteNav } from "@/components/SiteNav";
 
 export const metadata: Metadata = { title: "Following", robots: { index: false, follow: false } };
 
@@ -46,7 +47,7 @@ export default function HomePage() {
       <div className="member-atmosphere" aria-hidden="true"><i /><i /><i /></div>
       <header className="member-header">
         <Link className="member-wordmark" href="/" aria-label="HUMAN:HERE home">HUMAN<span>:</span>HERE</Link>
-        <nav aria-label="Account navigation"><Link href="/humans">Humans</Link><Link href="/share">Share</Link><Link href="/account">Account</Link></nav>
+        <SiteNav />
       </header>
       <div className="profile-body profile-body--single">
         <section className="profile-feed" aria-labelledby="feed-title">

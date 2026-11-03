@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Avatar } from "@/components/Avatar";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { AccountLink } from "@/components/AccountLink";
 import { createDatabaseClient } from "@/lib/neon/server";
+import { SiteNav } from "@/components/SiteNav";
 
 export const metadata: Metadata = { title: "People", description: "Find people on HUMAN:HERE by name or @username." };
 
@@ -24,7 +25,7 @@ async function Results({ searchParams }: { searchParams: SearchParams }) {
         return (
         <li key={person.username}>
           <Link href={`/@${person.username}`}>
-            <span className="post-avatar" aria-hidden="true">{name.replace("@", "").charAt(0).toUpperCase()}</span>
+            <Avatar className="post-avatar" name={name} path={person.avatar_path} size={44} />
             <span><b>{name}</b><small>@{person.username} · {person.followers} follower{person.followers === 1 ? "" : "s"}</small>{person.bio && <em>{person.bio}</em>}</span>
           </Link>
         </li>
@@ -40,7 +41,7 @@ export default async function PeoplePage({ searchParams }: { searchParams: Searc
       <div className="member-atmosphere" aria-hidden="true"><i /><i /><i /></div>
       <header className="member-header">
         <Link className="member-wordmark" href="/" aria-label="HUMAN:HERE home">HUMAN<span>:</span>HERE</Link>
-        <nav aria-label="Site navigation"><Link href="/humans">Humans</Link><Link href="/share">Share</Link><AccountLink /></nav>
+        <SiteNav />
       </header>
       <div className="profile-body profile-body--single">
         <section className="profile-feed" aria-labelledby="people-title">

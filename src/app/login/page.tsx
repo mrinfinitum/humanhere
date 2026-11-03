@@ -5,6 +5,7 @@ import { Turnstile } from "@/components/auth/Turnstile";
 import { getAuthProviderAvailability } from "@/lib/auth/providers";
 import { turnstileSiteKey } from "@/lib/auth/turnstile";
 import { safeNext } from "@/lib/auth/redirect";
+import { SiteNav } from "@/components/SiteNav";
 
 const AUTH_ERRORS: Record<string, string> = {
   provider: "That sign-in method is not supported.",
@@ -86,7 +87,7 @@ async function LoginContent({ searchParams }: { searchParams: Promise<Query> }) 
       <div className="member-atmosphere" aria-hidden="true"><i /><i /><i /></div>
       <header className="member-header">
         <Link className="member-wordmark" href="/" aria-label="HUMAN:HERE home">HUMAN<span>:</span>HERE</Link>
-        <nav aria-label="Public navigation"><Link href="/humans">Humans</Link><Link href="/mission">Mission</Link><Link href="/share">Share</Link></nav>
+        <SiteNav />
       </header>
       <section className="auth-composition" aria-labelledby="login-title">
         <div className="auth-intro">

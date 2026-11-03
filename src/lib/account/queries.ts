@@ -22,6 +22,9 @@ export type AccountActivity = {
   username: string | null;
   bio: string | null;
   allowSocialReuse: boolean;
+  avatarPath: string | null;
+  followers: number;
+  following: number;
   published: Record<string, PublishedStory>;
   permissions: Record<string, StoryPermissions>;
   notes: ReceivedNote[];
@@ -31,8 +34,8 @@ export type AccountActivity = {
 /** Everything the signed-in member's own page shows beyond their submissions. */
 export async function getAccountActivity(userId: string): Promise<AccountActivity> {
   const database = await createDatabaseClient();
-  const [profile, notes, loves, consents, entries, experience] = await Promise.all([
-    database.from("profiles").select("display_name,created_at,username,bio,allow_social_reuse").eq("id", userId).maybeSingle(),
+  const [profile, notes, loves, consents, entries, experience, followers, following] = await Promise.all([
+    database.from("profiles").select("display_name,created_at,username,bio,allow_social_reuse,avatar_path").eq("id", userId).maybeSingle(),
     database.rpc("notes_for_me", { p_limit: 40 }),
     database.from("human_entry_loves").select("human_entry_id,created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(60),
     // Staff can read every consent record, so always filter to the owner.
@@ -44,8 +47,11 @@ export async function getAccountActivity(userId: string): Promise<AccountActivit
       join public.submissions s on s.id = h.submission_id
       where s.user_id = ${userId}::uuid and h.published = true`,
     database.rpc("my_experience"),
+    // Members can read the follow rows they are part of.
+    database.from("follows").select("follower_id", { count: "exact", head: true }).eq("followee_id", userId),
+    database.from("follows").select("followee_id", { count: "exact", head: true }).eq("follower_id", userId),
   ]);
-  const failed = Object.entries({ profile, notes, loves, consents, experience }).flatMap(([name, result]) => result.error ? [`${name}: ${result.error.code} ${result.error.message}`] : []);
+  const failed = Object.entries({ profile, notes, loves, consents, experience, followers, following }).flatMap(([name, result]) => result.error ? [`${name}: ${result.error.code} ${result.error.message}`] : []);
   if (failed.length) console.error("Account activity failed:", failed.join("; "));
   if (failed.length) throw new Error("Could not load your account activity.");
 
@@ -74,6 +80,9 @@ export async function getAccountActivity(userId: string): Promise<AccountActivit
     username: profile.data?.username ?? null,
     bio: profile.data?.bio ?? null,
     allowSocialReuse: profile.data?.allow_social_reuse === true,
+    avatarPath: profile.data?.avatar_path ?? null,
+    followers: followers.count ?? 0,
+    following: following.count ?? 0,
     published: Object.fromEntries(entries.map(entry => [String(entry.submission_id), { slug: String(entry.slug), loveCount: Number(entry.love_count ?? 0) }])),
     permissions,
     notes: (notes.data ?? []).map(note => ({ id: note.note_id, storySlug: note.story_slug, body: note.body, createdAt: note.created_at, readAt: note.read_at })),

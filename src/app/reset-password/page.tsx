@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { resetPassword } from "@/app/login/actions";
+import { SiteNav } from "@/components/SiteNav";
 
 // The reset token travels in the URL, so never leak it through the Referer header.
 export const metadata: Metadata = {
@@ -30,7 +31,7 @@ async function ResetContent({ searchParams }: { searchParams: Promise<Query> }) 
       <div className="member-atmosphere" aria-hidden="true"><i /><i /><i /></div>
       <header className="member-header">
         <Link className="member-wordmark" href="/" aria-label="HUMAN:HERE home">HUMAN<span>:</span>HERE</Link>
-        <nav aria-label="Public navigation"><Link href="/humans">Humans</Link><Link href="/mission">Mission</Link><Link href="/share">Share</Link></nav>
+        <SiteNav />
       </header>
       <section className="auth-composition" aria-labelledby="reset-title">
         <div className="auth-intro">

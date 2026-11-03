@@ -310,6 +310,7 @@ export function GlobeScene({
   controls,
   reducedMotion,
   interactive,
+  sparse = false,
   debugProjectionRef,
   debugWorldRef,
   onHover,
@@ -323,6 +324,8 @@ export function GlobeScene({
   controls: MutableRefObject<GlobeControls>;
   reducedMotion: boolean;
   interactive: boolean;
+  /** The homepage shows only a few lights at a time; the world page shows more. */
+  sparse?: boolean;
   debugProjectionRef: RefObject<HTMLElement | null>;
   debugWorldRef: RefObject<HTMLElement | null>;
   onHover: (hover: GlobeHover) => void;
@@ -346,13 +349,13 @@ export function GlobeScene({
     && humans.length > 0
     && humans.every(human => human.fixture);
   const discoveryManager = useMemo(() => new HumanDiscoveryManager(candidatePositions, {
-    poolSize: showAllTestBeacons ? humans.length : Math.min(size.width <= 760 ? 10 : 16, humans.length),
-    visibleBudget: showAllTestBeacons ? humans.length : size.width <= 760 ? 6 : 10,
-    initialBudget: showAllTestBeacons ? humans.length : size.width <= 760 ? 2 : 4,
+    poolSize: showAllTestBeacons ? humans.length : Math.min(sparse ? (size.width <= 760 ? 5 : 8) : size.width <= 760 ? 10 : 16, humans.length),
+    visibleBudget: showAllTestBeacons ? humans.length : sparse ? (size.width <= 760 ? 3 : 4) : size.width <= 760 ? 6 : 10,
+    initialBudget: showAllTestBeacons ? humans.length : sparse ? (size.width <= 760 ? 1 : 2) : size.width <= 760 ? 2 : 4,
     recentlySeenLimit: Math.min(80, Math.max(12, humans.length)),
     showAll: showAllTestBeacons,
     timingScale: size.width <= 760 ? 1.18 : 1,
-  }), [candidatePositions, humans.length, showAllTestBeacons, size.width]);
+  }), [candidatePositions, humans.length, showAllTestBeacons, size.width, sparse]);
   const selectedCandidateIndex = selectedHumanId === null
     ? null
     : humans.findIndex(human => human.id === selectedHumanId);

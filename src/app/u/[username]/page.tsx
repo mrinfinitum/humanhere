@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
+import { Avatar } from "@/components/Avatar";
 import { HeartIcon } from "@/components/HeartIcon";
 import { RankBadge } from "@/components/RankBadge";
 import { memberLevel } from "@/lib/account/levels";
@@ -11,6 +12,7 @@ import type { MediaAsset } from "@/lib/archive/types";
 import { resolveMediaUrl } from "@/lib/media/resolver";
 import { createDatabaseClient } from "@/lib/neon/server";
 import { followMember, unfollowMember } from "./actions";
+import { SiteNav } from "@/components/SiteNav";
 
 type ProfileParams = Promise<{ username: string }>;
 
@@ -39,7 +41,7 @@ async function ProfileContent({ params }: { params: ProfileParams }) {
   return (
     <>
       <section className="profile-head" aria-labelledby="member-name">
-        <span className="profile-avatar" aria-hidden="true">{name.replace("@", "").charAt(0).toUpperCase()}</span>
+        <Avatar className="profile-photo" name={name} path={member.avatar_path} size={124} />
         <div className="profile-identity">
           <h1 id="member-name">{name}<RankBadge rank={level.rank} /></h1>
           <p className="profile-handle">@{member.username}</p>
@@ -47,14 +49,14 @@ async function ProfileContent({ params }: { params: ProfileParams }) {
           <p>Joined {joined}</p>
         </div>
         <div className="profile-actions">
-          {member.is_self ? <Link className="profile-secondary" href="/account">Edit profile</Link>
+          {member.is_self ? <Link className="profile-secondary" href="/account/settings/profile">Edit profile</Link>
             : member.viewer_follows ? <form action={unfollowMember}><input type="hidden" name="username" value={member.username} /><button className="profile-secondary">Following</button></form>
               : <form action={followMember}><input type="hidden" name="username" value={member.username} /><button className="profile-primary">Follow</button></form>}
         </div>
         <dl className="profile-stats">
           <div><dd>{posts.length}</dd><dt>Stories</dt></div>
-          <div><dd>{member.followers}</dd><dt>Followers</dt></div>
-          <div><dd>{member.following}</dd><dt>Following</dt></div>
+          <Link href={`/@${member.username}/followers`}><dd>{member.followers}</dd><dt>Followers</dt></Link>
+          <Link href={`/@${member.username}/following`}><dd>{member.following}</dd><dt>Following</dt></Link>
         </dl>
         <div className="profile-level">
           <p><RankBadge rank={level.rank} /><b>Level {level.level}</b><span>{level.rank}</span><small>{level.experience} experience</small></p>
@@ -87,7 +89,7 @@ export default function ProfilePage({ params }: { params: ProfileParams }) {
       <div className="member-atmosphere" aria-hidden="true"><i /><i /><i /></div>
       <header className="member-header">
         <Link className="member-wordmark" href="/" aria-label="HUMAN:HERE home">HUMAN<span>:</span>HERE</Link>
-        <nav aria-label="Site navigation"><Link href="/home">Following</Link><Link href="/humans">Humans</Link><Link href="/account">Account</Link></nav>
+        <SiteNav />
       </header>
       <Suspense fallback={<p className="member-loading">Opening this profile…</p>}><ProfileContent params={params} /></Suspense>
       <footer className="member-footer"><span><i aria-hidden="true" /> People need people.</span><small>Levels grow by showing love and giving</small></footer>

@@ -253,16 +253,17 @@ export function HumanGlobe({
     setHovered(next);
   }, []);
 
+  // Lights open their story on the homepage too; the world page only shows more of them.
   const selectHuman = useCallback((humanId: string) => {
-    if (!interactive) return;
     const human = globeHumans.find(candidate => candidate.id === humanId);
-    if (!human) return;
+    // Decorative preview lights have no story behind them.
+    if (!human?.slug) return;
     controls.current.engaged = true;
     controls.current.lastInteraction = performance.now();
     setSelectedHumanId(humanId);
     setHovered(null);
     void openStory(human);
-  }, [globeHumans, interactive, openStory]);
+  }, [globeHumans, openStory]);
 
   const sceneReady = useCallback(() => setReady(true), []);
   const updateActiveHumanIds = useCallback((next: string[]) => {
@@ -284,7 +285,7 @@ export function HumanGlobe({
       controls.current.lastInteraction = performance.now();
       controls.current.targetX = clamp(controls.current.targetX + (event.key === "ArrowUp" ? -step : step), -0.52, 0.52);
     }
-    if (interactive && event.key === "Enter" && activeHumanIds.length) {
+    if (event.key === "Enter" && activeHumanIds.length) {
       event.preventDefault();
       const activePosition = selectedHumanId === null ? -1 : activeHumanIds.indexOf(selectedHumanId);
       selectHuman(activeHumanIds[(activePosition + 1) % activeHumanIds.length]);
@@ -299,7 +300,7 @@ export function HumanGlobe({
         aria-label={hasPublishedHumans
           ? interactive
             ? "Living globe of published HUMAN:HERE stories. Drag or use arrow keys to rotate. Press Enter to meet a human."
-            : "Cinematic preview of the HUMAN:HERE world. Drag or use arrow keys to rotate, then enter the globe to meet people."
+            : "Cinematic preview of the HUMAN:HERE world. Drag or use arrow keys to rotate. Choose a light, or press Enter, to meet a human."
           : "HUMAN:HERE globe. The first consented stories are being prepared. Drag or use arrow keys to rotate."}
         tabIndex={0}
         onKeyDown={navigateGlobe}
@@ -317,7 +318,6 @@ export function HumanGlobe({
             gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
             raycaster={{ params: { Mesh: {}, Line: { threshold: 1 }, LOD: {}, Points: { threshold: 0.032 }, Sprite: {} } }}
             onPointerMissed={() => {
-              if (!interactive) return;
               if (lastInteractionWasDrag.current) {
                 lastInteractionWasDrag.current = false;
                 return;
@@ -333,7 +333,8 @@ export function HumanGlobe({
                 hoveredHumanId={hovered?.humanId ?? null}
                 controls={controls}
                 reducedMotion={reducedMotion}
-                interactive={interactive}
+                interactive
+                sparse={mode === "home"}
                 debugProjectionRef={debugProjectionRef}
                 debugWorldRef={debugWorldRef}
                 onHover={updateHover}
@@ -372,7 +373,7 @@ export function HumanGlobe({
       )}
 
       <section className="human-globe-copy" aria-labelledby="globe-headline">
-        <p><span aria-hidden="true" />{hasPublishedHumans ? "Each light is a human" : "A living archive is beginning"}</p>
+        <p><span aria-hidden="true" />{!hasPublishedHumans ? "A living archive is beginning" : globeHumans.some(human => human.slug) ? "Each light is a human. Choose one" : "Each light is a human"}</p>
         <h1 id="globe-headline">People<br />need<br />people</h1>
         {!hasPublishedHumans && <small>The first consented stories are being prepared.</small>}
       </section>
