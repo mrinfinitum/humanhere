@@ -106,6 +106,15 @@ export async function updateSocialSharing(formData: FormData) {
   refresh();
 }
 
+/** Hides who the member follows and who follows them from everyone else. */
+export async function updateFollowListPrivacy(formData: FormData) {
+  const user = await requireUser("/account/settings/privacy");
+  const database = await createDatabaseClient();
+  const { error } = await database.from("profiles").update({ hide_follow_lists: formData.get("hideFollowLists") === "on" }).eq("id", user.id);
+  if (error) throw new Error(`Privacy setting could not be saved: ${error.code}`);
+  refresh();
+}
+
 const NOTE_ACTIONS = { read: "mark_private_note_read", hide: "hide_private_note", report: "report_private_note" } as const;
 
 export async function updateReceivedNote(formData: FormData) {

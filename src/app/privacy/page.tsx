@@ -13,7 +13,7 @@ export default function PrivacyPage() {
       <article>
         <p className="eyebrow">Privacy Policy</p>
         <h1>Privacy Policy</h1>
-        <p className="legal-updated">Last updated November 2, 2026</p>
+        <p className="legal-updated">Last updated November 3, 2026</p>
 
         <h2>The short version</h2>
         <ul>
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
           <li><b>Published stories:</b> everyone, including the first name or &ldquo;Anonymous&rdquo;, the general location, and the media you approved.</li>
           <li><b>Notes sent to you:</b> our moderators, then only you. The sender&rsquo;s identity is not shown to you.</li>
           <li><b>Love:</b> everyone sees a total count. Who sent it stays private.</li>
-          <li><b>Who you follow and who follows you:</b> signed-in members can see these lists on your profile. Visitors who are not signed in see only the counts.</li>
+          <li><b>Who you follow and who follows you:</b> signed-in members can see these lists on your profile, unless you turn on &ldquo;Hide who I follow and who follows me&rdquo; in Settings. Then others see only the counts and you are left out of other people&rsquo;s lists too. Visitors who are not signed in only ever see the counts.</li>
           <li><b>Reports:</b> our staff. The author is not told who reported a story.</li>
           <li><b>Your email address:</b> never shown publicly.</li>
         </ul>

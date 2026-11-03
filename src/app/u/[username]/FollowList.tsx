@@ -30,6 +30,10 @@ async function ListContent({ params, direction }: { params: ListParams; directio
     return <>{heading}{tabs}<div className="follow-body"><div className="profile-empty"><i aria-hidden="true" /><h2>{total} {direction === "followers" ? (total === 1 ? "follower" : "followers") : "following"}</h2><p>Sign in to see who they are.</p><Link href={`/login?next=${encodeURIComponent(`/@${username}/${direction}`)}`}>Sign in →</Link></div></div></>;
   }
 
+  if (member.lists_hidden) {
+    return <>{heading}{tabs}<div className="follow-body"><div className="profile-empty"><i aria-hidden="true" /><h2>@{username} keeps this list private.</h2><p>Only the totals are shown.</p></div></div></>;
+  }
+
   const { data, error } = await database.rpc("member_follow_list", { p_username: username, p_direction: direction, p_limit: 100 });
   if (error) throw new Error("Could not load this list.");
   const people = data ?? [];

@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { getAccountRole, requireMember } from "@/lib/auth/server";
 import { getAccountActivity } from "@/lib/account/queries";
 import { submissionRepository } from "@/lib/submissions/repository";
-import { revokeConsent, updateSocialSharing } from "../../actions";
+import { revokeConsent, updateFollowListPrivacy, updateSocialSharing } from "../../actions";
 import { STATUS_LABELS, timeAgo } from "../../AccountView";
 import { SettingsFrame, SettingsLoading } from "../SettingsFrame";
 
@@ -29,11 +29,20 @@ async function PrivacySettings() {
           <div><dt>Stories you submit</dt><dd>You and our review team</dd></div>
           <div><dt>Published stories</dt><dd>Everyone. Stories you did not post anonymously also appear on your profile</dd></div>
           <div><dt>Your profile</dt><dd>Everyone: your photo, @username, name, bio, level and follower counts</dd></div>
-          <div><dt>Who follows you, and who you follow</dt><dd>Signed-in members. Visitors who are not signed in see only the totals</dd></div>
+          <div><dt>Who follows you, and who you follow</dt><dd>{activity.hideFollowLists ? "Only you. Others see only the totals" : "Signed-in members. Visitors who are not signed in see only the totals"}</dd></div>
           <div><dt>Notes sent to you</dt><dd>Only you, once our moderators approve them</dd></div>
           <div><dt>Humans you love</dt><dd>Only you. Others see a total count, never your name</dd></div>
           <div><dt>Your email address</dt><dd>Never shown publicly</dd></div>
         </dl>
+      </section>
+
+      <section className="settings-group">
+        <h2>Followers and following</h2>
+        <form className="settings-toggle" action={updateFollowListPrivacy}>
+          <input type="hidden" name="hideFollowLists" value={activity.hideFollowLists ? "" : "on"} />
+          <span><b>Hide who I follow and who follows me</b><small>Others see only your totals, and you are left out of other people&rsquo;s lists too. You still see your own.</small></span>
+          <button className={`switch${activity.hideFollowLists ? " switch--on" : ""}`} role="switch" aria-checked={activity.hideFollowLists} aria-label="Hide who I follow and who follows me"><i /></button>
+        </form>
       </section>
 
       <section className="settings-group">

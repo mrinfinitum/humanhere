@@ -59,9 +59,12 @@ export async function removeObjects(bucket: typeof PRIVATE_BUCKET | typeof PUBLI
   await Promise.all(paths.map(Key => storage().send(new DeleteObjectCommand({ Bucket: bucket, Key }))));
 }
 
-/** Writes a small object the server produced itself, such as a profile photo, to the public bucket. */
+/**
+ * Writes a small object the server produced itself, such as a profile photo, to
+ * the public bucket. Cached briefly, so a removed photo stops showing soon.
+ */
 export async function putPublicObject(key: string, body: Uint8Array, contentType: string) {
   await storage().send(new PutObjectCommand({
-    Bucket: PUBLIC_BUCKET, Key: key, Body: body, ContentType: contentType, CacheControl: "public, max-age=31536000, immutable",
+    Bucket: PUBLIC_BUCKET, Key: key, Body: body, ContentType: contentType, CacheControl: "public, max-age=300",
   }));
 }

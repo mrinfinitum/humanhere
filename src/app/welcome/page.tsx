@@ -21,6 +21,8 @@ async function WelcomeContent({ searchParams }: { searchParams: WelcomeSearchPar
   const next = safeNext(query.next);
   const user = await requireUser(next);
   const { data: profile } = await (await createDatabaseClient()).from("profiles").select("username,display_name,bio").eq("id", user.id).maybeSingle();
+  // Members who already set up a profile only need to agree to updated terms.
+  const returning = Boolean(profile?.username);
   const suggested = profile?.username ?? (user.email.split("@")[0] ?? "").toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 20);
   return (
     <main className="member-shell auth-page">
@@ -31,12 +33,14 @@ async function WelcomeContent({ searchParams }: { searchParams: WelcomeSearchPar
       </header>
       <section className="auth-composition" aria-labelledby="welcome-title">
         <div className="auth-intro">
-          <p className="member-kicker"><i aria-hidden="true" /> Before you begin</p>
-          <h1 id="welcome-title">Make<br />it<br />yours.</h1>
-          <p>Choose how you appear on HUMAN:HERE. Nothing you share publishes until our team has reviewed it, and you can change all of this later.</p>
+          <p className="member-kicker"><i aria-hidden="true" /> {returning ? "We updated our terms" : "Before you begin"}</p>
+          <h1 id="welcome-title">{returning ? <>A few<br />things<br />changed.</> : <>Make<br />it<br />yours.</>}</h1>
+          {returning
+            ? <p>You can now add a profile photo, and signed-in members can see who follows you and who you follow. You can hide those lists any time in Settings, Privacy &amp; sharing. Please review your profile and agree to continue.</p>
+            : <p>Choose how you appear on HUMAN:HERE. Nothing you share publishes until our team has reviewed it, and you can change all of this later.</p>}
         </div>
         <section className="auth-panel" aria-label="Your profile">
-          <header><span>Your profile</span><small>One time</small></header>
+          <header><span>Your profile</span><small>{returning ? "Updated terms" : "One time"}</small></header>
           {typeof query.error === "string" && WELCOME_ERRORS[query.error] && <p className="auth-notice auth-error" role="alert">{WELCOME_ERRORS[query.error]}</p>}
           <form action={acceptTerms} className="auth-agree">
             <input type="hidden" name="next" value={next} />
@@ -53,7 +57,7 @@ async function WelcomeContent({ searchParams }: { searchParams: WelcomeSearchPar
               <label htmlFor="welcome-bio">Bio <small>Optional</small></label>
               <textarea id="welcome-bio" name="bio" defaultValue={profile?.bio ?? ""} maxLength={160} rows={2} placeholder="A line about you" />
             </div>
-            <p className="auth-consent">By continuing you agree to the <Link href="/terms" target="_blank">Terms of Use</Link> and <Link href="/privacy" target="_blank">Privacy Policy</Link>, and confirm you are 18 or older or have a parent or guardian&rsquo;s permission.</p>
+            <p className="auth-consent">{returning && <>Read what changed in the <Link href="/privacy" target="_blank">Privacy Policy</Link>. </>}By continuing you agree to the <Link href="/terms" target="_blank">Terms of Use</Link> and <Link href="/privacy" target="_blank">Privacy Policy</Link>, and confirm you are 18 or older or have a parent or guardian&rsquo;s permission.</p>
             <button>Continue <span aria-hidden="true">→</span></button>
           </form>
           <footer><span>Nothing publishes automatically.</span><span>You can leave any time.</span></footer>

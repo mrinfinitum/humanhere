@@ -23,6 +23,7 @@ export type AccountActivity = {
   bio: string | null;
   allowSocialReuse: boolean;
   avatarPath: string | null;
+  hideFollowLists: boolean;
   followers: number;
   following: number;
   published: Record<string, PublishedStory>;
@@ -35,7 +36,7 @@ export type AccountActivity = {
 export async function getAccountActivity(userId: string): Promise<AccountActivity> {
   const database = await createDatabaseClient();
   const [profile, notes, loves, consents, entries, experience, followers, following] = await Promise.all([
-    database.from("profiles").select("display_name,created_at,username,bio,allow_social_reuse,avatar_path").eq("id", userId).maybeSingle(),
+    database.from("profiles").select("display_name,created_at,username,bio,allow_social_reuse,avatar_path,hide_follow_lists").eq("id", userId).maybeSingle(),
     database.rpc("notes_for_me", { p_limit: 40 }),
     database.from("human_entry_loves").select("human_entry_id,created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(60),
     // Staff can read every consent record, so always filter to the owner.
@@ -81,6 +82,7 @@ export async function getAccountActivity(userId: string): Promise<AccountActivit
     bio: profile.data?.bio ?? null,
     allowSocialReuse: profile.data?.allow_social_reuse === true,
     avatarPath: profile.data?.avatar_path ?? null,
+    hideFollowLists: profile.data?.hide_follow_lists === true,
     followers: followers.count ?? 0,
     following: following.count ?? 0,
     published: Object.fromEntries(entries.map(entry => [String(entry.submission_id), { slug: String(entry.slug), loveCount: Number(entry.love_count ?? 0) }])),
