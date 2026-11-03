@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { requireStaff } from "@/lib/auth/server";
 import { createDatabaseClient } from "@/lib/neon/server";
-import { publishSubmissionAction } from "./actions";
+import { declineHeldSubmission, publishSubmissionAction, releaseHeldSubmission } from "./actions";
 
 export default async function SubmissionReviewPage({ params }: { params: Promise<{ id: string }> }) {
   await connection();
@@ -41,7 +41,7 @@ export default async function SubmissionReviewPage({ params }: { params: Promise
 
   return (
     <section className="admin-review">
-      <p className="eyebrow">Human review</p>
+      <p className="eyebrow">{submission.status === "in_review" ? "Held for a check" : "Submission"}</p>
       <h1>{String(submission.headline ?? submission.public_name ?? "Untitled submission")}</h1>
       <dl>
         <dt>Status</dt><dd>{String(submission.status)}</dd>
@@ -60,7 +60,16 @@ export default async function SubmissionReviewPage({ params }: { params: Promise
         <h2>Consent</h2>
         <pre>{JSON.stringify(consentRecord, null, 2)}</pre>
       </section>
-      {publishable ? (
+      {submission.status === "in_review" ? (
+        <section className="admin-held">
+          <h2>Held by the automatic check</h2>
+          <p>Stories post straight away unless they look like they include a phone number, email or street address. Read it, then post it as shared or decline it. A declined story goes back to its author, who can edit and share it again.</p>
+          <div>
+            <form action={releaseHeldSubmission}><input type="hidden" name="submissionId" value={id} /><button>Publish it →</button></form>
+            <form action={declineHeldSubmission}><input type="hidden" name="submissionId" value={id} /><button className="admin-decline">Decline</button></form>
+          </div>
+        </section>
+      ) : publishable ? (
         <form action={publishSubmissionAction}>
           <input type="hidden" name="submissionId" value={id} />
           <label>

@@ -26,8 +26,8 @@ async function PrivacySettings() {
         <h2>Who can see your content</h2>
         <dl className="settings-rows">
           <div><dt>Drafts</dt><dd>Only you</dd></div>
-          <div><dt>Stories you submit</dt><dd>You and our review team</dd></div>
-          <div><dt>Published stories</dt><dd>Everyone. Stories you did not post anonymously also appear on your profile</dd></div>
+          <div><dt>Stories the automatic check holds</dt><dd>You and our team, until we publish or decline them</dd></div>
+          <div><dt>Published stories</dt><dd>Everyone, as soon as you share them. Stories you did not post anonymously also appear on your profile</dd></div>
           <div><dt>Your profile</dt><dd>Everyone: your photo, @username, name, bio, level and follower counts</dd></div>
           <div><dt>Who follows you, and who you follow</dt><dd>{activity.hideFollowLists ? "Only you. Others see only the totals" : "Signed-in members. Visitors who are not signed in see only the totals"}</dd></div>
           <div><dt>Notes sent to you</dt><dd>Only you, once our moderators approve them</dd></div>
@@ -47,7 +47,7 @@ async function PrivacySettings() {
 
       <section className="settings-group">
         <h2>Social media</h2>
-        <p>Submitting a story lets us publish it, with the photos, video or audio you added, after our team reviews it. We contact you or connect you with a partner only when you ask for that kind of help.</p>
+        <p>Sharing a story publishes it straight away, with the photos, video or audio you added. We contact you or connect you with a partner only when you ask for that kind of help.</p>
         <form className="settings-toggle" action={updateSocialSharing}>
           <input type="hidden" name="allowSocialReuse" value={activity.allowSocialReuse ? "" : "on"} />
           <span><b>Feature my stories on HUMAN:HERE social media</b><small>Applies to stories you submit from now on.</small></span>

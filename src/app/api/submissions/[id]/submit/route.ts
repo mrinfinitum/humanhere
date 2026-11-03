@@ -1,4 +1,5 @@
 import { getAuthenticatedUser } from "@/lib/auth/server";
+import { publishMemberSubmission } from "@/lib/posts/publish";
 import { submissionRepository } from "@/lib/submissions/repository";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -10,6 +11,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!/^[0-9a-f-]{36}$/i.test(id)) return Response.json({ error: "invalid_submission" }, { status: 400 });
   const draft = await submissionRepository.getOwned(user.id, id);
   if (!draft || !draft.intent) return Response.json({ error: "The draft is incomplete." }, { status: 400 });
-  const submitted = await submissionRepository.submitOwnedDraft(user.id, id);
-  return Response.json(submitted);
+  await submissionRepository.submitOwnedDraft(user.id, id);
+  // Stories go live straight away unless the automatic check holds them for staff.
+  const result = await publishMemberSubmission(user.id, id);
+  return Response.json(result);
 }

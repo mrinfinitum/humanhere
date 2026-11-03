@@ -15,7 +15,7 @@ export const ACCOUNT_TABS = ["stories", "notes", "loved"] as const;
 export type AccountTab = (typeof ACCOUNT_TABS)[number];
 
 export const STATUS_LABELS: Record<SubmissionStatus, string> = {
-  draft: "Private draft", submitted: "Sent for review", in_review: "In review", contacted: "We reached out",
+  draft: "Private draft", submitted: "Posting", in_review: "Waiting for a check", contacted: "We reached out",
   approved: "Approved", rejected: "Not published", published: "Published", archived: "Archived",
 };
 
@@ -107,7 +107,7 @@ export function AccountView({ email, error, fallbackName, role, tab, submissions
                 {item.status === "draft" ? <Link href={`/share?draft=${item.id}`}>Continue →</Link> : (
                   <details className="post-confirm">
                     <summary>Edit</summary>
-                    <form action={editStory}><input type="hidden" name="submissionId" value={item.id} /><p>{published ? "Editing takes this story off the site and moves it back to a private draft. It returns after you resubmit and we review it." : "Editing moves this story back to a private draft. Resubmit it when you are ready."}</p><button>Edit story</button></form>
+                    <form action={editStory}><input type="hidden" name="submissionId" value={item.id} /><p>{published ? "Editing takes this story off the site and moves it back to a private draft. It goes live again, at the same link, when you share it." : "Editing moves this story back to a private draft. Share it again when you are ready."}</p><button>Edit story</button></form>
                   </details>
                 )}
                 {item.status === "published" && (
@@ -123,7 +123,7 @@ export function AccountView({ email, error, fallbackName, role, tab, submissions
               </footer>
             </article>
           );
-        })}</div> : <div className="profile-empty"><i aria-hidden="true" /><h2>When you are ready,<br />there is room for you.</h2><p>Nothing becomes public without review and explicit consent.</p><Link href="/share">Begin privately →</Link></div>)}
+        })}</div> : <div className="profile-empty"><i aria-hidden="true" /><h2>When you are ready,<br />there is room for you.</h2><p>Drafts stay private. A story posts when you share it, and you can unpublish it any time.</p><Link href="/share">Begin privately →</Link></div>)}
 
         {tab === "notes" && (activity.notes.length ? <div className="profile-feed">{activity.notes.map(note => (
           <article className={`post-card note-card${note.readAt ? "" : " note-card--unread"}`} key={note.id}>

@@ -18,7 +18,7 @@ export function ShareFlow({ initial }: { initial: SubmissionDraft }) {
   const [draft, setDraft] = useState(initial);
   const [saveState, setSaveState] = useState<"saved" | "saving" | "offline" | "error">("saved");
   const [uploadState, setUploadState] = useState("");
-  const [complete, setComplete] = useState(false);
+  const [complete, setComplete] = useState<{ status: "published"; slug: string } | { status: "held"; reason: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const firstRender = useRef(true);
   const questionRef = useRef<HTMLFieldSetElement | null>(null);
@@ -113,7 +113,7 @@ export function ShareFlow({ initial }: { initial: SubmissionDraft }) {
       if (!uploaded.ok) throw new Error();
       const completed = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "complete", key, ...metadata }) });
       if (!completed.ok) throw new Error();
-      setUploadState("Uploaded privately. Nothing is public.");
+      setUploadState("Uploaded privately. It is public only once you share your story.");
     } catch { setUploadState("Upload failed. Your draft text is still safe."); }
   }
 
@@ -126,11 +126,12 @@ export function ShareFlow({ initial }: { initial: SubmissionDraft }) {
     if (!consentResponse.ok) { setSaveState("error"); setSubmitting(false); return; }
     const response = await fetch(`/api/submissions/${draft.id}/submit`, { method: "POST" });
     if (!response.ok) { setSaveState("error"); setSubmitting(false); return; }
-    setComplete(true);
+    setComplete(await response.json() as NonNullable<typeof complete>);
     router.refresh();
   }
 
-  if (complete) return <section className="share-complete"><p className="eyebrow">Submitted privately</p><h1>Thank you for trusting us.</h1><p>A human will review what you shared. Nothing publishes automatically.</p><a href="/account">My HUMAN:HERE →</a></section>;
+  if (complete?.status === "published") return <section className="share-complete"><p className="eyebrow">Posted</p><h1>You&rsquo;re live.</h1><p>Thank you for trusting us with your story. People can see it now, and you can edit or unpublish it from your profile any time.</p><a href={`/humans/${complete.slug}`}>See your story →</a><a href="/account">My HUMAN:HERE →</a></section>;
+  if (complete) return <section className="share-complete"><p className="eyebrow">Waiting for a quick check</p><h1>Almost there.</h1><p>{complete.reason}, so our team will look before it posts, to keep you safe. You can edit it from your profile to take that detail out.</p><a href="/account">My HUMAN:HERE →</a></section>;
 
   const needsUpload = draft.artifactType === "portrait" || draft.artifactType === "video" || draft.artifactType === "audio";
 
@@ -149,12 +150,12 @@ export function ShareFlow({ initial }: { initial: SubmissionDraft }) {
 
       {step === 4 && <fieldset ref={questionRef} tabIndex={-1}><legend id="share-step-title">What are you carrying?</legend><p>What happened? What gives you hope? What do you wish someone understood?</p><textarea rows={8} value={draft.story ?? ""} onChange={event => patch({ story: event.target.value })} placeholder="There is no perfect way to tell it…" /></fieldset>}
 
-      {step === 5 && <fieldset ref={questionRef} tabIndex={-1}><legend id="share-step-title">What would help right now?</legend><p>This does not promise publication or assistance. It helps a real person understand what you are asking for.</p><div className="share-choices">{helpOptions.map(([value, label], index) => <Choice key={value} index={index} label={label} selected={draft.whatWouldHelp === value} onClick={() => patch({ whatWouldHelp: value })} />)}</div><p className="share-agreement">When you submit, HUMAN:HERE may publish your story, with any photo, video or audio you added, once our team has reviewed it. {draft.whatWouldHelp && draft.whatWouldHelp !== "share_only" ? "We may contact you about what would help. " : ""}Featuring it on our social media follows <a href="/account/settings/privacy">your settings</a>. You can unpublish or delete it any time.</p></fieldset>}
+      {step === 5 && <fieldset ref={questionRef} tabIndex={-1}><legend id="share-step-title">What would help right now?</legend><p>This does not promise assistance. It helps a real person understand what you are asking for.</p><div className="share-choices">{helpOptions.map(([value, label], index) => <Choice key={value} index={index} label={label} selected={draft.whatWouldHelp === value} onClick={() => patch({ whatWouldHelp: value })} />)}</div><p className="share-agreement">When you share, your story posts straight away, with any photo, video or audio you added. If it looks like it includes a phone number, email or street address, our team checks it first. {draft.whatWouldHelp && draft.whatWouldHelp !== "share_only" ? "We may contact you about what would help. " : ""}Featuring it on our social media follows <a href="/account/settings/privacy">your settings</a>. You can unpublish or delete it any time.</p></fieldset>}
 
 
       <footer>
         <button className="share-back" type="button" onClick={() => goToStep(step - 1)} disabled={step === 1}>← Back</button>
-        <div>{step < TOTAL_STEPS ? <button className="share-next" type="button" onClick={() => goToStep(step + 1)} disabled={!canContinue}><span>Continue</span><b>→</b></button> : <button className="share-next" type="button" onClick={() => void submit()} disabled={submitting || !canContinue}><span>{submitting ? "Submitting…" : "Submit for human review"}</span><b>→</b></button>}<small>{step < TOTAL_STEPS ? "Press Enter ↵" : "Nothing publishes automatically"}</small></div>
+        <div>{step < TOTAL_STEPS ? <button className="share-next" type="button" onClick={() => goToStep(step + 1)} disabled={!canContinue}><span>Continue</span><b>→</b></button> : <button className="share-next" type="button" onClick={() => void submit()} disabled={submitting || !canContinue}><span>{submitting ? "Sharing…" : "Share my story"}</span><b>→</b></button>}<small>{step < TOTAL_STEPS ? "Press Enter ↵" : "Posts right away"}</small></div>
       </footer>
     </section>
   );

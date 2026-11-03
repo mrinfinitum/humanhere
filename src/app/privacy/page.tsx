@@ -37,8 +37,8 @@ export default function PrivacyPage() {
         <ul>
           <li><b>Your profile:</b> everyone: your profile photo, @username, name, bio, level and rank, when you joined, your follower and following counts, and your published stories that are not anonymous.</li>
           <li><b>Drafts:</b> only you.</li>
-          <li><b>Stories you submit:</b> you and our review team.</li>
-          <li><b>Published stories:</b> everyone, including the first name or &ldquo;Anonymous&rdquo;, the general location, and the media you approved.</li>
+          <li><b>Stories held by the automatic check:</b> you and our team, until we publish or decline them.</li>
+          <li><b>Published stories:</b> everyone, including the first name or &ldquo;Anonymous&rdquo;, the general location, and the media you added. If you give a location, the story can appear on the globe at the center of that city, state or country, never a precise spot.</li>
           <li><b>Notes sent to you:</b> our moderators, then only you. The sender&rsquo;s identity is not shown to you.</li>
           <li><b>Love:</b> everyone sees a total count. Who sent it stays private.</li>
           <li><b>Who you follow and who follows you:</b> signed-in members can see these lists on your profile, unless you turn on &ldquo;Hide who I follow and who follows me&rdquo; in Settings. Then others see only the counts and you are left out of other people&rsquo;s lists too. Visitors who are not signed in only ever see the counts.</li>
@@ -47,7 +47,7 @@ export default function PrivacyPage() {
         </ul>
 
         <h2>3. How we use it</h2>
-        <p>We use your information to run your account, review and publish the stories you approve, deliver notes, keep people safe, respond to your requests, and contact you if you allowed it. We rely on your consent for publishing and sharing your stories, and on our legitimate interest in running a safe service for the rest.</p>
+        <p>We use your information to run your account, publish the stories you share, check stories for personal contact details before they post, deliver notes, keep people safe, respond to your requests, and contact you if you allowed it. We rely on your consent for publishing and sharing your stories, and on our legitimate interest in running a safe service for the rest.</p>
 
         <h2>4. Who we share it with</h2>
         <p>We do not sell personal information. We share it only with:</p>

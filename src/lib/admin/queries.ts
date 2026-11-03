@@ -14,11 +14,15 @@ const decode = (value?: string): Cursor | undefined => {
 export async function getSubmissionQueue(cursorValue?: string) {
   await requireStaff();
   const cursor = decode(cursorValue);
-  let query = (await createDatabaseClient()).from("submissions").select("id,status,public_name,headline,created_at").neq("status", "draft").order("created_at").order("id").limit(41);
+  // Stories post straight away; staff only see the ones the automatic check held.
+  let query = (await createDatabaseClient()).from("submissions").select("id,status,public_name,headline,created_at,moderation_flags(notes)").in("status", ["in_review", "submitted"]).order("created_at").order("id").limit(41);
   if (cursor) query = query.or(`created_at.gt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.gt.${cursor.id})`);
   const { data, error } = await query;
   if (error) throw new Error(`Submission queue failed: ${error.code}`);
-  const rows = (data ?? []).slice(0, 40).map(row => ({ id: String(row.id), status: String(row.status), title: String(row.headline ?? row.public_name ?? "Untitled submission"), createdAt: String(row.created_at), href: `/admin/submissions/${row.id}` }));
+  const rows = (data ?? []).slice(0, 40).map(row => {
+    const flags = (row as unknown as { moderation_flags?: Array<{ notes: string | null }> | null }).moderation_flags ?? [];
+    return { id: String(row.id), status: String(row.status), title: String(row.headline ?? row.public_name ?? "Untitled submission"), detail: flags.map(flag => flag.notes).filter(Boolean).join(" · ") || undefined, createdAt: String(row.created_at), href: `/admin/submissions/${row.id}` };
+  });
   const last = rows.at(-1);
   return { rows: rows as AdminQueueRow[], next: (data?.length ?? 0) > 40 && last ? encode({ createdAt: last.createdAt, id: last.id }) : undefined };
 }

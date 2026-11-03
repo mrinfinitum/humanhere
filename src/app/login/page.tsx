@@ -169,7 +169,7 @@ async function LoginContent({ searchParams }: { searchParams: Promise<Query> }) 
               )}
             </div>
           )}
-          <footer><span>Your email is never shown publicly.</span><span>Nothing publishes automatically.</span></footer>
+          <footer><span>Your email is never shown publicly.</span><span>Drafts stay private until you share.</span></footer>
         </section>
       </section>
       <footer className="member-footer"><span><i aria-hidden="true" /> People need people.</span><small><Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link></small></footer>

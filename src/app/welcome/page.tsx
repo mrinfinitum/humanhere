@@ -37,7 +37,7 @@ async function WelcomeContent({ searchParams }: { searchParams: WelcomeSearchPar
           <h1 id="welcome-title">{returning ? <>A few<br />things<br />changed.</> : <>Make<br />it<br />yours.</>}</h1>
           {returning
             ? <p>You can now add a profile photo, and signed-in members can see who follows you and who you follow. You can hide those lists any time in Settings, Privacy &amp; sharing. Please review your profile and agree to continue.</p>
-            : <p>Choose how you appear on HUMAN:HERE. Nothing you share publishes until our team has reviewed it, and you can change all of this later.</p>}
+            : <p>Choose how you appear on HUMAN:HERE. Drafts stay private until you share them, and you can change all of this later.</p>}
         </div>
         <section className="auth-panel" aria-label="Your profile">
           <header><span>Your profile</span><small>{returning ? "Updated terms" : "One time"}</small></header>
@@ -60,7 +60,7 @@ async function WelcomeContent({ searchParams }: { searchParams: WelcomeSearchPar
             <p className="auth-consent">{returning && <>Read what changed in the <Link href="/privacy" target="_blank">Privacy Policy</Link>. </>}By continuing you agree to the <Link href="/terms" target="_blank">Terms of Use</Link> and <Link href="/privacy" target="_blank">Privacy Policy</Link>, and confirm you are 18 or older or have a parent or guardian&rsquo;s permission.</p>
             <button>Continue <span aria-hidden="true">→</span></button>
           </form>
-          <footer><span>Nothing publishes automatically.</span><span>You can leave any time.</span></footer>
+          <footer><span>Drafts stay private.</span><span>You can leave any time.</span></footer>
         </section>
       </section>
       <footer className="member-footer"><span><i aria-hidden="true" /> People need people.</span><small>Browsing never requires an account.</small></footer>

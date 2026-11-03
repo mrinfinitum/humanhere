@@ -18,7 +18,7 @@ export default function TermsPage() {
         <h2>The short version</h2>
         <ul>
           <li>Your story stays yours. You decide what is shared and you can take it down.</li>
-          <li>Nothing you write is public until you give permission for that story and our team has reviewed it.</li>
+          <li>Your stories post as soon as you share them, like a social post. Drafts stay private until then.</li>
           <li>Be truthful, be kind, and only share what is yours to share.</li>
         </ul>
 
@@ -32,14 +32,14 @@ export default function TermsPage() {
         <p>Your account has a public profile with the @username you choose, your name, bio and profile photo, your level and rank, and how many people follow you and how many you follow. Signed-in members can also see who follows you and who you follow, unless you hide those lists in Settings. Your published stories appear on it unless you shared them anonymously. You can follow other members to see their published stories in one place, and anyone signed in can report a published story to us.</p>
 
         <h2>4. Your stories and what we may do with them</h2>
-        <p>You keep ownership of everything you share. When you submit a story, you give us permission to publish it, with the photos, video or audio you added, once our team has reviewed it. If you tell us you would like help, you also allow us to contact you and, when you ask for practical help or resources, to connect you with a partner organization. We feature your stories on our own social media only if you turn that on in your account settings; it is off until you do.</p>
+        <p>You keep ownership of everything you share. When you share a story, you give us permission to publish it straight away, with the photos, video or audio you added. If you tell us you would like help, you also allow us to contact you and, when you ask for practical help or resources, to connect you with a partner organization. We feature your stories on our own social media only if you turn that on in your account settings; it is off until you do.</p>
         <p>For the things you allow, you give HUMAN:HERE permission to host, display, format and share that story for as long as your permission stands. This permission is free of charge, is not exclusive, and ends when you withdraw it.</p>
 
         <h2>5. Changing your mind</h2>
         <p>You can unpublish, edit or delete a story from your account at any time. Unpublishing takes the story and its public media off HUMAN:HERE right away. Copies that other people made or shared before then, including on social media, are outside our control; if we posted your story on our own social accounts, we will remove those posts when you ask.</p>
 
-        <h2>6. Review before publishing</h2>
-        <p>Our team reads every story before it is published. We may decline to publish a story or take one down, for example when it could put someone at risk or does not meet these terms.</p>
+        <h2>6. Posting and safety</h2>
+        <p>Stories are not reviewed before they post. An automatic check holds back a story that looks like it contains a phone number, email address or street address, so our team can look at it first. Anyone signed in can report a published story, and our team may take down any story, for example when it could put someone at risk or does not meet these terms. We may add automated review in the future.</p>
 
         <h2>7. What you agree not to share</h2>
         <ul>

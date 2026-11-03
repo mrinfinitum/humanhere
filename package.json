@@ -12,6 +12,7 @@
     "test:auth": "node --no-warnings scripts/verify-auth-launch.mjs",
     "test:location": "node --no-warnings scripts/verify-public-globe-location.mjs",
     "test:help": "node --no-warnings scripts/verify-help-foundation.mjs",
+    "test:publishing": "node --no-warnings scripts/verify-instant-publishing.mjs",
     "test:scale": "node scripts/scale-archive.mjs",
     "test:rls": "node scripts/verify-neon-database.mjs",
     "db:migrate": "node --env-file=.env.local scripts/migrate-neon.mjs",
