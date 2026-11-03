@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AccountLink } from "@/components/AccountLink";
 
 export function ArchiveChrome({ count, total }: { count: number; total?: number }) {
   return (
@@ -9,6 +10,7 @@ export function ArchiveChrome({ count, total }: { count: number; total?: number 
         <Link href="/humans">Humans</Link>
         <Link href="/mission">Mission</Link>
         <Link href="/support">Support</Link>
+        <AccountLink />
       </nav>
     </>
   );

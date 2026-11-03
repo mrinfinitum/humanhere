@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { AccountLink } from "@/components/AccountLink";
 import Link from "next/link";
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -508,6 +509,7 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
           <Link href="/humans">View the archive</Link>
           <Link href="/mission">Our mission</Link>
           <Link href="/support">Support the work</Link>
+          <AccountLink />
         </nav>
         <footer>
           <span>{entries.length} records loaded</span>

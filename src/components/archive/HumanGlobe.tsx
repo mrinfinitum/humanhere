@@ -1,6 +1,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
+import { AccountLink } from "@/components/AccountLink";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { HumanStoryDrawer } from "@/components/globe/HumanStoryDrawer";
@@ -344,6 +345,7 @@ export function HumanGlobe({
           <Link href="/mission">Mission</Link>
           <Link href="/share">Share</Link>
           <Link href="/support">Support</Link>
+          <AccountLink />
         </nav>
       </header>
 
