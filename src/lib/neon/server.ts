@@ -30,6 +30,22 @@ function describeToken(token: string) {
   }
 }
 
+// For its first moments, a brand-new account's token is sometimes refused by
+// the database, more often when several queries run at once. Every function
+// refuses before it changes anything, so the request is retried briefly.
+const AUTH_RETRY_DELAYS_MS = [300, 800, 1600];
+
+async function fetchWithAuthRetry(input: RequestInfo | URL, init?: RequestInit) {
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetch(input, init);
+    if (response.status !== 400 || attempt >= AUTH_RETRY_DELAYS_MS.length) return response;
+    const body = await response.clone().text();
+    if (!body.includes("P0001") || !body.includes("authentication required")) return response;
+    console.warn(`Database refused a new session; retry ${attempt + 1}`);
+    await new Promise(resolve => setTimeout(resolve, AUTH_RETRY_DELAYS_MS[attempt]));
+  }
+}
+
 export const createDatabaseClient = cache(async () => {
   const user = await getSessionUser();
   if (!user) return createPublicDatabaseClient();
@@ -39,16 +55,9 @@ export const createDatabaseClient = cache(async () => {
   if (error || !data?.token) throw new Error("Unable to authorize database access.");
   const client = new NeonPostgrestClient<Database, "public">({
     dataApiUrl,
-    options: { global: { fetch, headers: { Authorization: `Bearer ${data.token}` } } },
+    options: { global: { fetch: fetchWithAuthRetry, headers: { Authorization: `Bearer ${data.token}` } } },
   });
-  let profile = await client.rpc("ensure_profile", { p_display_name: user.name });
-  // A token minted moments ago (right after sign-in) is sometimes not yet
-  // accepted as a user by the database, so wait briefly and try once more.
-  if (profile.error?.code === "P0001") {
-    console.warn("Profile initialization retrying:", describeToken(data.token));
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    profile = await client.rpc("ensure_profile", { p_display_name: user.name });
-  }
+  const profile = await client.rpc("ensure_profile", { p_display_name: user.name });
   if (profile.error) console.error("Profile initialization failed:", profile.error.code, profile.error.message, describeToken(data.token));
   if (profile.error) throw new Error(`Unable to initialize your account: ${profile.error.code}`);
   return client;
