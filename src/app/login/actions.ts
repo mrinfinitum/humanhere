@@ -5,6 +5,7 @@ import { getNeonAuth } from "@/lib/auth/neon";
 import { getSiteUrl } from "@/lib/neon/env";
 import { getAuthProviderAvailability } from "@/lib/auth/providers";
 import { safeNext } from "@/lib/auth/redirect";
+import { passesTurnstile } from "@/lib/auth/turnstile";
 
 const OAUTH_PROVIDERS = ["google", "apple"] as const;
 type OAuthProvider = (typeof OAUTH_PROVIDERS)[number];
@@ -74,6 +75,7 @@ export async function signInWithMagicLink(formData: FormData) {
   if (!email) redirect(loginUrl({ error: "email", next }));
   const available = await getAuthProviderAvailability();
   if (!available.email) redirect(loginUrl({ error: "email-unavailable", next }));
+  if (!await passesTurnstile(formData)) redirect(loginUrl({ error: "captcha", next }));
   const { error } = await getNeonAuth().signIn.magicLink({ email, callbackURL: completeUrl(next) });
   if (error) {
     logFailure("Magic link request", error);
@@ -90,6 +92,7 @@ export async function signInWithPassword(formData: FormData) {
   if (!email) redirect(loginUrl({ error: "email", next }));
   const password = readPassword(formData);
   if (!password || password.length > PASSWORD_MAX) redirect(loginUrl({ error: "credentials", next }));
+  if (!await passesTurnstile(formData)) redirect(loginUrl({ error: "captcha", next }));
   // The server API copies the session cookies onto this response, so the
   // user is signed in as soon as this resolves without an /auth/complete hop.
   const { error } = await getNeonAuth().signIn.email({ email, password, callbackURL: completeUrl(next) });
@@ -113,6 +116,7 @@ export async function signUpWithPassword(formData: FormData) {
   const password = readPassword(formData);
   const problem = passwordProblem(password);
   if (problem) redirect(loginUrl({ mode: "signup", error: problem, next }));
+  if (!await passesTurnstile(formData)) redirect(loginUrl({ mode: "signup", error: "captcha", next }));
   const name = String(formData.get("name") ?? "").trim().replace(/\s+/g, " ").slice(0, NAME_MAX);
   const { data, error } = await getNeonAuth().signUp.email({ email, password, name, callbackURL: completeUrl(next) });
   if (error) {
@@ -135,6 +139,7 @@ export async function requestPasswordReset(formData: FormData) {
   if (!available.password) redirect(loginUrl({ mode: "forgot", error: "password-unavailable", next }));
   const email = readEmail(formData);
   if (!email) redirect(loginUrl({ mode: "forgot", error: "email", next }));
+  if (!await passesTurnstile(formData)) redirect(loginUrl({ mode: "forgot", error: "captcha", next }));
   // Better Auth emails `<auth>/reset-password/<token>?callbackURL=<redirectTo>`,
   // which forwards to `redirectTo?token=...` (or `?error=INVALID_TOKEN`).
   const { error } = await getNeonAuth().requestPasswordReset({

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { requestPasswordReset, signInWithMagicLink, signInWithOAuth, signInWithPassword, signUpWithPassword } from "./actions";
+import { Turnstile } from "@/components/auth/Turnstile";
 import { getAuthProviderAvailability } from "@/lib/auth/providers";
+import { turnstileSiteKey } from "@/lib/auth/turnstile";
 import { safeNext } from "@/lib/auth/redirect";
 
 const AUTH_ERRORS: Record<string, string> = {
@@ -9,6 +11,7 @@ const AUTH_ERRORS: Record<string, string> = {
   "provider-unavailable": "That sign-in method is not available yet. Continue with email instead.",
   oauth: "We could not complete that sign-in. Please try again.",
   email: "Enter a valid email address.",
+  captcha: "We could not confirm you are a person. Please try again.",
   "email-unavailable": "Email links are temporarily unavailable.",
   "magic-link": "We could not send the sign-in link. Please try again.",
   callback: "That sign-in link could not be verified. Request a new one below.",
@@ -46,12 +49,13 @@ function SentNotice({ title, eyebrow, children }: { title: string; eyebrow: stri
   );
 }
 
-function MagicLinkForm({ next }: { next: string }) {
+function MagicLinkForm({ next, siteKey }: { next: string; siteKey: string | null }) {
   return (
     <form action={signInWithMagicLink} className="auth-email">
       <label htmlFor="magic-email">Email address</label>
       <input id="magic-email" name="email" type="email" autoComplete="email" required placeholder="you@example.com" />
       <input type="hidden" name="next" value={next} />
+      {siteKey && <Turnstile siteKey={siteKey} action="magic-link" />}
       <button>Send a private link <span aria-hidden="true">→</span></button>
     </form>
   );
@@ -66,6 +70,7 @@ async function LoginContent({ searchParams }: { searchParams: Promise<Query> }) 
   const hasOAuth = providers.google || providers.apple;
   const hasSignInMethod = providers.email || providers.password || hasOAuth;
   const resetDone = query.reset === "1";
+  const siteKey = turnstileSiteKey();
 
   let notice: React.ReactNode = null;
   if (query.sent === "1") {
@@ -101,6 +106,7 @@ async function LoginContent({ searchParams }: { searchParams: Promise<Query> }) 
                   <label htmlFor="forgot-email">Email address</label>
                   <input id="forgot-email" name="email" type="email" autoComplete="email" required placeholder="you@example.com" />
                   <input type="hidden" name="next" value={next} />
+                  {siteKey && <Turnstile siteKey={siteKey} action="password-reset" />}
                   <button>Send reset link <span aria-hidden="true">→</span></button>
                   <Link className="auth-text-link" href={modeHref("signin", next)}>← Back to sign in</Link>
                 </form>
@@ -129,6 +135,7 @@ async function LoginContent({ searchParams }: { searchParams: Promise<Query> }) 
                           <input id="signup-password" name="password" type="password" autoComplete="new-password" required minLength={10} maxLength={128} aria-describedby="signup-password-hint" />
                           <p id="signup-password-hint" className="auth-hint">At least 10 characters. A short phrase works well.</p>
                           <input type="hidden" name="next" value={next} />
+                          {siteKey && <Turnstile siteKey={siteKey} action="sign-up" />}
                           <button>Create account <span aria-hidden="true">→</span></button>
                         </form>
                       ) : (
@@ -141,6 +148,7 @@ async function LoginContent({ searchParams }: { searchParams: Promise<Query> }) 
                           </span>
                           <input id="signin-password" name="password" type="password" autoComplete="current-password" required maxLength={128} />
                           <input type="hidden" name="next" value={next} />
+                          {siteKey && <Turnstile siteKey={siteKey} action="sign-in" />}
                           <button>Sign in <span aria-hidden="true">→</span></button>
                         </form>
                       )}
@@ -149,10 +157,10 @@ async function LoginContent({ searchParams }: { searchParams: Promise<Query> }) 
                   {providers.email && (providers.password ? (
                     <details className="auth-alt">
                       <summary>Email me a link instead</summary>
-                      <MagicLinkForm next={next} />
+                      <MagicLinkForm next={next} siteKey={siteKey} />
                     </details>
                   ) : (
-                    <MagicLinkForm next={next} />
+                    <MagicLinkForm next={next} siteKey={siteKey} />
                   ))}
                   {mode === "forgot" && !providers.password && <p className="auth-notice" role="status">Password reset is not available yet.{providers.email ? " Use a private email link instead." : ""}</p>}
                   {!hasSignInMethod && <p className="auth-notice" role="status">Account access is temporarily unavailable. You can still explore every public Human story.</p>}

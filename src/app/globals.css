@@ -782,3 +782,4 @@ button.profile-primary { cursor: pointer; }
 .auth-agree .auth-username > label { display: block; }
 .settings-permissions { display: flex; flex-wrap: wrap; margin: 12px 0 6px; align-items: center; gap: 12px; }.settings-permissions button { height: 40px; padding: 0 18px; border: 1px solid #3e5de6; border-radius: 999px; background: #3046a5; color: white; font-size: 13px; }.settings-permissions small { color: rgb(226 232 245 / .5); font-size: 13px; }
 .auth-consent { margin: 0; color: rgb(226 232 245 / .62); font-size: 14px; line-height: 1.55; }.auth-consent a { color: #8fa4ff; text-decoration: underline; text-underline-offset: 3px; }
+.auth-turnstile { min-height: 65px; }
