@@ -8,6 +8,7 @@ import { HumanStoryDrawer } from "@/components/globe/HumanStoryDrawer";
 import { GlobeScene } from "@/components/globe/GlobeScene";
 import type { GlobeControls, GlobeHover, GlobeHuman } from "@/components/globe/types";
 import type { HumanEntry } from "@/lib/archive/types";
+import "./human-globe-large.css";
 
 const MIN_DISTANCE = 2.82;
 const MAX_DISTANCE = 4.15;
@@ -359,7 +360,7 @@ export function HumanGlobe({
           <Link href="/members">People</Link>
           <Link href="/mission">Mission</Link>
           <Link href="/share">Share</Link>
-          <Link href="/support">Support</Link>
+          <Link href="/give">Give</Link>
           <AccountLink />
         </nav>
       </header>

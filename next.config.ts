@@ -18,6 +18,7 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      { source: "/support", destination: "/give", permanent: true },
       { source: "/people", destination: "/humans", permanent: true },
       { source: "/people/:slug", destination: "/humans/:slug", permanent: true },
     ];

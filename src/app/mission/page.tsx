@@ -78,7 +78,7 @@ export default function MissionPage() {
 
       <section className="manifesto-closing" aria-labelledby="mission-closing-title">
         <p className="section-code">09 / HUMAN:HERE</p><h2 id="mission-closing-title">See people.<br />Serve people.<br />Love people.</h2><p>People need people.</p>
-        <nav aria-label="Continue from the mission page"><Link href="/humans">Meet someone <span aria-hidden="true">→</span></Link><Link href="/share">Share your story <span aria-hidden="true">→</span></Link><Link href="/support">Show up <span aria-hidden="true">→</span></Link></nav>
+        <nav aria-label="Continue from the mission page"><Link href="/humans">Meet someone <span aria-hidden="true">→</span></Link><Link href="/share">Share your story <span aria-hidden="true">→</span></Link><Link href="/give">Show up <span aria-hidden="true">→</span></Link></nav>
       </section>
     </main>
   );

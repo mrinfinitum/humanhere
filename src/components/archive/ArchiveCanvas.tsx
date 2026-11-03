@@ -508,7 +508,7 @@ export function ArchiveCanvas({ initialBatch }: { initialBatch: ArchiveBatch }) 
           <Link href="/share">+ Add your story</Link>
           <Link href="/humans">View the archive</Link>
           <Link href="/mission">Our mission</Link>
-          <Link href="/support">Support the work</Link>
+          <Link href="/give">Give</Link>
           <AccountLink />
         </nav>
         <footer>

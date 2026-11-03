@@ -67,3 +67,12 @@
   .mission-page .manifesto-closing { padding-inline: 14px; }
   .mission-page .manifesto-closing h2 { font-size: 12vw; }
 }
+@media (min-width: 1800px) {
+  .mission-page { --mission-display: clamp(88px, 4.9vw, 124px); --mission-body: clamp(23px, 1.2vw, 28px); }
+  .mission-page .ruled-section, .mission-page .manifesto-hero { width: min(1720px, 100% - 96px); }
+  .mission-hero h1 { font-size: clamp(156px, 9.2vw, 236px); }
+  .mission-statement h2 { font-size: clamp(46px, 2.5vw, 60px); }
+  .faith-section, .mission-page .manifesto-closing { padding-inline: max(48px, (100% - 1720px) / 2); }
+  .faith-section h2 { font-size: clamp(112px, 6.2vw, 156px); }
+  .mission-page .manifesto-closing h2 { font-size: clamp(124px, 7vw, 176px); }
+}

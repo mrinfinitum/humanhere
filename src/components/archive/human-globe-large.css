@@ -1,0 +1,16 @@
+/* Large displays: the home headline and its surroundings keep scaling past
+   1700px so the composition reads as one confident scale, not a small block. */
+@media (min-width: 1700px) {
+  .human-globe-shell.is-home .human-globe-copy { top: 27%; left: 6.4%; width: 36vw; }
+  .human-globe-shell.is-home .human-globe-copy > p { margin-bottom: 3.2vw; gap: 1.6vw; font-size: .78vw; }
+  .human-globe-shell.is-home .human-globe-copy > p span { width: 1.7vw; height: 1.7vw; }
+  .human-globe-shell.is-home .human-globe-copy > p span::after { margin: calc(.85vw - 2px); }
+  .human-globe-shell.is-home .human-globe-copy h1 { font-size: 4.9vw; font-weight: 320; letter-spacing: .2em; line-height: 1.02; }
+  .human-globe-shell.is-home .human-globe-copy small { margin-top: 2.2vw; font-size: .68vw; }
+  .human-globe-shell.is-home .human-globe-chrome { min-height: 7.4vw; padding-inline: 2.5vw; }
+  .human-globe-shell.is-home .human-wordmark { font-size: 2.4vw; }
+  .human-globe-shell.is-home .human-globe-chrome nav { gap: 4.2vw; font-size: .78vw; }
+  .human-globe-shell.is-home .human-globe-enter { min-width: 19.5vw; min-height: 4.2vw; padding-inline: 1.8vw; font-size: .95vw; }
+  .human-globe-shell.is-home .human-globe-enter span { font-size: 1.3vw; }
+  .human-globe-shell.is-home .human-globe-footer { font-size: .72vw; }
+}

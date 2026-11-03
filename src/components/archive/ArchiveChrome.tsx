@@ -10,7 +10,7 @@ export function ArchiveChrome({ count, total }: { count: number; total?: number 
         <Link href="/humans">Humans</Link>
         <Link href="/members">People</Link>
         <Link href="/mission">Mission</Link>
-        <Link href="/support">Support</Link>
+        <Link href="/give">Give</Link>
         <AccountLink />
       </nav>
     </>
