@@ -46,7 +46,7 @@ h2 { font-weight: 650 !important; letter-spacing: -.025em !important; }
 .human-globe-chrome > a, .human-globe-chrome nav { pointer-events: auto; }
 .human-wordmark { color: rgb(250 250 250 / .94); font-size: clamp(18px, 1.85vw, 29px); font-weight: 350; letter-spacing: .31em; line-height: 1; text-transform: uppercase; white-space: nowrap; }
 .human-wordmark span { color: #4766ee; }
-.human-globe-chrome nav { display: flex; align-items: center; gap: clamp(20px, 2.2vw, 36px); font-size: 12px; font-weight: 520; letter-spacing: .22em; text-transform: uppercase; }
+.human-globe-chrome nav { display: flex; align-items: center; gap: clamp(18px, 1.8vw, 28px); font-size: 11px; font-weight: 520; letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; }
 .human-globe-chrome nav a { position: relative; color: rgb(250 250 250 / .84); transition: color 220ms ease; }
 .human-globe-chrome nav a:hover, .human-globe-chrome nav a:focus-visible { color: #fff; }
 .human-globe-chrome nav a.is-active::before { position: absolute; top: 50%; left: -14px; width: 5px; height: 5px; border-radius: 50%; background: #315dff; box-shadow: 0 0 9px #315dff; content: ""; transform: translateY(-50%); }
@@ -96,7 +96,7 @@ h2 { font-weight: 650 !important; letter-spacing: -.025em !important; }
 @media (min-width: 901px) {
   .human-globe-shell.is-home .human-globe-chrome { min-height: 126px; padding-inline: 42px; }
   .human-globe-shell.is-home .human-wordmark { font-size: clamp(30px, 2.55vw, 41px); }
-  .human-globe-shell.is-home .human-globe-chrome nav { gap: clamp(22px, 2.4vw, 40px); font-size: 13px; }
+  .human-globe-shell.is-home .human-globe-chrome nav { gap: clamp(20px, 2vw, 30px); font-size: 11.5px; }
   .human-globe-shell.is-home .human-globe-copy { top: 29%; width: 570px; }
   .human-globe-shell.is-home .human-globe-copy > p { margin-bottom: 52px; font-size: 13px; }
   .human-globe-shell.is-home .human-globe-copy h1 { font-size: clamp(48px, 4.16vw, 67.2px); letter-spacing: .21em; line-height: 1.04; }
@@ -330,7 +330,7 @@ h2 { font-weight: 650 !important; letter-spacing: -.025em !important; }
 .member-header { position: relative; z-index: 3; display: flex; min-height: 96px; padding: 0 30px; align-items: center; justify-content: space-between; border-bottom: 1px solid rgb(250 250 250 / .13); }
 .member-wordmark { color: rgb(250 250 250 / .94); font-size: clamp(17px, 1.75vw, 27px); font-weight: 350; letter-spacing: .31em; line-height: 1; white-space: nowrap; }
 .member-wordmark span { color: #5074ff; }
-.member-header nav { display: flex; align-items: center; gap: clamp(18px, 2vw, 32px); color: rgb(250 250 250 / .68); font-size: 11px; font-weight: 520; letter-spacing: .22em; text-transform: uppercase; }
+.member-header nav { display: flex; align-items: center; gap: clamp(18px, 1.8vw, 28px); color: rgb(250 250 250 / .68); font-size: 11px; font-weight: 520; letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; }
 .member-header nav a, .member-header nav button { transition: color 180ms ease; }.member-header nav a:hover, .member-header nav button:hover { color: white; }
 .member-header nav form { margin: 0; }.member-header nav button { padding: 0; border: 0; background: transparent; color: inherit; letter-spacing: inherit; text-transform: inherit; }
 .member-admin-link { color: #6f8cff !important; }
@@ -433,7 +433,7 @@ h2 { font-weight: 650 !important; letter-spacing: -.025em !important; }
 
 @media (max-width: 900px) {
   .human-globe-chrome { min-height: 82px; padding-inline: 20px; }
-  .human-globe-chrome nav { gap: 24px; font-size: 10px; }
+  .human-globe-chrome nav { gap: 18px; font-size: 10px; }
   .human-wordmark { font-size: 18px; }
   .human-globe-copy { top: 29%; left: 5.5%; }
   .human-globe-copy > p { margin-bottom: 34px; }
