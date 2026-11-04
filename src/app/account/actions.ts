@@ -8,6 +8,8 @@ import type { MediaAsset } from "@/lib/archive/types";
 import { adminSql } from "@/lib/neon/admin";
 import { removeObjects, PRIVATE_BUCKET, PUBLIC_BUCKET } from "@/lib/storage/server";
 import { createDatabaseClient } from "@/lib/neon/server";
+import { formatPlace } from "@/lib/account/queries";
+import { placeCentroid } from "@/lib/geo/places";
 
 // Approved derivatives are removed from the public bucket so previously
 // copied URLs stop resolving once a story is no longer public.
@@ -80,6 +82,32 @@ export async function deleteStory(formData: FormData) {
 const USERNAME_ERRORS: Record<string, string> = { "invalid username": "username-invalid", "username is reserved": "username-reserved", "username is taken": "username-taken" };
 const PROFILE_SETTINGS = "/account/settings/profile";
 
+/**
+ * A story without its own location shows on the globe at the author's profile
+ * city. When that city changes, those stories move with it; a story whose
+ * author typed a different place keeps it. Anonymous stories never use it, so
+ * the profile cannot be tied to them.
+ */
+async function moveStoriesToProfilePlace(userId: string, previous: string | null, next: string | null) {
+  if (previous === next) return;
+  const sql = adminSql();
+  const stories = await sql`select h.id, h.slug, h.submission_id from public.human_entries h
+    join public.submissions s on s.id = h.submission_id
+    where s.user_id = ${userId}::uuid and h.published = true and not h.anonymous and not h.location_withheld
+      and (nullif(btrim(coalesce(h.display_location, '')), '') is null or h.display_location = ${previous ?? ""})`;
+  if (!stories.length) return;
+  const pin = placeCentroid(next);
+  for (const story of stories) {
+    await sql`update public.human_entries set display_location = ${next},
+        public_latitude = ${pin?.latitude ?? null}, public_longitude = ${pin?.longitude ?? null},
+        public_location_precision = ${pin?.precision ?? null}::public.human_public_location_precision,
+        public_location_approved_at = ${pin ? new Date() : null}, public_location_approved_by = ${pin ? userId : null}::uuid
+      where id = ${story.id}::uuid`;
+    await sql`update public.submissions set location = ${next} where id = ${story.submission_id}::uuid and user_id = ${userId}::uuid`;
+    expirePublishedHumanImmediately(String(story.slug));
+  }
+}
+
 function field(formData: FormData, name: string, max: number) {
   return String(formData.get(name) ?? "").trim().replace(/\s+/g, " ").slice(0, max);
 }
@@ -93,9 +121,11 @@ export async function updateProfile(formData: FormData) {
   const city = field(formData, "city", 80);
   const region = field(formData, "region", 80);
   const database = await createDatabaseClient();
+  const { data: before } = await database.from("profiles").select("city,region").eq("id", user.id).maybeSingle();
   // Name, bio and place save even when the new username is refused.
   const { error } = await database.from("profiles").update({ display_name: displayName || null, bio: bio || null, city: city || null, region: region || null }).eq("id", user.id);
   if (error) throw new Error(`Profile could not be saved: ${error.code}`);
+  await moveStoriesToProfilePlace(user.id, formatPlace(before?.city, before?.region), formatPlace(city, region));
   if (username && username !== String(formData.get("currentUsername") ?? "")) {
     const { error: usernameError } = await database.rpc("claim_username", { p_username: username });
     if (usernameError) redirect(`${PROFILE_SETTINGS}?error=${USERNAME_ERRORS[usernameError.message] ?? "username-invalid"}`);

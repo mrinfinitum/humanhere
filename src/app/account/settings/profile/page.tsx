@@ -50,7 +50,7 @@ async function EditProfile({ searchParams }: { searchParams: Search }) {
           <div><label htmlFor="profile-city">City</label><input id="profile-city" name="city" defaultValue={activity.city ?? ""} maxLength={80} autoComplete="address-level2" placeholder="Columbus" /></div>
           <div><label htmlFor="profile-region">State</label><input id="profile-region" name="region" defaultValue={activity.region ?? ""} maxLength={80} autoComplete="address-level1" placeholder="OH" /></div>
         </div>
-        <small>Optional. Shown on your profile so people know where you are.</small>
+        <small>Optional. Shown on your profile, and it places your stories on the globe unless you give a story its own place. Anonymous stories never use it.</small>
         <button className="ig-button ig-button--primary">Save</button>
       </form>
       <form className="settings-group settings-form" action={saveMailingAddress} id="address" aria-labelledby="address-title">

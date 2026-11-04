@@ -36,7 +36,10 @@ class NeonSubmissionRepository implements SubmissionRepository {
     // `status` is intentionally omitted. Authenticated users are not granted
     // direct INSERT access to that workflow column; the database default and
     // RLS policy establish every new submission as a draft.
-    const { data, error } = await client.from("submissions").insert({ user_id: userId, intent: intent ?? null }).select(OWNED_COLUMNS).single();
+    // A new story starts at the member's profile city; they can change or clear it in the flow.
+    const { data: profile } = await client.from("profiles").select("city,region").eq("id", userId).maybeSingle();
+    const location = [profile?.city?.trim(), profile?.region?.trim()].filter(Boolean).join(", ") || null;
+    const { data, error } = await client.from("submissions").insert({ user_id: userId, intent: intent ?? null, location }).select(OWNED_COLUMNS).single();
     if (error?.message === "draft limit reached") throw new LimitError("You have started a lot of drafts recently. Please continue an existing draft.");
     if (error) throw new Error(`Could not create draft: ${error.code}`);
     return mapSubmission(data as unknown as SubmissionRow);

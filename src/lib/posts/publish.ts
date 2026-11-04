@@ -39,6 +39,16 @@ export async function publishMemberSubmission(userId: string, submissionId: stri
   const { copied, assets } = await copySubmissionMediaToPublic(submissionId, rows);
   const thumbnail = assets.find(asset => asset.kind === "image") ?? null;
   const anonymous = Boolean(submission.anonymous) || submission.identity_mode === "anonymous";
+  // New drafts start at the author's profile city. An anonymous story never
+  // keeps it, so the story cannot be matched to the profile by place.
+  if (anonymous && submission.location) {
+    const [profile] = await sql`select city, region from public.profiles where id = ${userId}::uuid`;
+    const profilePlace = [profile?.city, profile?.region].map(part => String(part ?? "").trim()).filter(Boolean).join(", ");
+    if (profilePlace && String(submission.location).trim() === profilePlace) {
+      await sql`update public.submissions set location = null where id = ${submissionId}::uuid and user_id = ${userId}::uuid`;
+      submission.location = null;
+    }
+  }
   const pin = submission.location_withheld ? null : placeCentroid(submission.location as string | null);
   let slug: string;
   try {

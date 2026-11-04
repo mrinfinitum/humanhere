@@ -44,7 +44,7 @@ export default function PrivacyPage() {
           <li><b>Love:</b> everyone sees a total count. Who sent it stays private.</li>
           <li><b>Who you follow and who follows you:</b> signed-in members can see these lists on your profile, unless you turn on &ldquo;Hide who I follow and who follows me&rdquo; in Settings. Then others see only the counts and you are left out of other people&rsquo;s lists too. Visitors who are not signed in only ever see the counts.</li>
           <li><b>Reports:</b> our staff. The author is not told who reported a story.</li>
-          <li><b>City and state on your profile:</b> everyone, if you add them.</li>
+          <li><b>City and state on your profile:</b> everyone, if you add them. Your stories without a place of their own show there on the globe; anonymous stories never do.</li>
           <li><b>Your mailing address:</b> never shown publicly. Only our staff can see it, when you ask for something to be sent to you, and each time they do it is logged.</li>
           <li><b>Your email address:</b> never shown publicly.</li>
         </ul>
