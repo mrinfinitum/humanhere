@@ -793,6 +793,8 @@ button.profile-primary { cursor: pointer; }
 .story-tile > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }.story-tile > header small { color: rgb(226 232 245 / .46); font-size: 12px; }
 .story-tile h2 { margin: 4px 0 0; font-size: 17px; font-weight: 460; letter-spacing: -.015em; line-height: 1.25; }.story-tile h2 a:hover { color: #9fb2ff; }
 .story-tile > p { display: -webkit-box; flex: 1; margin: 0; overflow: hidden; color: rgb(226 232 245 / .66); font-size: 14px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }
+.story-tile > p.story-tile-lead { color: rgb(245 247 252 / .9); font-size: 16px; line-height: 1.45; -webkit-line-clamp: 6; }.story-tile-lead a:hover { color: #9fb2ff; }
+.story-tile > p.story-tile-empty { color: rgb(226 232 245 / .4); font-style: italic; }
 .story-tile > footer { display: flex; padding-top: 12px; flex-wrap: wrap; align-items: center; gap: 8px 16px; border-top: 1px solid rgb(226 232 245 / .08); font-size: 13px; }
 .story-tile > footer > a { color: #8fa4ff; }.story-tile > footer > small { color: rgb(226 232 245 / .5); }
 .story-tile > footer:has(.post-confirm[open]) { row-gap: 12px; }

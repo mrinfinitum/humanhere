@@ -6,6 +6,7 @@ import { submissionRepository } from "@/lib/submissions/repository";
 import { revokeConsent, updateFollowListPrivacy, updateSocialSharing } from "../../actions";
 import { STATUS_LABELS, timeAgo } from "../../AccountView";
 import { SettingsFrame, SettingsLoading } from "../SettingsFrame";
+import { storyLabel } from "@/lib/posts/label";
 
 const PERMISSION_LABELS = [
   ["publishStory", "Show my story publicly"],
@@ -60,7 +61,7 @@ async function PrivacySettings() {
           <h2>What each story allows</h2>
           {storiesWithPermissions.map(({ story, permissions }) => (
             <article className="settings-story" key={story.id}>
-              <header><b>{story.headline ?? "Untitled story"}</b><small>{permissions.revokedAt ? `Turned off ${timeAgo(permissions.revokedAt)}` : STATUS_LABELS[story.status]}</small></header>
+              <header><b>{storyLabel(story.headline, story.story)}</b><small>{permissions.revokedAt ? `Turned off ${timeAgo(permissions.revokedAt)}` : STATUS_LABELS[story.status]}</small></header>
               <ul>{PERMISSION_LABELS.map(([key, label]) => {
                 const allowed = permissions[key] && !permissions.revokedAt;
                 return <li key={key}><span>{label}</span><b className={allowed ? "settings-on" : undefined}>{allowed ? "On" : "Off"}</b></li>;

@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from "@/lib/auth/server";
 import { alertStaff } from "@/lib/notify/staff-alerts";
 import { publishMemberSubmission } from "@/lib/posts/publish";
 import { LimitError, submissionRepository } from "@/lib/submissions/repository";
+import { storyLabel } from "@/lib/posts/label";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   // These cookie-authenticated mutations must originate from the app.
@@ -24,7 +25,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (result.status === "held") {
     after(() => alertStaff({
       subject: "A story is waiting for a check",
-      lines: [`"${draft.headline?.trim() || "Untitled story"}" did not post because it ${result.reason.charAt(0).toLowerCase()}${result.reason.slice(1)}.`, "Publish it or decline it from the admin queue."],
+      lines: [`"${storyLabel(draft.headline, draft.story)}" did not post because it ${result.reason.charAt(0).toLowerCase()}${result.reason.slice(1)}.`, "Publish it or decline it from the admin queue."],
       path: `/admin/submissions/${id}`,
     }));
   }

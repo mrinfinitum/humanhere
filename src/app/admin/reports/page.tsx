@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { requireStaff } from "@/lib/auth/server";
 import { adminSql } from "@/lib/neon/admin";
 import { dismissReports, takeDownReported } from "../moderation-actions";
+import { storyLabel } from "@/lib/posts/label";
 
 type ReportRow = { entry_id: string; slug: string; headline: string | null; story: string | null; published: boolean; reports: number; reasons: string[]; details: string[] | null; first_reported: string };
 
@@ -21,7 +22,7 @@ export default async function ReportsPage() {
       <p>Open reports, most reported first. Taking a story down removes it from the site at once.</p>
       {rows.length ? rows.map(row => (
         <article key={row.entry_id}>
-          <header><b>{row.headline ?? "Untitled story"}</b><span>{row.reports} report{row.reports === 1 ? "" : "s"}</span></header>
+          <header><b>{storyLabel(row.headline, row.story)}</b><span>{row.reports} report{row.reports === 1 ? "" : "s"}</span></header>
           <ul>{row.reasons.map(reason => <li key={reason}>{reason.replaceAll("_", " ")}</li>)}</ul>
           {row.story && <p>{row.story}</p>}
           {row.details?.map((detail, index) => <blockquote key={index}>{detail}</blockquote>)}

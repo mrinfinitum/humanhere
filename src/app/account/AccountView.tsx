@@ -100,8 +100,13 @@ export function AccountView({ email, error, fallbackName, role, tab, submissions
           return (
             <article className={`story-tile story-tile--${item.status}`} key={item.id}>
               <header><span className={`post-status post-status--${item.status}`}>{STATUS_LABELS[item.status]}</span><small>{timeAgo(item.updatedAt)}</small></header>
-              <h2>{published ? <Link href={`/humans/${published.slug}`}>{item.headline ?? "Untitled story"}</Link> : item.headline ?? "Untitled story"}</h2>
-              {item.story && <p>{item.story}</p>}
+              {item.headline?.trim() ? <>
+                <h2>{published ? <Link href={`/humans/${published.slug}`}>{item.headline}</Link> : item.headline}</h2>
+                {item.story && <p>{item.story}</p>}
+              </> : item.story?.trim() ? (
+                // No title, like a post on X: the story's own words lead the tile.
+                <p className="story-tile-lead">{published ? <Link href={`/humans/${published.slug}`}>{item.story}</Link> : item.story}</p>
+              ) : <p className="story-tile-empty">Nothing written yet.</p>}
               <footer>
                 {published && <span className="post-love"><HeartIcon filled={published.loveCount > 0} />{published.loveCount}</span>}
                 {item.anonymous && <small>Anonymous</small>}
