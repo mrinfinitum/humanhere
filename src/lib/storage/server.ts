@@ -1,6 +1,6 @@
 import "server-only";
 
-import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client, type _Object } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export const PRIVATE_BUCKET = "submission-private";
@@ -67,4 +67,15 @@ export async function putPublicObject(key: string, body: Uint8Array, contentType
   await storage().send(new PutObjectCommand({
     Bucket: PUBLIC_BUCKET, Key: key, Body: body, ContentType: contentType, CacheControl: "public, max-age=300",
   }));
+}
+
+export async function listObjects(bucket: typeof PRIVATE_BUCKET | typeof PUBLIC_BUCKET) {
+  const objects: _Object[] = [];
+  let ContinuationToken: string | undefined;
+  do {
+    const page = await storage().send(new ListObjectsV2Command({ Bucket: bucket, ContinuationToken }));
+    objects.push(...(page.Contents ?? []));
+    ContinuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+  } while (ContinuationToken);
+  return objects;
 }

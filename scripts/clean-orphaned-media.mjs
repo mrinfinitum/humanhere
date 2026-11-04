@@ -35,8 +35,10 @@ try {
   const { rows: publicRows } = await client.query(`select asset ->> 'path' as path
     from public.human_entries, jsonb_array_elements(coalesce(media, '[]'::jsonb) || coalesce(jsonb_build_array(thumbnail), '[]'::jsonb)) asset
     where asset ->> 'provider' = 'neon'`);
+  // Profile photos live in the public bucket too; keep in step with src/lib/storage/cleanup.ts.
+  const { rows: avatarRows } = await client.query("select avatar_path as path from public.profiles where avatar_path is not null");
   const privateReferences = new Set(privateRows.map(row => row.storage_path));
-  const publicReferences = new Set(publicRows.map(row => row.path));
+  const publicReferences = new Set([...publicRows, ...avatarRows].map(row => row.path));
   const now = Date.now();
   const age = object => now - (object.LastModified?.getTime() ?? now);
 
