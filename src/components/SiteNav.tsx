@@ -8,8 +8,7 @@ import { AccountLink } from "./AccountLink";
 export function SiteNav({ staff = false, signedIn = false }: { staff?: boolean; signedIn?: boolean }) {
   return (
     <nav aria-label="Main navigation">
-      <Link href="/humans">Humans</Link>
-      <Link href="/members">People</Link>
+      <Link href="/world">Humans</Link>
       <Link href="/mission">Mission</Link>
       <Link href="/share">Share</Link>
       <Link href="/give">Give</Link>

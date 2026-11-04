@@ -2,6 +2,8 @@ export type GlobeHuman = {
   id: string;
   slug: string;
   firstName: string;
+  /** Author's @username; never set for anonymous stories. */
+  username?: string;
   city?: string;
   lat: number;
   lng: number;

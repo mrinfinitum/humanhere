@@ -19,7 +19,7 @@ async function FeedContent() {
   if (error) throw new Error("Could not load your feed.");
   const posts = data ?? [];
   if (!posts.length) {
-    return <div className="profile-empty"><i aria-hidden="true" /><h2>Nobody to follow yet.</h2><p>Follow people from their profile and their published stories show up here.</p><Link href="/humans">Meet the Humans →</Link></div>;
+    return <div className="profile-empty"><i aria-hidden="true" /><h2>Nobody to follow yet.</h2><p>Follow people from their profile and their published stories show up here.</p><Link href="/world">Meet the Humans →</Link></div>;
   }
   return posts.map(post => {
     const thumbnail = post.thumbnail as unknown as MediaAsset | null;

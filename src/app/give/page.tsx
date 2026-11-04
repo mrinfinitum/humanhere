@@ -23,7 +23,7 @@ const fundingAreas = [
   ["Community", "Resource connections / Partner outreach / Local initiatives / Volunteer coordination"],
   ["Reach", "Social storytelling / Physical campaigns / QR decals / Events / Community installations"],
 ];
-const beyondMoney = [["Share a story", "/share"], ["Volunteer", "/contact?reason=volunteer"], ["Pray", "/contact?reason=pray"], ["Introduce a partner", "/contact?reason=partner"], ["Host HUMAN:HERE", "/contact?reason=host"], ["Wear the message", "/contact?reason=merch"], ["Put up a decal", "/contact?reason=decal"], ["Tell someone they matter", "/humans"]];
+const beyondMoney = [["Share a story", "/share"], ["Volunteer", "/contact?reason=volunteer"], ["Pray", "/contact?reason=pray"], ["Introduce a partner", "/contact?reason=partner"], ["Host HUMAN:HERE", "/contact?reason=host"], ["Wear the message", "/contact?reason=merch"], ["Put up a decal", "/contact?reason=decal"], ["Tell someone they matter", "/world"]];
 
 const promises = ["No display advertising around human stories.", "No selling personal data.", "No charging someone to ask for help.", "No paying to be featured.", "No turning trauma into engagement bait."];
 const organizationTypes = ["Community Partner", "Story Project Partner", "City Partner", "Initiative Partner", "Founding Partner"];

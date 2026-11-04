@@ -149,7 +149,7 @@ export function AccountView({ email, error, fallbackName, role, tab, submissions
             <small>{human.location ?? human.headline}</small>
             <span className="post-love"><HeartIcon filled />{human.loveCount}</span>
           </Link>
-        ))}</div> : <div className="profile-empty"><i aria-hidden="true" /><h2>Nobody here yet.</h2><p>Send love to a Human and they will be kept here for you.</p><Link href="/humans">Meet the Humans →</Link></div>)}
+        ))}</div> : <div className="profile-empty"><i aria-hidden="true" /><h2>Nobody here yet.</h2><p>Send love to a Human and they will be kept here for you.</p><Link href="/world">Meet the Humans →</Link></div>)}
       </div>
 
       <footer className="member-footer"><span><i aria-hidden="true" /> People need people.</span><small>Your private space · <Link href="/account/settings/privacy">Your choices</Link></small></footer>

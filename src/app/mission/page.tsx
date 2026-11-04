@@ -42,7 +42,7 @@ export default function MissionPage() {
         <div className="give-hero__copy">
           <p className="mission-lede">Everyone is carrying something. Some struggles are visible. Most are not.</p>
           <p>HUMAN:HERE exists to help people see one another, share real stories, meet real needs, and show up for one another.</p>
-          <div className="give-buttons"><Link className="give-button give-button--primary" href="/humans">Meet someone <Arrow /></Link><Link className="give-button" href="/share">Share your story <Arrow /></Link></div>
+          <div className="give-buttons"><Link className="give-button give-button--primary" href="/world">Meet someone <Arrow /></Link><Link className="give-button" href="/share">Share your story <Arrow /></Link></div>
         </div>
       </section>
 
@@ -105,7 +105,7 @@ export default function MissionPage() {
         <p className="member-kicker"><i aria-hidden="true" /> HUMAN:HERE</p>
         <h2 id="mission-closing-title">See people. Serve people. Love people.</h2>
         <p>People need people.</p>
-        <nav className="give-buttons" aria-label="Continue from the mission page"><Link className="give-button give-button--primary" href="/humans">Meet someone <Arrow /></Link><Link className="give-button" href="/share">Share your story <Arrow /></Link><Link className="give-button" href="/give">Show up <Arrow /></Link></nav>
+        <nav className="give-buttons" aria-label="Continue from the mission page"><Link className="give-button give-button--primary" href="/world">Meet someone <Arrow /></Link><Link className="give-button" href="/share">Share your story <Arrow /></Link><Link className="give-button" href="/give">Show up <Arrow /></Link></nav>
       </section>
 
       <footer className="member-footer"><span><i aria-hidden="true" /> People need people.</span><small><Link href="/terms">Terms</Link> · <Link href="/privacy">Privacy</Link></small></footer>

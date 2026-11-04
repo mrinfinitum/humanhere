@@ -25,6 +25,7 @@ export function toGlobeHumans(entries: HumanEntry[], limit = 24): GlobeHuman[] {
       id: entry.id,
       slug: entry.relatedStorySlug ?? entry.slug,
       firstName: entry.person.anonymous ? "Anonymous" : entry.person.firstName ?? entry.person.displayName ?? "A human",
+      username: entry.person.anonymous ? undefined : entry.authorUsername,
       city: entry.person.location,
       lat: coordinate[0],
       lng: coordinate[1],

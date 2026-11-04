@@ -3,6 +3,8 @@
 import { Canvas } from "@react-three/fiber";
 import { AccountLink } from "@/components/AccountLink";
 import Link from "next/link";
+import { GlobeSearch } from "@/components/globe/GlobeSearch";
+import "@/components/globe/globe-search.css";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { HumanStoryDrawer } from "@/components/globe/HumanStoryDrawer";
 import { GlobeScene } from "@/components/globe/GlobeScene";
@@ -265,6 +267,12 @@ export function HumanGlobe({
     void openStory(human);
   }, [globeHumans, openStory]);
 
+  const globeUsernames = useMemo(() => new Set(globeHumans.flatMap(human => human.username ? [human.username] : [])), [globeHumans]);
+  const showPersonOnGlobe = useCallback((username: string) => {
+    const human = globeHumans.find(candidate => candidate.username === username);
+    if (human) selectHuman(human.id);
+  }, [globeHumans, selectHuman]);
+
   const sceneReady = useCallback(() => setReady(true), []);
   const updateActiveHumanIds = useCallback((next: string[]) => {
     setActiveHumanIds(current => (
@@ -357,8 +365,7 @@ export function HumanGlobe({
       <header className="human-globe-chrome">
         <Wordmark />
         <nav aria-label="Primary navigation">
-          <Link className="is-active" href="/humans">Humans</Link>
-          <Link href="/members">People</Link>
+          <Link className={interactive ? "is-active" : undefined} href="/world">Humans</Link>
           <Link href="/mission">Mission</Link>
           <Link href="/share">Share</Link>
           <Link href="/give">Give</Link>
@@ -384,6 +391,8 @@ export function HumanGlobe({
           <p><span aria-hidden="true" /><Link href="/share">Be one of the first to share yours</Link></p>
         </section>
       )}
+
+      {mode === "world" && <GlobeSearch onGlobe={globeUsernames} onShowOnGlobe={showPersonOnGlobe} />}
 
       {mode === "world" && hasPublishedHumans && (
         <section className="human-world-intro" aria-labelledby="world-intro-title">
@@ -412,11 +421,7 @@ export function HumanGlobe({
 
       <footer className="human-globe-footer">
         <span><i aria-hidden="true" />People need people.</span>
-        {mode === "world" && (
-          <Link href={hasPublishedHumans ? "/humans" : "/share"}>
-            {hasPublishedHumans ? "Explore the archive →" : "Share your story →"}
-          </Link>
-        )}
+        {mode === "world" && <Link href="/share">Share your story →</Link>}
       </footer>
 
       <div className="human-globe-orbit" aria-hidden="true"><i /><i /><span /></div>
@@ -457,7 +462,7 @@ function GlobeFallback({ hasHumans }: { hasHumans: boolean }) {
         ))}
       </div>
       <p>{hasHumans ? "Every light is a human." : "The first stories are being prepared."}</p>
-      <Link href={hasHumans ? "/humans" : "/share"}>{hasHumans ? "Meet the humans →" : "Share your story →"}</Link>
+      <Link href={hasHumans ? "/world" : "/share"}>{hasHumans ? "Meet the humans →" : "Share your story →"}</Link>
     </div>
   );
 }

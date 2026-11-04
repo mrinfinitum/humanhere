@@ -8,7 +8,7 @@ export function StoryViewer({ entry, previous, next }: { entry: HumanEntry; prev
   const identity = entry.person?.anonymous ? "Anonymous" : entry.person?.displayName ?? entry.headline ?? "Human";
   const imageAssets = [...(entry.thumbnail ? [entry.thumbnail] : []), ...(entry.media ?? [])].filter((asset, index, all) => asset.kind === "image" && all.findIndex(item => item.id === asset.id) === index);
   return <main className="story-viewer">
-    <header><Link href="/humans" scroll={false}>← Archive</Link><Link className="story-mark" href="/">HUMAN<span>:</span>HERE</Link><Link href="/share">Be seen →</Link></header>
+    <header><Link href="/world" scroll={false}>← Globe</Link><Link className="story-mark" href="/">HUMAN<span>:</span>HERE</Link><Link href="/share">Be seen →</Link></header>
     <article>
       <section className="story-intro"><p className="eyebrow">{entry.type}</p><h1>{identity}</h1>{entry.authorUsername && <p className="story-author"><Link href={`/@${entry.authorUsername}`}>@{entry.authorUsername}</Link></p>}{entry.person?.location && <p>{entry.person.location}</p>}{entry.headline && <h2>{entry.headline}</h2>}{entry.quote && <blockquote>“{entry.quote}”</blockquote>}</section>
       {imageAssets[0] && <figure className="story-primary"><Image src={resolveMediaUrl(imageAssets[0])} alt={imageAssets[0].alt} fill priority sizes="100vw" style={{ objectPosition: imageAssets[0].objectPosition }} />{imageAssets[0].caption && <figcaption>{imageAssets[0].caption}</figcaption>}</figure>}
@@ -19,6 +19,6 @@ export function StoryViewer({ entry, previous, next }: { entry: HumanEntry; prev
       {(entry.media ?? []).filter(asset => asset.kind === "video").map(asset => <figure className="story-video" key={asset.id}><video controls preload="metadata" poster={asset.poster}><source src={resolveMediaUrl(asset)} type={asset.mimeType} />{asset.transcript}</video>{asset.transcript && <figcaption>{asset.transcript}</figcaption>}</figure>)}
     </article>
     {!entry.fixture && <ReportStory entryId={entry.id} />}
-    <nav className="story-next" aria-label="More humans">{previous ? <Link href={`/humans/${previous.slug}`}><span>Previous</span>{previous.person?.displayName ?? previous.headline ?? "Human"}</Link> : <span />}{next ? <Link href={`/humans/${next.slug}`}><span>Meet another human</span>{next.person?.displayName ?? next.headline ?? "Human"} →</Link> : <Link href="/humans"><span>Continue</span>More humans →</Link>}</nav>
+    <nav className="story-next" aria-label="More humans">{previous ? <Link href={`/humans/${previous.slug}`}><span>Previous</span>{previous.person?.displayName ?? previous.headline ?? "Human"}</Link> : <span />}{next ? <Link href={`/humans/${next.slug}`}><span>Meet another human</span>{next.person?.displayName ?? next.headline ?? "Human"} →</Link> : <Link href="/world"><span>Continue</span>More humans →</Link>}</nav>
   </main>;
 }
