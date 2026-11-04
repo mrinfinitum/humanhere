@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { Avatar } from "@/components/Avatar";
 import { HeartIcon } from "@/components/HeartIcon";
 import { RankBadge } from "@/components/RankBadge";
+import { formatPlace } from "@/lib/account/queries";
 import { memberLevel } from "@/lib/account/levels";
 import type { MediaAsset } from "@/lib/archive/types";
 import { resolveMediaUrl } from "@/lib/media/resolver";
@@ -36,6 +37,7 @@ async function ProfileContent({ params }: { params: ProfileParams }) {
   const posts = stories ?? [];
   const name = member.display_name?.trim() || `@${member.username}`;
   const level = memberLevel(member);
+  const place = formatPlace(member.city, member.region);
   const joined = new Intl.DateTimeFormat("en", { month: "long", year: "numeric" }).format(new Date(member.joined_at));
 
   return (
@@ -46,7 +48,7 @@ async function ProfileContent({ params }: { params: ProfileParams }) {
           <h1 id="member-name">{name}<RankBadge rank={level.rank} /></h1>
           <p className="profile-handle">@{member.username}</p>
           {member.bio && <p className="profile-bio">{member.bio}</p>}
-          <p>Joined {joined}</p>
+          <p>{place && <><span className="profile-place">{place}</span> · </>}Joined {joined}</p>
         </div>
         <div className="profile-actions">
           {member.is_self ? <Link className="profile-secondary" href="/account/settings/profile">Edit profile</Link>

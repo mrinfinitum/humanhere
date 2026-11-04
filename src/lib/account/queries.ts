@@ -21,6 +21,8 @@ export type AccountActivity = {
   level: MemberLevel;
   username: string | null;
   bio: string | null;
+  city: string | null;
+  region: string | null;
   allowSocialReuse: boolean;
   avatarPath: string | null;
   hideFollowLists: boolean;
@@ -36,7 +38,7 @@ export type AccountActivity = {
 export async function getAccountActivity(userId: string): Promise<AccountActivity> {
   const database = await createDatabaseClient();
   const [profile, notes, loves, consents, entries, experience, followers, following] = await Promise.all([
-    database.from("profiles").select("display_name,created_at,username,bio,allow_social_reuse,avatar_path,hide_follow_lists").eq("id", userId).maybeSingle(),
+    database.from("profiles").select("display_name,created_at,username,bio,city,region,allow_social_reuse,avatar_path,hide_follow_lists").eq("id", userId).maybeSingle(),
     database.rpc("notes_for_me", { p_limit: 40 }),
     database.from("human_entry_loves").select("human_entry_id,created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(60),
     // Staff can read every consent record, so always filter to the owner.
@@ -80,6 +82,8 @@ export async function getAccountActivity(userId: string): Promise<AccountActivit
     level: memberLevel(experience.data?.[0] ?? { loves: 0, notes: 0, gifts: 0 }),
     username: profile.data?.username ?? null,
     bio: profile.data?.bio ?? null,
+    city: profile.data?.city ?? null,
+    region: profile.data?.region ?? null,
     allowSocialReuse: profile.data?.allow_social_reuse === true,
     avatarPath: profile.data?.avatar_path ?? null,
     hideFollowLists: profile.data?.hide_follow_lists === true,
@@ -99,4 +103,26 @@ export async function getAccountActivity(userId: string): Promise<AccountActivit
       }];
     }),
   };
+}
+
+export type MailingAddress = {
+  line1: string; line2: string; city: string; state: string; postalCode: string; country: string;
+};
+
+/** The member's own private address. Only they (and audited staff workflows) can read it. */
+export async function getMailingAddress(userId: string): Promise<MailingAddress | null> {
+  const database = await createDatabaseClient();
+  const { data, error } = await database.from("fulfillment_profiles")
+    .select("address_line_1,address_line_2,city,state,postal_code,country").eq("user_id", userId).maybeSingle();
+  if (error) throw new Error(`Mailing address could not be loaded: ${error.code}`);
+  if (!data?.address_line_1) return null;
+  return {
+    line1: String(data.address_line_1 ?? ""), line2: String(data.address_line_2 ?? ""), city: String(data.city ?? ""),
+    state: String(data.state ?? ""), postalCode: String(data.postal_code ?? ""), country: String(data.country ?? "US"),
+  };
+}
+
+/** "City, ST", or whichever part the member filled in. */
+export function formatPlace(city?: string | null, region?: string | null) {
+  return [city?.trim(), region?.trim()].filter(Boolean).join(", ") || null;
 }

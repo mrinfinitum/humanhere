@@ -4,7 +4,7 @@ import { Avatar } from "@/components/Avatar";
 import { HeartIcon } from "@/components/HeartIcon";
 import { RankBadge } from "@/components/RankBadge";
 import { ShareProfileButton } from "@/components/account/ShareProfileButton";
-import type { AccountActivity } from "@/lib/account/queries";
+import { formatPlace, type AccountActivity } from "@/lib/account/queries";
 import { resolveMediaUrl } from "@/lib/media/resolver";
 import type { SubmissionDraft, SubmissionStatus } from "@/lib/submissions/types";
 import { EXPERIENCE_PER } from "@/lib/account/levels";
@@ -49,6 +49,7 @@ function GearIcon() {
 export function AccountView({ email, error, fallbackName, role, tab, submissions, activity }: AccountViewProps) {
   const name = activity.displayName?.trim() || fallbackName.trim() || email.split("@")[0];
   const { level } = activity;
+  const place = formatPlace(activity.city, activity.region);
   const unreadNotes = activity.notes.filter(note => !note.readAt).length;
   const tabs: Array<{ id: AccountTab; label: string; count?: number }> = [
     { id: "stories", label: "Stories" },
@@ -69,7 +70,7 @@ export function AccountView({ email, error, fallbackName, role, tab, submissions
             <h1 id="profile-name">{name}<RankBadge rank={level.rank} /></h1>
             <Link className="ig-gear" href="/account/settings" aria-label="Settings"><GearIcon /></Link>
           </div>
-          {activity.username && <p className="ig-handle">@{activity.username}</p>}
+          {activity.username && <p className="ig-handle">@{activity.username}{place && <span className="ig-place"> · {place}</span>}</p>}
           <dl className="ig-stats">
             <div><dd>{submissions.length}</dd><dt>stories</dt></div>
             <Link href={followHref("followers")}><dd>{activity.followers}</dd><dt>followers</dt></Link>

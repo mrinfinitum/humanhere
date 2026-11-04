@@ -27,6 +27,7 @@ export default function PrivacyPage() {
         <h2>1. What we collect</h2>
         <ul>
           <li><b>Account details:</b> your email address, your @username, and the name, bio and profile photo you choose to show. If you sign in with Google or Apple, the basic profile details they share with us.</li>
+          <li><b>Mailing address, if you add one:</b> the street address, city, state and ZIP code you save in Edit profile. It is optional, kept for when you ask for something to be sent to you, and you can remove it any time.</li>
           <li><b>Stories you write:</b> the text, the photos, video or audio you upload, and details you add such as a location or what would help. Stories can include sensitive information about your life; we use it only as you have allowed.</li>
           <li><b>Your permissions:</b> what each story you submitted allows, when you submitted it, which version of these terms applied, and whether you let us feature your stories on social media.</li>
           <li><b>Activity:</b> the stories you send love to, notes you send, the members you follow, stories you report, and requests you make to us.</li>
@@ -43,6 +44,8 @@ export default function PrivacyPage() {
           <li><b>Love:</b> everyone sees a total count. Who sent it stays private.</li>
           <li><b>Who you follow and who follows you:</b> signed-in members can see these lists on your profile, unless you turn on &ldquo;Hide who I follow and who follows me&rdquo; in Settings. Then others see only the counts and you are left out of other people&rsquo;s lists too. Visitors who are not signed in only ever see the counts.</li>
           <li><b>Reports:</b> our staff. The author is not told who reported a story.</li>
+          <li><b>City and state on your profile:</b> everyone, if you add them.</li>
+          <li><b>Your mailing address:</b> never shown publicly. Only our staff can see it, when you ask for something to be sent to you, and each time they do it is logged.</li>
           <li><b>Your email address:</b> never shown publicly.</li>
         </ul>
 

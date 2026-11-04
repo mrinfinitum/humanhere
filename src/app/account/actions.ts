@@ -80,15 +80,21 @@ export async function deleteStory(formData: FormData) {
 const USERNAME_ERRORS: Record<string, string> = { "invalid username": "username-invalid", "username is reserved": "username-reserved", "username is taken": "username-taken" };
 const PROFILE_SETTINGS = "/account/settings/profile";
 
-/** Saves the Edit profile form: name, bio and, when it changed, the @username. */
+function field(formData: FormData, name: string, max: number) {
+  return String(formData.get(name) ?? "").trim().replace(/\s+/g, " ").slice(0, max);
+}
+
+/** Saves the Edit profile form: name, bio, city and state and, when it changed, the @username. */
 export async function updateProfile(formData: FormData) {
   const user = await requireUser(PROFILE_SETTINGS);
   const displayName = String(formData.get("displayName") ?? "").trim().replace(/\s+/g, " ").slice(0, 80);
   const bio = String(formData.get("bio") ?? "").trim().slice(0, 160);
   const username = String(formData.get("username") ?? "").trim().toLowerCase().replace(/^@/, "");
+  const city = field(formData, "city", 80);
+  const region = field(formData, "region", 80);
   const database = await createDatabaseClient();
-  // Name and bio save even when the new username is refused.
-  const { error } = await database.from("profiles").update({ display_name: displayName || null, bio: bio || null }).eq("id", user.id);
+  // Name, bio and place save even when the new username is refused.
+  const { error } = await database.from("profiles").update({ display_name: displayName || null, bio: bio || null, city: city || null, region: region || null }).eq("id", user.id);
   if (error) throw new Error(`Profile could not be saved: ${error.code}`);
   if (username && username !== String(formData.get("currentUsername") ?? "")) {
     const { error: usernameError } = await database.rpc("claim_username", { p_username: username });
@@ -126,4 +132,34 @@ export async function updateReceivedNote(formData: FormData) {
   const { error } = await database.rpc(NOTE_ACTIONS[action as keyof typeof NOTE_ACTIONS], { p_note_id: noteId });
   if (error) throw new Error(`Note could not be updated: ${error.code}`);
   refresh();
+}
+
+/** Saves the member's private mailing address. It is never shown on their profile. */
+export async function saveMailingAddress(formData: FormData) {
+  const user = await requireUser(PROFILE_SETTINGS);
+  const address = {
+    address_line_1: field(formData, "line1", 200), address_line_2: field(formData, "line2", 200),
+    city: field(formData, "addressCity", 160), state: field(formData, "addressState", 160),
+    postal_code: field(formData, "postalCode", 32), country: field(formData, "country", 160) || "US",
+  };
+  if (!address.address_line_1 || !address.city || !address.state || !address.postal_code) redirect(`${PROFILE_SETTINGS}?error=address-incomplete#address`);
+  const database = await createDatabaseClient();
+  const { data: existing, error: readError } = await database.from("fulfillment_profiles").select("user_id").eq("user_id", user.id).maybeSingle();
+  if (readError) throw new Error(`Mailing address could not be saved: ${readError.code}`);
+  const values = { ...address, address_line_2: address.address_line_2 || null };
+  const { error } = existing
+    ? await database.from("fulfillment_profiles").update(values).eq("user_id", user.id)
+    : await database.from("fulfillment_profiles").insert({ user_id: user.id, ...values });
+  if (error) throw new Error(`Mailing address could not be saved: ${error.code}`);
+  redirect(`${PROFILE_SETTINGS}?done=address#address`);
+}
+
+/** Clears the address fields; any help preferences stay as they were. */
+export async function removeMailingAddress() {
+  const user = await requireUser(PROFILE_SETTINGS);
+  const database = await createDatabaseClient();
+  const { error } = await database.from("fulfillment_profiles")
+    .update({ address_line_1: null, address_line_2: null, city: null, state: null, postal_code: null, country: null }).eq("user_id", user.id);
+  if (error) throw new Error(`Mailing address could not be removed: ${error.code}`);
+  redirect(`${PROFILE_SETTINGS}?done=address-removed#address`);
 }
