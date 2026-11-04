@@ -366,7 +366,7 @@ export function HumanGlobe({
         <Wordmark />
         <nav aria-label="Primary navigation">
           <Link href="/share">Tell your story</Link>
-          <Link className={interactive ? "is-active" : undefined} href="/world">Humans</Link>
+          <Link className={interactive ? "is-active" : undefined} href="/world">Find humans</Link>
           <Link href="/mission">Mission</Link>
           <Link href="/give">Give</Link>
           <AccountLink />
