@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { StoryViewer } from "@/components/archive/StoryViewer";
 import { getPublishedHumanBySlug, humanArchiveRepository } from "@/lib/archive/repository";
-import { resolveMediaUrl } from "@/lib/media/resolver";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
@@ -11,13 +10,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!entry) return { title: "Human not found" };
   const name = entry.person?.anonymous ? "Anonymous" : entry.person?.displayName ?? entry.headline ?? "A human story";
   const description = entry.quote ?? entry.headline ?? entry.story?.slice(0, 155) ?? "A human story from HUMAN:HERE.";
-  const image = entry.socialImageAllowed && entry.thumbnail?.kind === "image" ? resolveMediaUrl(entry.thumbnail, "display") : undefined;
+  // The share card image comes from ./opengraph-image.tsx.
   return {
     title: name,
     description,
     alternates: { canonical: `/humans/${entry.slug}` },
-    openGraph: { title: name, description, url: `/humans/${entry.slug}`, type: "article", publishedTime: entry.publishedAt, images: image ? [{ url: image, alt: entry.thumbnail?.alt ?? name }] : undefined },
-    twitter: { card: image ? "summary_large_image" : "summary", title: name, description, images: image ? [image] : undefined },
+    openGraph: { title: name, description, url: `/humans/${entry.slug}`, type: "article", publishedTime: entry.publishedAt },
+    twitter: { card: "summary_large_image", title: name, description },
   };
 }
 

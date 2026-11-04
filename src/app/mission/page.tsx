@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   title: { absolute: "Our Mission | HUMAN:HERE" },
   description,
   alternates: { canonical: "/mission" },
-  openGraph: { title: "Our Mission | HUMAN:HERE", description, url: "/mission", siteName: "HUMAN:HERE", images: [{ url: "/images/hero-maya.jpg", width: 1536, height: 1024, alt: "A portrait from the HUMAN:HERE living archive" }], locale: "en_US", type: "website" },
-  twitter: { card: "summary_large_image", title: "Our Mission | HUMAN:HERE", description, images: ["/images/hero-maya.jpg"] },
+  openGraph: { title: "Our Mission | HUMAN:HERE", description, url: "/mission", siteName: "HUMAN:HERE", images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "HUMAN:HERE. People need people." }], locale: "en_US", type: "website" },
+  twitter: { card: "summary_large_image", title: "Our Mission | HUMAN:HERE", description, images: ["/twitter-image"] },
 };
 
 const burdens = ["Homelessness", "Grief", "Loneliness", "Recovery", "Financial hardship", "Family crisis", "Fear", "Starting over", "Caring for someone", "Needing help", "Wanting to help"];

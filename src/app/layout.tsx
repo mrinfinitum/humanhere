@@ -11,7 +11,7 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://humanhere.co"),
+  metadataBase: new URL("https://www.humanhere.co"),
   title: {
     default: "HUMAN:HERE | People Need People",
     template: "%s | HUMAN:HERE",
@@ -20,16 +20,8 @@ export const metadata: Metadata = {
   openGraph: {
     title: "HUMAN:HERE | People Need People",
     description: "People still need people. Show up for someone.",
-    url: "https://humanhere.co",
+    url: "https://www.humanhere.co",
     siteName: "HUMAN:HERE",
-    images: [
-      {
-        url: "/images/hero-maya.jpg",
-        width: 1536,
-        height: 1024,
-        alt: "HUMAN:HERE — People Need People",
-      },
-    ],
     locale: "en_US",
     type: "website",
   },
@@ -37,7 +29,6 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "HUMAN:HERE | People Need People",
     description: "People still need people. Show up for someone.",
-    images: ["/images/hero-maya.jpg"],
   },
 };
 

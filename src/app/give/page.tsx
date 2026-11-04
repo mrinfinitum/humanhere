@@ -7,8 +7,8 @@ const description = "Support HUMAN:HERE and help fund human storytelling, commun
 
 export const metadata: Metadata = {
   title: { absolute: "Give | HUMAN:HERE" }, description, alternates: { canonical: "/give" },
-  openGraph: { title: "Give | HUMAN:HERE", description, url: "/give", siteName: "HUMAN:HERE", images: [{ url: "/images/community-table.jpg", width: 1536, height: 1024, alt: "People gathered around a community table" }], locale: "en_US", type: "website" },
-  twitter: { card: "summary_large_image", title: "Give | HUMAN:HERE", description, images: ["/images/community-table.jpg"] },
+  openGraph: { title: "Give | HUMAN:HERE", description, url: "/give", siteName: "HUMAN:HERE", images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "HUMAN:HERE. People need people." }], locale: "en_US", type: "website" },
+  twitter: { card: "summary_large_image", title: "Give | HUMAN:HERE", description, images: ["/twitter-image"] },
 };
 
 const supportActions = [
