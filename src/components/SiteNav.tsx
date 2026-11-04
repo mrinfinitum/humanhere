@@ -10,7 +10,7 @@ export function SiteNav({ staff = false, signedIn = false }: { staff?: boolean; 
     <nav aria-label="Main navigation">
       <Link href="/world">Humans</Link>
       <Link href="/mission">Mission</Link>
-      <Link href="/share">Share</Link>
+      <Link href="/share">Tell your story</Link>
       <Link href="/give">Give</Link>
       {staff && <Link className="member-admin-link" href="/admin">Admin</Link>}
       {signedIn ? <Link href="/account">Account</Link> : <AccountLink />}

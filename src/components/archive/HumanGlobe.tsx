@@ -367,7 +367,7 @@ export function HumanGlobe({
         <nav aria-label="Primary navigation">
           <Link className={interactive ? "is-active" : undefined} href="/world">Humans</Link>
           <Link href="/mission">Mission</Link>
-          <Link href="/share">Share</Link>
+          <Link href="/share">Tell your story</Link>
           <Link href="/give">Give</Link>
           <AccountLink />
         </nav>
