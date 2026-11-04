@@ -669,9 +669,11 @@ button.profile-primary { cursor: pointer; }
 }
 
 /* Give page: the dark member shell, with glass panels like sign-in. */
-.give-page { --give-line: rgb(226 232 245 / .13); --give-muted: rgb(226 232 245 / .62); --give-glow: #315dff; overflow: visible; color: #f5f7fc; }
+/* One content width for Give, Mission and every page built on them. */
+.give-page { --page-width: min(1200px, 100% - 64px); --give-line: rgb(226 232 245 / .13); --give-muted: rgb(226 232 245 / .62); --give-glow: #315dff; overflow: visible; color: #f5f7fc; }
 .give-page .member-wordmark span { color: #6f8cff; }
-.give-hero, .give-section, .give-photo, .give-closing { position: relative; z-index: 2; width: min(1120px, 100% - 60px); margin: 0 auto; }
+.give-hero, .give-section, .give-photo, .give-closing { position: relative; z-index: 2; width: var(--page-width); margin: 0 auto; }
+@media (min-width: 1800px) { .give-page { --page-width: min(1440px, 100% - 120px); } }
 .give-hero { display: grid; padding: clamp(64px, 11vh, 128px) 0 clamp(64px, 10vh, 112px); grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 32px 64px; align-items: start; }
 .give-hero .member-kicker { grid-column: 1 / -1; }
 .give-hero h1 { margin: 0; color: rgb(250 250 250 / .96); font-size: clamp(44px, 5.4vw, 80px); font-weight: 320; letter-spacing: .06em; line-height: .98; text-transform: uppercase; }
@@ -738,7 +740,7 @@ button.profile-primary { cursor: pointer; }
   .give-hero { gap: 22px; }
 }
 @media (max-width: 760px) {
-  .give-hero, .give-section, .give-photo, .give-closing { width: calc(100% - 32px); }
+  .give-page { --page-width: calc(100% - 32px); }
   .give-hero__copy p { font-size: 16px; }
   .give-promise ul { padding: 4px 18px; }
   .give-card, .give-areas > div { padding: 22px; }

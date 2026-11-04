@@ -1,11 +1,7 @@
-/* Mission page on large displays: wider measure, larger type, same proportions. */
+/* Mission page on large displays: larger type, same proportions. The width is shared with Give (globals.css). */
 @media (min-width: 1800px) {
-  .mission-page .give-hero,
-  .mission-page .give-section,
-  .mission-page .give-photo,
-  .mission-page .give-closing { width: min(1560px, 100% - 120px); }
   .mission-page .give-hero { gap: 40px 96px; }
-  .mission-page .give-hero h1 { font-size: clamp(112px, 6vw, 150px); }
+  .mission-page .give-hero h1 { font-size: clamp(104px, 5.6vw, 136px); }
   .mission-page .give-hero__copy p { font-size: 21px; }
   .mission-page .mission-lede { font-size: clamp(28px, 1.5vw, 34px) !important; }
   .mission-page .member-kicker,
