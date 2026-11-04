@@ -365,9 +365,9 @@ export function HumanGlobe({
       <header className="human-globe-chrome">
         <Wordmark />
         <nav aria-label="Primary navigation">
+          <Link href="/share">Tell your story</Link>
           <Link className={interactive ? "is-active" : undefined} href="/world">Humans</Link>
           <Link href="/mission">Mission</Link>
-          <Link href="/share">Tell your story</Link>
           <Link href="/give">Give</Link>
           <AccountLink />
         </nav>

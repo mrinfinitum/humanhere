@@ -8,9 +8,9 @@ import { AccountLink } from "./AccountLink";
 export function SiteNav({ staff = false, signedIn = false }: { staff?: boolean; signedIn?: boolean }) {
   return (
     <nav aria-label="Main navigation">
+      <Link href="/share">Tell your story</Link>
       <Link href="/world">Humans</Link>
       <Link href="/mission">Mission</Link>
-      <Link href="/share">Tell your story</Link>
       <Link href="/give">Give</Link>
       {staff && <Link className="member-admin-link" href="/admin">Admin</Link>}
       {signedIn ? <Link href="/account">Account</Link> : <AccountLink />}
