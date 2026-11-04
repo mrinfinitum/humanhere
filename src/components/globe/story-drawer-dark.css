@@ -1,0 +1,109 @@
+/* The story panel in the dark member theme, matching the globe, share, Give and Mission. */
+.human-story-drawer-layer {
+  --drawer-ink: rgb(250 250 250 / .95);
+  --drawer-muted: rgb(226 232 245 / .62);
+  --drawer-faint: rgb(226 232 245 / .4);
+  --drawer-line: rgb(226 232 245 / .13);
+  --drawer-accent: #9fb2ff;
+  --drawer-glow: #315dff;
+  color: var(--drawer-ink);
+}
+.human-story-drawer-layer .human-story-drawer {
+  border-left: 1px solid rgb(93 125 255 / .18);
+  background:
+    radial-gradient(circle at 110% -10%, rgb(48 70 165 / .24), transparent 46%),
+    #05070b;
+  color: var(--drawer-ink);
+  box-shadow: -30px 0 90px rgb(0 0 0 / .55);
+  scrollbar-color: rgb(226 232 245 / .2) transparent;
+}
+
+/* Header */
+.human-story-drawer-layer .human-story-drawer > header { border-bottom-color: var(--drawer-line); background: rgb(5 7 11 / .82); }
+.human-story-drawer-layer .human-story-drawer > header > span { color: rgb(250 250 250 / .94); font-weight: 350; letter-spacing: .31em; }
+.human-story-drawer-layer .human-story-drawer > header > span > span { color: #5074ff; }
+.human-story-drawer-layer .human-story-drawer > header small { color: var(--drawer-faint); }
+.human-story-drawer-layer .human-story-drawer > header button { color: var(--drawer-muted); transition: color 180ms ease; }
+.human-story-drawer-layer .human-story-drawer > header button:hover { color: var(--drawer-ink); }
+
+/* Loading and errors */
+.human-story-drawer-layer .human-story-drawer-status p { color: var(--drawer-muted); }
+.human-story-drawer-layer .human-story-drawer-status i { background: var(--drawer-glow); box-shadow: 0 0 16px var(--drawer-glow); }
+.human-story-drawer-layer .human-story-drawer-status button { border-bottom-color: var(--drawer-accent); color: var(--drawer-accent); }
+
+/* Name, place and love count */
+.human-story-drawer-layer .human-story-drawer-intro > p { display: flex; align-items: center; gap: 16px; color: rgb(250 250 250 / .58); font-weight: 520; letter-spacing: .36em; }
+.human-story-drawer-layer .human-story-drawer-intro > p::before { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--drawer-glow); box-shadow: 0 0 13px var(--drawer-glow); content: ""; }
+.human-story-drawer-layer .human-story-drawer-intro h2 { color: var(--drawer-ink); font-weight: 320; letter-spacing: .03em; line-height: .95; }
+.human-story-drawer-layer .human-story-drawer-intro > span { color: var(--drawer-muted); }
+.human-story-drawer-layer .human-story-drawer-intro blockquote { color: var(--drawer-ink); font-weight: 320; }
+.human-story-drawer-layer .human-story-drawer-intro > small { color: var(--drawer-accent); }
+
+/* Love and note buttons */
+.human-story-drawer-layer .human-story-actions-primary { gap: 10px; border: 0; }
+.human-story-drawer-layer .human-story-actions-primary > button {
+  border: 1px solid rgb(128 151 235 / .2); border-radius: 14px;
+  background: rgb(7 11 20 / .72); color: var(--drawer-ink);
+  transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+.human-story-drawer-layer .human-story-actions-primary > button:only-child { grid-column: 1 / -1; min-height: 96px; }
+.human-story-drawer-layer .human-story-actions-primary > button + button { border-left: 1px solid rgb(128 151 235 / .2); }
+.human-story-drawer-layer .human-story-actions-primary > button:hover,
+.human-story-drawer-layer .human-story-actions-primary > button:focus-visible { border-color: rgb(111 140 255 / .55); background: rgb(49 93 255 / .1); box-shadow: none; }
+.human-story-drawer-layer .human-story-actions-primary > button.is-loved { border-color: var(--drawer-glow); background: rgb(49 93 255 / .2); box-shadow: 0 0 24px rgb(49 93 255 / .22); }
+.human-story-drawer-layer .human-story-actions-primary > button > span { color: #6f8cff; }
+.human-story-drawer-layer .human-story-actions-primary > button.is-loved > span { color: #fff; filter: drop-shadow(0 0 8px rgb(49 93 255 / .8)); }
+.human-story-drawer-layer .human-story-actions-primary > button > b { color: var(--drawer-muted); }
+.human-story-drawer-layer .human-story-actions-primary > button.is-loved > b { color: var(--drawer-ink); }
+.human-story-drawer-layer .human-story-actions-primary > .human-story-note-action > span { color: #6f8cff; }
+.human-story-drawer-layer .human-story-actions-primary > .human-story-note-action > strong { font-weight: 340; letter-spacing: -.01em; }
+.human-story-drawer-layer .human-story-action-error,
+.human-story-drawer-layer .human-story-note-form .human-story-action-error { color: #ff8c8c; }
+.human-story-drawer-layer .human-story-actions-fixture { border-color: var(--drawer-line); }
+.human-story-drawer-layer .human-story-actions-fixture span,
+.human-story-drawer-layer .human-story-note-success > span { color: var(--drawer-accent); }
+.human-story-drawer-layer .human-story-actions-fixture p { color: var(--drawer-muted); }
+
+/* Private note */
+.human-story-drawer-layer .human-story-note-form,
+.human-story-drawer-layer .human-story-note-success { border: 1px solid rgb(128 151 235 / .2); border-radius: 14px; background: rgb(10 15 28 / .9); color: var(--drawer-ink); }
+.human-story-drawer-layer .human-story-note-form > header span { color: var(--drawer-accent); }
+.human-story-drawer-layer .human-story-note-form > header h3 { font-weight: 320; }
+.human-story-drawer-layer .human-story-note-form > header button { color: var(--drawer-muted); }
+.human-story-drawer-layer .human-story-note-form label { color: var(--drawer-faint); }
+.human-story-drawer-layer .human-story-note-form textarea { border-color: rgb(226 232 245 / .18); border-radius: 10px; background: rgb(5 7 11 / .7); color: var(--drawer-ink); }
+.human-story-drawer-layer .human-story-note-form textarea::placeholder { color: rgb(226 232 245 / .26); }
+.human-story-drawer-layer .human-story-note-form textarea:focus { border-color: #6f8cff; background: rgb(5 7 11 / .9); }
+.human-story-drawer-layer .human-story-note-form > div { color: var(--drawer-faint); }
+.human-story-drawer-layer .human-story-note-form > button,
+.human-story-drawer-layer .human-story-note-success button {
+  min-height: 46px; padding: 0 22px; border: 1px solid var(--drawer-glow); border-radius: 999px;
+  background: var(--drawer-glow); color: #fff; font-weight: 560; letter-spacing: .16em;
+  box-shadow: 0 0 24px rgb(49 93 255 / .3); transition: background 180ms ease;
+}
+.human-story-drawer-layer .human-story-note-form > button:hover,
+.human-story-drawer-layer .human-story-note-success button:hover { background: #4a70ff; }
+.human-story-drawer-layer .human-story-note-form > button:disabled { box-shadow: none; opacity: .35; }
+.human-story-drawer-layer .human-story-note-success p { color: var(--drawer-muted); }
+
+/* Story text and media */
+.human-story-drawer-layer .human-story-drawer-hero,
+.human-story-drawer-layer .human-story-drawer-secondary { background: #0b1020; }
+.human-story-drawer-layer .human-story-drawer-content > h3,
+.human-story-drawer-layer .human-story-drawer-content > section h3 { color: var(--drawer-faint); }
+.human-story-drawer-layer .human-story-drawer-content p { color: rgb(240 243 250 / .86); font-weight: 340; letter-spacing: -.01em; line-height: 1.5; }
+.human-story-drawer-layer .human-story-drawer-content > blockquote { color: var(--drawer-ink); font-weight: 320; }
+.human-story-drawer-layer .human-story-drawer-content > aside { border: 1px solid rgb(226 198 110 / .3); background: rgb(226 198 110 / .1); box-shadow: none; color: #f1dc9c; }
+.human-story-drawer-layer .human-story-drawer-content > aside small { color: rgb(241 220 156 / .7); }
+.human-story-drawer-layer .human-story-drawer-media > span { color: var(--drawer-faint); }
+.human-story-drawer-layer .human-story-drawer-media audio { color-scheme: dark; }
+
+/* Footer */
+.human-story-drawer-layer .human-story-drawer article > footer { border-top-color: var(--drawer-line); }
+.human-story-drawer-layer .human-story-drawer article > footer p { color: var(--drawer-faint); }
+.human-story-drawer-layer .human-story-drawer article > footer button { border-bottom-color: var(--drawer-accent); color: var(--drawer-accent); }
+
+@media (max-width: 760px) {
+  .human-story-drawer-layer .human-story-drawer { border-left: 0; border-top: 1px solid rgb(93 125 255 / .18); }
+  .human-story-drawer-layer .human-story-actions-primary > button + button { border-top: 1px solid rgb(128 151 235 / .2); border-left: 1px solid rgb(128 151 235 / .2); }
+}

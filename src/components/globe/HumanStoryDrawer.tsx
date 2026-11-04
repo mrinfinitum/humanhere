@@ -6,6 +6,7 @@ import { HeartIcon } from "@/components/HeartIcon";
 import type { HumanEntry } from "@/lib/archive/types";
 import { resolveMediaUrl } from "@/lib/media/resolver";
 import { useHumanLove } from "./useHumanLove";
+import "./story-drawer-dark.css";
 
 type Props = {
   entry: HumanEntry | null;
