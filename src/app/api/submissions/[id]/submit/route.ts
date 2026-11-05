@@ -1,5 +1,5 @@
 import { after } from "next/server";
-import { getAuthenticatedUser } from "@/lib/auth/server";
+import { apiMember } from "@/lib/auth/server";
 import { alertStaff } from "@/lib/notify/staff-alerts";
 import { publishMemberSubmission } from "@/lib/posts/publish";
 import { LimitError, submissionRepository } from "@/lib/submissions/repository";
@@ -8,8 +8,8 @@ import { storyLabel } from "@/lib/posts/label";
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   // These cookie-authenticated mutations must originate from the app.
   if (request.headers.get("origin") !== new URL(request.url).origin) return Response.json({ error: "invalid_origin" }, { status: 403 });
-  const user = await getAuthenticatedUser();
-  if (!user) return Response.json({ error: "authentication_required" }, { status: 401 });
+  const { user, response } = await apiMember();
+  if (response) return response;
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return Response.json({ error: "invalid_submission" }, { status: 400 });
   const draft = await submissionRepository.getOwned(user.id, id);

@@ -37,3 +37,20 @@ export async function requireStaff(allowed: StaffRole[] = ["moderator", "editor"
   if (!allowed.includes(role as StaffRole)) redirect("/account");
   return { user, role: role as StaffRole };
 }
+
+/**
+ * The API-route version of requireMember: returns the member, or a JSON
+ * response to send back. API routes are reachable without the pages, so the
+ * terms and username check must happen here too, not only on /welcome.
+ */
+export async function apiMember(): Promise<{ user: NonNullable<Awaited<ReturnType<typeof getSessionUser>>>; response?: undefined } | { user?: undefined; response: Response }> {
+  const user = await getSessionUser();
+  if (!user) return { response: Response.json({ error: "Sign in first." }, { status: 401 }) };
+  const database = await createDatabaseClient();
+  const { data, error } = await database.from("profiles").select("terms_version,username").eq("id", user.id).maybeSingle();
+  if (error) return { response: Response.json({ error: "database_unavailable" }, { status: 503 }) };
+  if (data?.terms_version !== TERMS_VERSION || !data.username) {
+    return { response: Response.json({ error: "Finish setting up your account first.", next: "/welcome" }, { status: 403 }) };
+  }
+  return { user };
+}

@@ -1,4 +1,5 @@
-import { createDatabaseClient, getSessionUser } from "@/lib/neon/server";
+import { apiMember } from "@/lib/auth/server";
+import { createDatabaseClient } from "@/lib/neon/server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -6,8 +7,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   const { slug } = await params;
   if (!UUID.test(slug)) return Response.json({ error: "Human not found." }, { status: 404 });
 
-  const user = await getSessionUser();
-  if (!user) return Response.json({ error: "Authentication required." }, { status: 401 });
+  const { response } = await apiMember();
+  if (response) return response;
   const client = await createDatabaseClient();
 
   let body = "";

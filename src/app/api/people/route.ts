@@ -21,7 +21,8 @@ export async function GET(request: Request) {
     from public.profiles p
     where p.username is not null
       and (p.username like ${term} || '%' or lower(coalesce(p.display_name, '')) like '%' || ${term} || '%'
-        or lower(coalesce(p.city, '')) like ${term} || '%')
+        -- Searching by city lists everyone in a place, so only members can.
+        or (${Boolean(viewer)}::boolean and lower(coalesce(p.city, '')) like ${term} || '%'))
     order by (p.username = ${query}) desc, (p.username like ${term} || '%') desc, followers desc, p.username
     limit 12`;
   const people: PersonResult[] = rows.map(row => ({

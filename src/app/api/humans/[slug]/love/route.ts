@@ -1,3 +1,4 @@
+import { apiMember } from "@/lib/auth/server";
 import { createDatabaseClient, getSessionUser } from "@/lib/neon/server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -45,6 +46,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ sl
   const value = await context(params);
   if (!value) return Response.json({ error: "Human not found." }, { status: 404 });
   if (!value.user) return Response.json({ error: "Authentication required." }, { status: 401 });
+  const { response } = await apiMember();
+  if (response) return response;
 
   const { error } = await value.client.from("human_entry_loves").insert({
     human_entry_id: value.humanEntryId,

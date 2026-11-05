@@ -2,6 +2,7 @@ import "server-only";
 
 import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client, type _Object } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { matchesDeclaredType, stripImageMetadata } from "@/lib/media/metadata";
 
 export const PRIVATE_BUCKET = "submission-private";
 export const PUBLIC_BUCKET = "published-media";
@@ -35,16 +36,28 @@ export function signPrivateRead(key: string) {
   }), { expiresIn: 60 });
 }
 
+export class FileTypeMismatch extends Error {}
+
 async function copyObject(source: string, destination: string, bucket: typeof PRIVATE_BUCKET | typeof PUBLIC_BUCKET) {
   const sourceObject = await storage().send(new GetObjectCommand({ Bucket: PRIVATE_BUCKET, Key: source }));
   if (!sourceObject.Body || !sourceObject.ContentLength || sourceObject.ContentLength > 50 * 1024 * 1024) throw new Error("Invalid source object.");
+  const contentType = sourceObject.ContentType ?? "";
+  let body = await sourceObject.Body.transformToByteArray();
+  // The browser uploads straight to storage, so the server sees the bytes
+  // only here. Refuse files that are not what they claim to be.
+  if (!matchesDeclaredType(body, contentType)) throw new FileTypeMismatch(`File does not match ${contentType}.`);
+  // Public copies of photos lose EXIF and similar metadata, which can hold
+  // the GPS position the photo was taken at.
+  if (bucket === PUBLIC_BUCKET && contentType.startsWith("image/")) {
+    const stripped = stripImageMetadata(body, contentType);
+    if (!stripped) throw new FileTypeMismatch(`Image could not be read as ${contentType}.`);
+    body = stripped;
+  }
   // Neon documents GET/PUT support. Do not rely on an undocumented CopyObject API.
   await storage().send(new PutObjectCommand({
-    Bucket: bucket, Key: destination,
-    Body: await sourceObject.Body.transformToByteArray(),
-    ContentType: sourceObject.ContentType, CacheControl: "no-store",
+    Bucket: bucket, Key: destination, Body: body, ContentType: contentType, CacheControl: "no-store",
   }));
-  return { contentType: sourceObject.ContentType };
+  return { contentType: sourceObject.ContentType, byteLength: body.length };
 }
 
 export function finalizePrivateObject(source: string, destination: string) {

@@ -1,6 +1,6 @@
 import { getAuthenticatedUser } from "@/lib/auth/server";
 import { createDatabaseClient } from "@/lib/neon/server";
-import { finalizePrivateObject, inspectPrivateObject, PRIVATE_BUCKET, removeObjects, signPrivateUpload } from "@/lib/storage/server";
+import { FileTypeMismatch, finalizePrivateObject, inspectPrivateObject, PRIVATE_BUCKET, removeObjects, signPrivateUpload } from "@/lib/storage/server";
 import { isOwnedUploadKey, uploadMetadata } from "@/lib/storage/validation";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -41,7 +41,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
   // Presigned URLs can be reused until expiry. Copy to a server-only key before
   // registration; completion requires a draft, so reviewed files cannot change.
-  await finalizePrivateObject(key, finalKey);
+  try {
+    await finalizePrivateObject(key, finalKey);
+  } catch (error) {
+    if (!(error instanceof FileTypeMismatch)) throw error;
+    await removeObjects(PRIVATE_BUCKET, [key]);
+    return Response.json({ error: "file_mismatch" }, { status: 400 });
+  }
   const finalized = await inspectPrivateObject(finalKey);
   if (finalized.ContentLength !== metadata.size || finalized.ContentType !== metadata.contentType) {
     await removeObjects(PRIVATE_BUCKET, [key, finalKey]);
