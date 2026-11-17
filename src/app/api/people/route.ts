@@ -29,7 +29,8 @@ export async function GET(request: Request) {
     username: String(row.username),
     name: String(row.display_name ?? "").trim() || `@${row.username}`,
     avatarPath: (row.avatar_path as string | null) ?? null,
-    place: [row.city, row.region].map(part => String(part ?? "").trim()).filter(Boolean).join(", ") || null,
+    // Signed-out visitors don't get cities, so a script can't harvest everyone's town in bulk.
+    place: viewer ? [row.city, row.region].map(part => String(part ?? "").trim()).filter(Boolean).join(", ") || null : null,
     followers: Number(row.followers ?? 0),
     following: row.following === true,
     self: row.self === true,

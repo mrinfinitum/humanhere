@@ -108,6 +108,7 @@ export function ShareFlow({ initial }: { initial: SubmissionDraft }) {
       const endpoint = `/api/submissions/${draft.id}/media`;
       const metadata = { contentType, size: file.size };
       const prepared = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "prepare", ...metadata }) });
+      if (prepared.status === 429) { setUploadState("A story can hold up to 10 files."); return; }
       if (!prepared.ok) throw new Error();
       const { key, url } = await prepared.json() as { key: string; url: string };
       const uploaded = await fetch(url, { method: "PUT", headers: { "Content-Type": contentType }, body: file });
@@ -126,7 +127,7 @@ export function ShareFlow({ initial }: { initial: SubmissionDraft }) {
     const consentResponse = await fetch(`/api/submissions/${draft.id}/consent`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
     if (!consentResponse.ok) { setSaveState("error"); setSubmitting(false); return; }
     const response = await fetch(`/api/submissions/${draft.id}/submit`, { method: "POST" });
-    if (response.status === 429) {
+    if (response.status === 429 || response.status === 409) {
       const body = await response.json().catch(() => ({})) as { error?: string };
       setSubmitError(body.error ?? "You have shared a lot of stories recently. Please try again in a little while.");
       setSubmitting(false);

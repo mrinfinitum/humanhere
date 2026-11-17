@@ -10,13 +10,13 @@ const idFrom = (formData: FormData, name: string) => {
   return /^[0-9a-f-]{36}$/i.test(value) ? value : null;
 };
 
-/** Takes a reported story down and closes every open report on it. */
+/** Takes a reported story down for good and closes every open report on it. */
 export async function takeDownReported(formData: FormData) {
   const { user } = await requireStaff();
   const entryId = idFrom(formData, "entryId");
   if (!entryId) return;
   const sql = adminSql();
-  const [entry] = await sql`update public.human_entries set published = false where id = ${entryId}::uuid returning slug`;
+  const [entry] = await sql`update public.human_entries set published = false, removed_at = now(), removed_by = ${user.id}::uuid where id = ${entryId}::uuid returning slug`;
   await sql`update public.content_reports set resolved_at = now(), resolved_by = ${user.id}::uuid, resolution = 'removed'
     where human_entry_id = ${entryId}::uuid and resolved_at is null`;
   if (entry?.slug) expirePublishedHumanImmediately(String(entry.slug));

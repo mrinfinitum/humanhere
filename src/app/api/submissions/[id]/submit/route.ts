@@ -1,7 +1,7 @@
 import { after } from "next/server";
 import { apiMember } from "@/lib/auth/server";
 import { alertStaff } from "@/lib/notify/staff-alerts";
-import { publishMemberSubmission } from "@/lib/posts/publish";
+import { PublishBlocked, publishMemberSubmission, storyWasRemoved } from "@/lib/posts/publish";
 import { LimitError, submissionRepository } from "@/lib/submissions/repository";
 import { storyLabel } from "@/lib/posts/label";
 
@@ -14,6 +14,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!/^[0-9a-f-]{36}$/i.test(id)) return Response.json({ error: "invalid_submission" }, { status: 400 });
   const draft = await submissionRepository.getOwned(user.id, id);
   if (!draft || !draft.intent) return Response.json({ error: "The draft is incomplete." }, { status: 400 });
+  if (await storyWasRemoved(id)) return Response.json({ error: "This story was removed by staff and can't be posted again." }, { status: 409 });
   try {
     await submissionRepository.submitOwnedDraft(user.id, id);
   } catch (error) {
@@ -21,7 +22,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     throw error;
   }
   // Stories go live straight away unless the automatic check holds them for staff.
-  const result = await publishMemberSubmission(user.id, id);
+  let result;
+  try {
+    result = await publishMemberSubmission(user.id, id);
+  } catch (error) {
+    if (error instanceof PublishBlocked) return Response.json({ error: error.message }, { status: 409 });
+    throw error;
+  }
   if (result.status === "held") {
     after(() => alertStaff({
       subject: "A story is waiting for a check",

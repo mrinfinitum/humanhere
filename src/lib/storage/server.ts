@@ -92,3 +92,9 @@ export async function listObjects(bucket: typeof PRIVATE_BUCKET | typeof PUBLIC_
   } while (ContinuationToken);
   return objects;
 }
+
+/** Counts objects under a prefix, stopping once it reaches `limit`. */
+export async function countPrivateObjects(prefix: string, limit: number) {
+  const page = await storage().send(new ListObjectsV2Command({ Bucket: PRIVATE_BUCKET, Prefix: prefix, MaxKeys: limit }));
+  return page.KeyCount ?? page.Contents?.length ?? 0;
+}

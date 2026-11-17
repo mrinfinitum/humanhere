@@ -26,9 +26,23 @@ begin
   end;
 end;
 $$;
+-- The server registers media after checking the upload; members cannot.
+do $$
+begin
+  begin
+    insert into public.submission_media (submission_id, media_type, storage_path, mime_type, byte_size)
+    values ('62000000-0000-4000-8000-000000000001', 'image',
+      '61000000-0000-4000-8000-000000000001/62000000-0000-4000-8000-000000000001/64000000-0000-4000-8000-000000000001.jpg', 'image/jpeg', 100);
+    raise exception 'A member registered media directly';
+  exception when insufficient_privilege then null;
+  end;
+end;
+$$;
+reset role;
 insert into public.submission_media (submission_id, media_type, storage_path, mime_type, byte_size)
 values ('62000000-0000-4000-8000-000000000001', 'image',
   '61000000-0000-4000-8000-000000000001/62000000-0000-4000-8000-000000000001/64000000-0000-4000-8000-000000000001.jpg', 'image/jpeg', 100);
+set local role authenticated;
 
 do $$
 begin

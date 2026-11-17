@@ -7,7 +7,19 @@ import { placeCentroid } from "@/lib/geo/places";
 import { personalInfoReason } from "@/lib/moderation/personal-info";
 import { adminSql } from "@/lib/neon/admin";
 
+/** Publishing stopped for a reason the member should see. */
+export class PublishBlocked extends Error {}
+
+/** Staff took this story down; it cannot be posted again. */
+export async function storyWasRemoved(submissionId: string) {
+  const [entry] = await adminSql()`select 1 from public.human_entries where submission_id = ${submissionId}::uuid and removed_at is not null`;
+  return Boolean(entry);
+}
+
 export type PublishResult = { status: "published"; slug: string } | { status: "held"; reason: string };
+
+const REMOVED = "This story was removed by staff and can't be posted again.";
+const CHANGED = "This story changed while it was being posted. Please try again.";
 
 function slugFor(publicName: string | null, anonymous: boolean) {
   const first = anonymous ? "" : (publicName ?? "").trim().split(/\s+/)[0] ?? "";
@@ -27,6 +39,8 @@ export async function publishMemberSubmission(userId: string, submissionId: stri
   const [submission] = await sql`select public_name, anonymous, identity_mode, headline, story, location, location_withheld, media_withheld, status
     from public.submissions where id = ${submissionId}::uuid and user_id = ${userId}::uuid`;
   if (!submission || submission.status !== "submitted") throw new Error("This story is not ready to publish.");
+  const [previous] = await sql`select slug, removed_at from public.human_entries where submission_id = ${submissionId}::uuid`;
+  if (previous?.removed_at) throw new PublishBlocked(REMOVED);
 
   const reason = checked ? null : personalInfoReason(submission.headline as string | null, submission.story as string | null, submission.location as string | null);
   if (reason) {
@@ -45,24 +59,37 @@ export async function publishMemberSubmission(userId: string, submissionId: stri
     const [profile] = await sql`select city, region from public.profiles where id = ${userId}::uuid`;
     const profilePlace = [profile?.city, profile?.region].map(part => String(part ?? "").trim()).filter(Boolean).join(", ");
     if (profilePlace && String(submission.location).trim() === profilePlace) {
-      await sql`update public.submissions set location = null where id = ${submissionId}::uuid and user_id = ${userId}::uuid`;
+      // Only if nothing changed since it was read and checked.
+      const cleared = await sql`update public.submissions set location = null
+        where id = ${submissionId}::uuid and user_id = ${userId}::uuid and status = 'submitted'
+          and headline is not distinct from ${submission.headline} and story is not distinct from ${submission.story}
+          and location = ${submission.location} returning id`;
+      if (!cleared.length) throw new PublishBlocked(CHANGED);
       submission.location = null;
     }
   }
   const pin = submission.location_withheld ? null : placeCentroid(submission.location as string | null);
   let slug: string;
   try {
-    const [published] = await sql`select public.self_publish_submission(
-      ${userId}::uuid, ${submissionId}::uuid, ${slugFor(submission.public_name as string | null, anonymous)},
+    // Publishes only the text checked above; a story edited since then fails.
+    const [published] = await sql`select public.publish_checked_submission(
+      ${userId}::uuid, ${submissionId}::uuid,
+      ${submission.headline as string | null}, ${submission.story as string | null}, ${submission.location as string | null},
+      ${slugFor(submission.public_name as string | null, anonymous)},
       ${thumbnail ? JSON.stringify(thumbnail) : null}::jsonb, ${assets.length ? JSON.stringify(assets) : null}::jsonb,
       ${pin?.latitude ?? null}, ${pin?.longitude ?? null}, ${pin?.precision ?? null}::public.human_public_location_precision
     ) as slug`;
     slug = String(published.slug);
   } catch (error) {
     if (copied.length) await removeUnreferencedPublicCopies(submissionId, copied);
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("submission changed during publishing")) throw new PublishBlocked(CHANGED);
+    if (message.includes("story was removed by staff")) throw new PublishBlocked(REMOVED);
     throw error;
   }
   // Expire now rather than serving the old lists once more: the author expects to see their post.
   expirePublishedHumanImmediately(slug);
+  // A story re-shared as anonymous moves to a new link without the first name.
+  if (previous?.slug && previous.slug !== slug) expirePublishedHumanImmediately(String(previous.slug));
   return { status: "published", slug };
 }

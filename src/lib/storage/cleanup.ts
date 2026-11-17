@@ -8,7 +8,8 @@ import { listObjects, PRIVATE_BUCKET, PUBLIC_BUCKET, removeObjects } from "./ser
 // queries in step with scripts/clean-orphaned-media.mjs.
 const PENDING_AGE_MS = 60 * 60 * 1000; // Upload URLs expire after five minutes.
 const ORPHAN_AGE_MS = 24 * 60 * 60 * 1000; // Leaves in-flight uploads and publications alone.
-const MAX_REMOVALS = 500; // A run that finds more than this stops and reports instead.
+const MAX_REMOVALS = 500; // A run that finds more registered orphans than this stops and reports instead.
+const BATCH = 100;
 
 export type CleanupResult = { privateRemoved: number; publicRemoved: number; skipped: boolean };
 
@@ -35,12 +36,20 @@ export async function cleanOrphanedMedia(): Promise<CleanupResult> {
     .filter(object => object.Key && age(object.LastModified) > ORPHAN_AGE_MS && !publicReferences.has(object.Key))
     .map(object => object.Key as string);
 
-  // A sudden flood of "orphans" more likely means a broken reference query.
-  if (privateKeys.length + publicKeys.length > MAX_REMOVALS) {
-    console.warn(`Media cleanup skipped: ${privateKeys.length + publicKeys.length} candidates exceeds ${MAX_REMOVALS}.`);
-    return { privateRemoved: 0, publicRemoved: 0, skipped: true };
+  // Abandoned uploads were never registered, so they are always safe to remove,
+  // however many there are. Removing them in batches keeps one member's pile of
+  // unfinished uploads from stopping cleanup for everyone.
+  const pendingKeys = privateKeys.filter(key => key.includes("/pending/"));
+  const orphanKeys = privateKeys.filter(key => !key.includes("/pending/"));
+  for (let start = 0; start < pendingKeys.length; start += BATCH) {
+    await removeObjects(PRIVATE_BUCKET, pendingKeys.slice(start, start + BATCH));
   }
-  if (privateKeys.length) await removeObjects(PRIVATE_BUCKET, privateKeys);
+  // A sudden flood of registered-file "orphans" more likely means a broken reference query.
+  if (orphanKeys.length + publicKeys.length > MAX_REMOVALS) {
+    console.warn(`Media cleanup skipped orphans: ${orphanKeys.length + publicKeys.length} candidates exceeds ${MAX_REMOVALS}.`);
+    return { privateRemoved: pendingKeys.length, publicRemoved: 0, skipped: true };
+  }
+  if (orphanKeys.length) await removeObjects(PRIVATE_BUCKET, orphanKeys);
   if (publicKeys.length) await removeObjects(PUBLIC_BUCKET, publicKeys);
   return { privateRemoved: privateKeys.length, publicRemoved: publicKeys.length, skipped: false };
 }

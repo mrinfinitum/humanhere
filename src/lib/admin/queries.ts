@@ -6,9 +6,15 @@ import type { AdminQueueRow } from "@/components/admin/AdminQueue";
 
 type Cursor = { createdAt: string; id: string };
 const encode = (value: Cursor) => Buffer.from(JSON.stringify(value)).toString("base64url");
+// Both cursor values go into a filter string, so accept only a timestamp and a UUID.
+const ISO = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(\.\d{1,6})?(Z|[+-]\d{2}(:?\d{2})?)$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const decode = (value?: string): Cursor | undefined => {
   if (!value) return;
-  try { const parsed = JSON.parse(Buffer.from(value, "base64url").toString()) as Cursor; return parsed.createdAt && parsed.id ? parsed : undefined; } catch { return; }
+  try {
+    const parsed = JSON.parse(Buffer.from(value, "base64url").toString()) as Cursor;
+    return ISO.test(String(parsed.createdAt)) && UUID.test(String(parsed.id)) ? parsed : undefined;
+  } catch { return; }
 };
 
 export async function getSubmissionQueue(cursorValue?: string) {
